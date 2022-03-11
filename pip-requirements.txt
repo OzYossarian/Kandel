@@ -1,0 +1,10 @@
+attrs @ file:///opt/conda/conda-bld/attrs_1642510447205/work
+certifi==2021.10.8
+iniconfig @ file:///home/linux1/recipes/ci/iniconfig_1610983019677/work
+more-itertools @ file:///tmp/build/80754af9/more-itertools_1637733554872/work
+packaging @ file:///tmp/build/80754af9/packaging_1637314298585/work
+pluggy @ file:///Users/ktietz/ci_310/pluggy_1643910871755/work
+py @ file:///opt/conda/conda-bld/py_1644396412707/work
+pyparsing @ file:///tmp/build/80754af9/pyparsing_1635766073266/work
+pytest==6.2.4
+toml @ file:///tmp/build/80754af9/toml_1616166611790/work
