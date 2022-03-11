@@ -10,3 +10,4 @@ class Code:
                  schedule: List[Iterable[type(Check)]]):
         self.data_qubits = data_qubits
         self.schedule = schedule
+        # add [n,k,d] parameters?
