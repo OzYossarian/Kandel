@@ -16,9 +16,9 @@ class TriangularColourCode(HexagonalCode):
         self.distance = distance
         self.layout = layout
 
-        width = 3 * (distance // 2)
+        self.width = 3 * (distance // 2)
         if distance % 2 == 0:
-            width -= 1
+            self.width -= 1
         data_qubits = {}
         plaquette_centers = []
         checks = []
@@ -35,18 +35,14 @@ class TriangularColourCode(HexagonalCode):
                     else:
                         data_qubits[coords] = Qubit(coords, State.Zero)
 
-        define_qubits(0, width, 1)
-        define_qubits(1, width - 1, 2)
-
-        def is_in_triangle(coords: Tuple[int, int, int]):
-            (g, x, y) = coords
-            return y >= 0 and y <= x and y <= (width - g) - x
+        define_qubits(0, self.width, 1)
+        define_qubits(1, self.width - 1, 2)
 
         for center in plaquette_centers:
             plaquette_data_qubits = [
                 data_qubits[neighbour]
                 for neighbour in self.get_neighbours(center)
-                if is_in_triangle(neighbour)]
+                if self._is_in_triangle(neighbour)]
 
             x_ops = [
                 Operator(qubit, PauliX)
@@ -64,3 +60,7 @@ class TriangularColourCode(HexagonalCode):
             checks.append(z_stabilizer)
 
         super().__init__(data_qubits, [checks], layout)
+
+    def _is_in_triangle(self, coords: Tuple[int, int, int]):
+        (g, x, y) = coords
+        return y >= 0 and y <= x and y <= (self.width - g) - x

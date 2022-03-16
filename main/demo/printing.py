@@ -10,8 +10,8 @@ def test_print_triangular_colour_code():
     qpu = SquareLatticeQPU((20, 20))
     # printer.print_qpu(qpu, 'empty_qpu')
 
-    colour_code = TriangularColourCode(4, Layout.Hexagonal)
+    colour_code = TriangularColourCode(3, Layout.Hexagonal)
     # colour_code = ToricColourCode(4, Layout.Hexagonal)
-    qpu.embed(colour_code, (2,2), (0,1))
+    qpu.embed(colour_code, (4,4), (0,1))
     printer.print_qpu(qpu, 'colour_code')
 
