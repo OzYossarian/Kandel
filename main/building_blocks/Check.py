@@ -7,9 +7,9 @@ from main.building_blocks.Qubit import Qubit, Coordinates
 
 
 class Check:
-    def __init__(self, operators: List[Operator], center: Coordinates | None,
-                 ancilla: Qubit | None, colour: Colour | None,
-                 pauli_type: Pauli | None):
+    def __init__(self, operators: List[Operator], center: Coordinates = None,
+                 ancilla: Qubit = None, colour: Colour = None,
+                 pauli_type: Pauli = None):
         self.operators = operators
         self.ancilla = ancilla
         self.center = center
