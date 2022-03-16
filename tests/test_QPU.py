@@ -1,4 +1,6 @@
-from main.QPUs.QPU import SquareLatticeQPU
+import unittest
+
+from main.QPU import SquareLatticeQPU
 
 
 def test_square_lattice_qpu():
