@@ -18,8 +18,7 @@ def test_distance_3_triangular_colour_code():
         (1, 1, 1),
         (0, 2, 0),
         (0, 2, 1),
-        (0, 3, 0),
-    }
+        (0, 3, 0)}
 
     plaquette_weights = {len(check.operators) for check in colour_code.checks}
     assert plaquette_weights == {4}

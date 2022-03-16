@@ -1,6 +1,4 @@
 from main.QPUs.SquareLatticeQPU import SquareLatticeQPU
-from main.codes.Code import Code
-from main.codes.HexagonalCode import HexagonalCode
 from main.codes.RepetitionCode import RepetitionCode
 from main.codes.TriangularColourCode import TriangularColourCode
 from main.enums import Layout
@@ -21,7 +19,7 @@ def test_square_lattice_qpu():
     assert set(expected_positions) == set(actual_positions)
 
 
-def test_embed_1D_into_1D():
+def test_embed_1d_into_1d():
     code = RepetitionCode(4)
     qpu = SquareLatticeQPU((10, ))
     qpu.embed(code, 1, 0)
@@ -29,7 +27,7 @@ def test_embed_1D_into_1D():
         assert code.data_qubits[2 * i].coords == 2*i + 1
 
 
-def test_embed_1D_into_3D():
+def test_embed_1d_into_3d():
     code = RepetitionCode(4)
     qpu = SquareLatticeQPU((10, 10, 10))
     qpu.embed(code, (1, 1, 1), 2)
@@ -37,14 +35,14 @@ def test_embed_1D_into_3D():
         assert code.data_qubits[2*i].coords == (1, 1, 1 + 2*i)
 
 
-def test_embed_2D_into_3D():
+def test_embed_2d_into_3d():
     code = TriangularColourCode(3, Layout.Hexagonal)
     qpu = SquareLatticeQPU((10, 10, 10))
     plaquette_centers = {
-        HexagonalCode.hexagonal_square_lattice_coords(check.center)
+        code.hexagonal_square_lattice_coords(check.center)
         for check in code.checks}
     qubit_coords = {
-        HexagonalCode.hexagonal_square_lattice_coords(qubit.coords)
+        code.hexagonal_square_lattice_coords(qubit.coords)
         for qubit in code.data_qubits.values()}
 
     qpu.embed(code, (1, 1, 1), (1, 2))
