@@ -1,4 +1,4 @@
-from main.codes.ColourCode import TriangularColourCode
+from main.codes.TriangularColourCode import TriangularColourCode
 
 
 def test_triangular_colour_code():
