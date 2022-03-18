@@ -12,4 +12,3 @@ class Qubit(object):
 
     def __repr__(self):
         return f"position={self.coords}, state=|{self.initial_state.value}>"
-

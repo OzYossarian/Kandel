@@ -16,3 +16,6 @@ class Check:
         self.colour = colour
         self.pauli_type = pauli_type
 
+    def __repr__(self):
+        return(f"""Check using ancilla operator \n     {self.ancilla}
+               \nwith operators \n   {self.operators}\n""")
