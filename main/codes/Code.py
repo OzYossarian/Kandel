@@ -13,10 +13,12 @@ CodeId = Any
 
 class Code:
     def __init__(self, data_qubits: Dict[Coordinates, Qubit],
+                 ancilla_qubits: Dict[Coordinates, Qubit],
                  schedule: List[List[Check]]):
         self.data_qubits = data_qubits
         self.schedule = schedule
         self.checks = set(check for round in schedule for check in round)
+        self.ancilla_qubits = ancilla_qubits
         # TODO - add [n,k,d] parameters?
 
     def transform_coords(self, qpu: QPU):

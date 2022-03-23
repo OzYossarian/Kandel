@@ -10,12 +10,13 @@ from main.enums import State
 
 class RepetitionCode(Code):
     def __init__(self, distance: int):
-        data_qubits, schedule = self.init_checks(distance)
-        super().__init__(data_qubits, [schedule])
+        data_qubits, ancilla_qubits, schedule = self.init_checks(distance)
+        super().__init__(data_qubits, ancilla_qubits, [schedule])
 
     def init_checks(self, distance: int):
         data_qubits = {2*i: Qubit(2*i, State.Zero)
                        for i in range(distance)}
+        ancilla_qubits = dict()
         schedule = []
         for i in range(distance-1):
             operators = [
@@ -23,6 +24,7 @@ class RepetitionCode(Code):
                 Operator(data_qubits[2*(i+1)], PauliZ)]
             center = 2*i + 1
             ancilla = Qubit(center, State.Zero)
+            ancilla_qubits[center] = ancilla
             new_check = Check(operators, center, ancilla)
             schedule.append(new_check)
-        return data_qubits, schedule
+        return data_qubits, ancilla_qubits, schedule
