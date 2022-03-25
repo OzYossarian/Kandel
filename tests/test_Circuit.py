@@ -2,75 +2,118 @@ from sre_parse import State
 from main.Circuit import Circuit
 from main.building_blocks.Qubit import Qubit
 from main.codes.RepetitionCode import RepetitionCode
+from main.QPUs.SquareLatticeQPU import SquareLatticeQPU
 from main.enums import State
+from main. Compiler import Compiler
 from main.building_blocks.Pauli import Pauli, PauliX, PauliY, PauliZ
 import stim
 
 
-def test_initialize_qubits():
-    q_2_0 = Qubit((2, 0), State(0))
-    test_circuit = Circuit()
-    test_circuit.initialize_qubits([q_2_0])
-    assert test_circuit.initialized_qubit_coordinates == {(2, 0)}
-    assert test_circuit.coord_to_stim_index == {(2, 0): 0}
-    assert test_circuit.stim_circuit == stim.Circuit("R 0")
+def test_distance_2_rep_code_2_rounds():
+    test_qpu = SquareLatticeQPU((3, 1))
+    rep_code = RepetitionCode(2)
+    test_qpu.embed(rep_code, (0, 0), 0)
+    test_compiler = Compiler()
 
-    q_4_0 = Qubit((4, 0), State(0))
-    test_circuit.initialize_qubits([q_4_0])
-    assert test_circuit.initialized_qubit_coordinates == {(2, 0), (4, 0)}
-    assert test_circuit.coord_to_stim_index == {(2, 0): 0, (4, 0): 1}
-    assert test_circuit.stim_circuit == stim.Circuit("R 0 1")
-
-    test_circuit.initialize_qubits([q_2_0])
-    assert test_circuit.initialized_qubit_coordinates == {(2, 0), (4, 0)}
-    assert test_circuit.coord_to_stim_index == {(2, 0): 0, (4, 0): 1}
-    assert test_circuit.stim_circuit == stim.Circuit("R 0 1")
-
-
-def test_compile_check_cnot():
-    rep_code = RepetitionCode(3)
-    check_a1_d0_d2 = rep_code.schedule[0][0]
-    test_circuit = Circuit()
-    data_qubits = [check_a1_d0_d2.operators[i].qubit for i in range(
-        len(check_a1_d0_d2.operators))]
-    data_qubits.append(check_a1_d0_d2.ancilla)
-    test_circuit.initialize_qubits(data_qubits)
-    test_circuit.check_to_stim_cnot(check_a1_d0_d2)
-    assert test_circuit.stim_circuit == stim.Circuit("""R 0 1 2
-                                                     CX 0 2 1 2""")
-    check_a3_d2_d4 = rep_code.schedule[0][1]
-    data_qubits = [check_a3_d2_d4.operators[i].qubit for i in range(
-        len(check_a3_d2_d4.operators))]
-    data_qubits.append(check_a3_d2_d4.ancilla)
-    test_circuit.initialize_qubits(data_qubits)
-    test_circuit.check_to_stim_cnot(check_a3_d2_d4)
-    assert test_circuit.stim_circuit == stim.Circuit("""R 0 1 2 
-                                                     CX 0 2 1 2
-                                                     R 3 4
-                                                     CX 1 4 3 4""")
+    test_compiler.compile_code(
+        rep_code, n_code_rounds=2)
+    circuit = Circuit()
+    circuit.to_stim(test_compiler.gates_at_timesteps)
+    assert circuit.stim_circuit == stim.Circuit("""R 0 1 2
+                                                     TICK
+                                                     CX 0 2
+                                                     TICK
+                                                     CX 1 2
+                                                     TICK
+                                                     MR 2
+                                                     DETECTOR rec[-1]
+                                                     TICK
+                                                     R 2
+                                                     TICK
+                                                     CX 0 2
+                                                     TICK
+                                                     CX 1 2
+                                                     TICK
+                                                     MR 2
+                                                     DETECTOR rec[-1] rec[-2]
+                                                     TICK""")
 
 
-    # TODO create
-    # assert test_circuit.stim_circuit == stim.Circuit("""R 0 1 2 3 4
-    #                                                 CX 0 2 1 2 1 4 3 4""")
-test_compile_check_cnot()
+def test_distance_2_rep_code_2_rounds_measure_data_qubits():
+    test_qpu = SquareLatticeQPU((3, 1))
+    rep_code = RepetitionCode(2)
+    test_qpu.embed(rep_code, (0, 0), 0)
+    test_compiler = Compiler()
+
+    test_compiler.compile_code(
+        rep_code, n_code_rounds=2, measure_data_qubits=True)
+    circuit = Circuit()
+    circuit.to_stim(test_compiler.gates_at_timesteps)
+    assert circuit.stim_circuit == stim.Circuit("""R 0 1 2
+                                                     TICK
+                                                     CX 0 2
+                       
+                                                     TICK
+                                                     CX 1 2
+                                                     TICK
+                                                     MR 2
+                                                     DETECTOR rec[-1]
+                                                     TICK
+                                                     R 2
+                                                     TICK
+                                                     CX 0 2
+                                                     TICK
+                                                     CX 1 2
+                                                     TICK
+                                                     MR 2
+                                                     DETECTOR rec[-1] rec[-2]
+                                                     MR 0 1
+                                                     DETECTOR rec[-1] rec[-2] rec[-3]
+                                                     TICK""")
 
 
-def test_compile_measurements():
-    rep_code = RepetitionCode(3)
-    check_a1_d0_d2 = rep_code.schedule[0][0]
-    test_circuit = Circuit()
-    data_qubits = [check_a1_d0_d2.operators[i].qubit for i in range(
-        len(check_a1_d0_d2.operators))]
-    data_qubits.append(check_a1_d0_d2.ancilla)
-    test_circuit.initialize_qubits(data_qubits)
-    assert test_circuit.initialized_qubit_coordinates == {0, 1, 2}
-    test_circuit.measure_qubits([check_a1_d0_d2.ancilla], PauliZ)
-    assert test_circuit.initialized_qubit_coordinates == {0, 2}
+def test_distance_4_rep_code_2_rounds_measure_data_qubits():
+    test_qpu = SquareLatticeQPU((7, 1))
+    rep_code = RepetitionCode(4)
+    test_qpu.embed(rep_code, (0, 0), 0)
+    test_compiler = Compiler()
+    test_compiler.compile_code(
+        rep_code, n_code_rounds=2, measure_data_qubits=True)
+    circuit = Circuit()
+    circuit.to_stim(test_compiler.gates_at_timesteps)
+    assert circuit.stim_circuit == stim.Circuit("""R 0 1 2 3 4 5 6
+                                                TICK
+                                                CX 0 4 1 5 2 6
+                                                TICK
+                                                CX 1 4 2 5 3 6
+                                                TICK
+                                                MR 4
+                                                DETECTOR rec[-1]
+                                                MR 5
+                                                DETECTOR rec[-1]
+                                                MR 6
+                                                DETECTOR rec[-1]
+                                                TICK
+                                                R 4 5 6
+                                                TICK
+                                                CX 0 4 1 5 2 6
+                                                TICK
+                                                CX 1 4 2 5 3 6
+                                                TICK
+                                                MR 4
+                                                DETECTOR rec[-1] rec[-4]
+                                                MR 5
+                                                DETECTOR rec[-1] rec[-4]
+                                                MR 6
+                                                DETECTOR rec[-1] rec[-4]
+                                                MR 0 1
+                                                DETECTOR rec[-1] rec[-2] rec[-5]
+                                                MR 2
+                                                DETECTOR rec[-1] rec[-2] rec[-5]
+                                                MR 3
+                                                DETECTOR rec[-1] rec[-2] rec[-5]                                                
+                                                TICK
+                                                """)
 
-    assert test_circuit.stim_circuit == stim.Circuit("""R 0 1 2
-                                                     MRZ 2""")
 
-
-# test_compile_check_cnot()
-test_compile_measurements()
+test_distance_4_rep_code_2_rounds_measure_data_qubits()

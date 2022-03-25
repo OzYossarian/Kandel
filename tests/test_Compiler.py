@@ -8,7 +8,7 @@ import stim
 
 def test_compile_qpu():
     pass
-    assert test_circuit == stim.Circuit("""R 0 1 2 3 4 5 6  
+    assert test_circuit == stim.Circuit("""R 0 1 2 3 4 5 6
                                                  CNOT 0 1 2 3 4 5
                                                  CNOT 2 1 4 3 6 5
                                                  MR 1 3 5""")
@@ -35,20 +35,71 @@ def test_compile_code():
     test_compiler = Compiler()
 
     test_compiler.compile_code(
-        rep_code, n_code_rounds=2)
+        rep_code, n_code_rounds=1, measure_data_qubits=True)
+
     gate_dict = {}
+    gate_measure_dict = {}
+    data_qubits = tuple()
+    for qubit in rep_code.data_qubits.values():
+        gate_dict[qubit] = 'RZ'
+        data_qubits += (qubit,)
+
+    for qubit in rep_code.ancilla_qubits.values():
+        gate_dict[qubit] = 'RZ'
+
+        gate_measure_dict[(data_qubits, (qubit,))] = 'MRZ'
+        gate_measure_dict[qubit] = 'MRZ'
+    assert test_compiler.gates_at_timesteps[0]['gates'] == gate_dict
+    assert test_compiler.gates_at_timesteps[3]['gates'] == gate_measure_dict
+
+    test_qpu = SquareLatticeQPU((7, 1))
+    rep_code = RepetitionCode(4)
+    test_qpu.embed(rep_code, (0, 0), 0)
+    test_compiler = Compiler()
+
+    test_compiler.compile_code(
+        rep_code, n_code_rounds=1)
+    gate_dict = {}
+    measurement_dict = {}
     for qubit in rep_code.data_qubits.values():
         gate_dict[qubit] = 'RZ'
     for qubit in rep_code.ancilla_qubits.values():
         gate_dict[qubit] = 'RZ'
-    assert test_compiler.gates_at_timesteps[0]['gates'] == gate_dict
-    gate_dict_2 = {}
-    for qubit in rep_code.ancilla_qubits.values():
-        gate_dict_2[qubit] = 'RZ'
-    assert test_compiler.gates_at_timesteps[4]['gates'] == gate_dict_2
-    print(test_compiler.gates_at_timesteps[6]['gates'])
+        measurement_dict[qubit] = 'MRZ'
 
-    # TODO update timestep
+    assert test_compiler.gates_at_timesteps[0]['gates'] == gate_dict
+    assert test_compiler.gates_at_timesteps[3]['gates'] == measurement_dict
+
+    test_compiler_2_rounds = Compiler()
+
+    test_compiler_2_rounds.compile_code(
+        rep_code, n_code_rounds=2)
+    gate_dict = {}
+
+    for i in range(3):
+        assert test_compiler_2_rounds.gates_at_timesteps[i][
+            'gates'] == test_compiler.gates_at_timesteps[i]['gates']
+
+    for i in range(5, 8):
+        assert test_compiler_2_rounds.gates_at_timesteps[i][
+            'gates'] == test_compiler.gates_at_timesteps[i-4]['gates']
+
+    test_compiler_3_rounds = Compiler()
+
+    test_compiler_3_rounds.compile_code(
+        rep_code, n_code_rounds=3)
+
+    for i in range(3):
+        assert test_compiler_3_rounds.gates_at_timesteps[i][
+            'gates'] == test_compiler.gates_at_timesteps[i]['gates']
+
+    for i in range(5, 8):
+        assert test_compiler_3_rounds.gates_at_timesteps[i][
+            'gates'] == test_compiler.gates_at_timesteps[i-4]['gates']
+
+    for i in range(9, 12):
+        assert test_compiler_3_rounds.gates_at_timesteps[i][
+            'gates'] == test_compiler.gates_at_timesteps[i-8]['gates']
 
 
 test_compile_code()

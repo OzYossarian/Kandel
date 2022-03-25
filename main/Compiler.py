@@ -18,9 +18,9 @@ empty_timestep = {'occupied_qubits': set(),
 
 class Compiler(object):
     def __init__(self, noise_model=None):
+
         self.gates_at_timesteps = dict()
         self.gates_at_timesteps[0] = copy.deepcopy(empty_timestep)
-        pass
 
     def compile_qpu(self, qpu: QPU, circuit: Circuit, n_timesteps: int = 1):
         for code in qpu.codes:
@@ -35,8 +35,10 @@ class Compiler(object):
             for round in code.schedule:
                 initial_timestep = self.compile_one_round(
                     round, initial_timestep)
+
         if measure_data_qubits == True:
-            self.measure_qubits(code.data_qubits, PauliZ)
+            self.measure_data_qubits(code,
+                                     PauliZ, timestep=initial_timestep-1)
 
     def compile_one_round(self, round: [Check], initial_timestep: int):
         for check in round:
@@ -59,22 +61,55 @@ class Compiler(object):
                 self.translate_operator(
                     operator, check.ancilla)
             if stabilizer == {'Z'}:
-                self.measure_qubits([check.ancilla], PauliZ)
+                self.measure_ancilla_qubit(check.ancilla, PauliZ)
 
-        return(initial_timestep+len(self.gates_at_timesteps))
+        return(len(self.gates_at_timesteps))
 
-    def measure_qubits(self, qubits: [Qubit], basis: Pauli):
-        for qubit in qubits:
-            timestep = self.find_timestep(qubit)
-            # self.gates_at_timesteps[timestep]['gates'][qubit] = "RZ"
+    def measure_ancilla_qubit(self, qubit: Qubit, basis: Pauli):
+        timestep = self.find_timestep(qubit)
+        # self.gates_at_timesteps[timestep]['gates'][qubit] = "RZ"
+        if basis == PauliZ:
+            self.gates_at_timesteps[timestep]['gates'][qubit] = 'MRZ'
+        elif basis == PauliX:
+            self.gates_at_timesteps[timestep]['gates'][qubit] = 'MRX'
+        elif basis == PauliY:
+            self.gates_at_timesteps[timestep]['gates'][qubit] = 'MRY'
+        self.gates_at_timesteps[timestep]['initialized_qubits'].remove(
+            qubit)
+        self.gates_at_timesteps[timestep]['occupied_qubits'].add(
+            qubit)
+
+    def measure_data_qubits(self,  code: Code, basis, timestep: int):
+        """
+        The code here is messy. This is because stim needs to know which
+        ancilla measurement result should be the same as the data qubit
+        measurement result
+        """
+        for check in code.schedule[0]:
+            qubits_to_measure = tuple()
+            qubits_for_detector = tuple()
+
+            for operator in check.operators:
+                if operator.qubit in self.gates_at_timesteps[timestep]['initialized_qubits']:
+
+                    qubits_to_measure += (operator.qubit,)
+                else:
+                    qubits_for_detector += (operator.qubit,)
+            qubits_for_detector += (check.ancilla,)
+            qubits = (qubits_to_measure, qubits_for_detector)
+
+            # add case where data qubits are already measured!
             if basis == PauliZ:
-                self.gates_at_timesteps[timestep]['gates'][qubit] = 'MRZ'
+                self.gates_at_timesteps[timestep]['gates'][qubits] = 'MRZ'
             elif basis == PauliX:
-                self.gates_at_timesteps[timestep]['gates'][qubit] = 'MRX'
+                self.gates_at_timesteps[timestep]['gates'][qubits] = 'MRX'
             elif basis == PauliY:
-                self.gates_at_timesteps[timestep]['gates'][qubit] = 'MRY'
-            self.gates_at_timesteps[timestep]['initialized_qubits'].remove(
-                qubit)
+                self.gates_at_timesteps[timestep]['gates'][qubits] = 'MRY'
+            for qubit in qubits_to_measure:
+                self.gates_at_timesteps[timestep]['initialized_qubits'].remove(
+                    qubit)
+                self.gates_at_timesteps[timestep]['occupied_qubits'].add(
+                    qubit)
 
     def initialize_qubits(self, qubits: [Qubit], timestep):
         if timestep not in self.gates_at_timesteps:
@@ -107,7 +142,7 @@ class Compiler(object):
             self.gates_at_timesteps[timestep]['gates'][operator.qubit,
                                                        ancilla] = "CNOT"
 
-    def find_timestep(self, qubit):
+    def find_timestep(self, qubit: Qubit):
         for timestep in range(len(self.gates_at_timesteps.keys())):
             if qubit not in self.gates_at_timesteps[timestep]['occupied_qubits']:
                 return(timestep)
