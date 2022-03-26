@@ -23,6 +23,8 @@ class Circuit():
                     else:
                         self.translate_measurement_gates(
                             gate, qubits)
+                elif gate == "Observable":
+                    self.add_observable(qubits)
 
                 elif type(qubits) == tuple:
                     self.translate_two_qubit_gate(gate, qubits)
@@ -38,6 +40,15 @@ class Circuit():
                 self.coord_to_stim_index.keys())
         self.stim_circuit.append_operation(
             gate, self.coord_to_stim_index[qubit.coords])
+
+    def add_observable(self, qubits: (Qubit)):
+
+        observable_list = []
+        for qubit in qubits:
+            observable_list.append(
+                stim.target_rec(self.measured_qubits[qubit]))
+        self.stim_circuit.append_operation(
+            "OBSERVABLE_INCLUDE", (observable_list))
 
     def translate_two_qubit_gate(self, gate: str, qubits: (Qubit)):
         stim_qubits = []

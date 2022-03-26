@@ -39,6 +39,8 @@ class Compiler(object):
         if measure_data_qubits == True:
             self.measure_data_qubits(code,
                                      PauliZ, timestep=initial_timestep-1)
+            self.add_logical_observable(code.logical_operator,
+                                        PauliZ, timestep=initial_timestep-1)
 
     def compile_one_round(self, round: [Check], initial_timestep: int):
         for check in round:
@@ -111,7 +113,13 @@ class Compiler(object):
                 self.gates_at_timesteps[timestep]['occupied_qubits'].add(
                     qubit)
 
-    def initialize_qubits(self, qubits: [Qubit], timestep):
+    def add_logical_observable(self, logical_op: [Operator], basis: PauliZ, timestep: int):
+        qubits = tuple()
+        for operator in logical_op:
+            qubits += (operator.qubit,)
+        self.gates_at_timesteps[timestep]['gates'][qubits] = "Observable"
+
+    def initialize_qubits(self, qubits: [Qubit], timestep: int):
         if timestep not in self.gates_at_timesteps:
             self.gates_at_timesteps[timestep] = copy.deepcopy(empty_timestep)
             self.gates_at_timesteps[timestep]['initialized_qubits'] = copy.copy(

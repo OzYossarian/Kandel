@@ -112,6 +112,7 @@ def test_distance_4_rep_code_2_rounds_measure_data_qubits():
                                                 DETECTOR rec[-1] rec[-2] rec[-5]
                                                 MR 3
                                                 DETECTOR rec[-1] rec[-2] rec[-5]                                                
+                                                OBSERVABLE_INCLUDE(0) rec[-4]
                                                 TICK
                                                 """)
 

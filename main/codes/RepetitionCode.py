@@ -11,6 +11,7 @@ from main.enums import State
 class RepetitionCode(Code):
     def __init__(self, distance: int):
         data_qubits, ancilla_qubits, schedule = self.init_checks(distance)
+        self.logical_operator = [Operator(data_qubits[0], PauliZ)]
         super().__init__(data_qubits, ancilla_qubits, [schedule])
 
     def init_checks(self, distance: int):
