@@ -48,22 +48,25 @@ class Compiler(object):
             for operator in check.operators:
                 stabilizer.add(operator.pauli.name)
 
-            if stabilizer == {'Z'}:
+            # if stabilizer == {'Z'}:
 
-                self.initialize_qubits(
-                    [check.ancilla], initial_timestep)
+            self.initialize_qubits(
+                [check.ancilla], initial_timestep)
 
-            elif stabilizer == {'X'}:
-                print('todo')
-            elif stabilizer == {'X', 'Z'}:
-                raise Exception(
-                    'Sorry, mixed stabilizers are not supported.')
+            # print('todo')
 
             for operator in check.operators:
                 self.translate_operator(
                     operator, check.ancilla)
             if stabilizer == {'Z'}:
                 self.measure_ancilla_qubit(check.ancilla, PauliZ)
+
+            elif stabilizer == {'X'}:
+                pass
+                # self.initialize_qubits
+            elif stabilizer == {'X', 'Z'}:
+                raise Exception(
+                    'Sorry, mixed stabilizers are not supported.')
 
         return(len(self.gates_at_timesteps))
 
@@ -121,9 +124,11 @@ class Compiler(object):
 
     def initialize_qubits(self, qubits: [Qubit], timestep: int):
         if timestep not in self.gates_at_timesteps:
-            self.gates_at_timesteps[timestep] = copy.deepcopy(empty_timestep)
-            self.gates_at_timesteps[timestep]['initialized_qubits'] = copy.copy(
-                self.gates_at_timesteps[timestep-1]['initialized_qubits'])
+            for i in range(2):
+                self.gates_at_timesteps[timestep +
+                                        i] = copy.deepcopy(empty_timestep)
+                self.gates_at_timesteps[timestep+i]['initialized_qubits'] = copy.copy(
+                    self.gates_at_timesteps[timestep-1+i]['initialized_qubits'])
 
         for qubit in qubits:
             # TODOtimestep = self.find_timestep(qubit)
@@ -131,8 +136,16 @@ class Compiler(object):
             if qubit not in self.gates_at_timesteps[timestep]['initialized_qubits']:
                 if qubit.initial_state == State(0):
                     self.gates_at_timesteps[timestep]['gates'][qubit] = "RZ"
-                self.gates_at_timesteps[timestep]['occupied_qubits'].add(
-                    qubit)
+                    self.gates_at_timesteps[timestep]['occupied_qubits'].add(
+                        qubit)
+                elif qubit.initial_state == State(3):
+                    self.gates_at_timesteps[timestep]['gates'][qubit] = "RZ"
+                    self.gates_at_timesteps[timestep]['occupied_qubits'].add(
+                        qubit)
+                    self.gates_at_timesteps[timestep+1]['gates'][qubit] = "H"
+                    self.gates_at_timesteps[timestep+1]['occupied_qubits'].add(
+                        qubit)
+
                 for future_timestep in range(timestep, len(self.gates_at_timesteps)):
                     self.gates_at_timesteps[future_timestep]['initialized_qubits'].add(
                         qubit)
