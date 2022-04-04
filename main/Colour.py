@@ -6,6 +6,9 @@ class Colour:
         self.name = name
         self.rgb = rgb
 
+    def __repr__(self):
+        return(self.name)
+
 
 Red = Colour('red', (255, 0, 0))
 Green = Colour('green', (0, 255, 0))

@@ -49,6 +49,8 @@ def test_compile_code():
 
         gate_measure_dict[(data_qubits, (qubit,))] = 'MRZ'
         gate_measure_dict[qubit] = 'MRZ'
+
+    gate_measure_dict[(rep_code.data_qubits[0],)] = 'Observable'
     assert test_compiler.gates_at_timesteps[0]['gates'] == gate_dict
     assert test_compiler.gates_at_timesteps[3]['gates'] == gate_measure_dict
 
@@ -100,9 +102,6 @@ def test_compile_code():
     for i in range(9, 12):
         assert test_compiler_3_rounds.gates_at_timesteps[i][
             'gates'] == test_compiler.gates_at_timesteps[i-8]['gates']
-
-
-test_compile_code()
 
 
 def test_initialize_qubits():

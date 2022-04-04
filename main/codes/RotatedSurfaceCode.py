@@ -59,26 +59,27 @@ class RotatedSurfaceCode(Code):
                     ancilla = Qubit(center, initial_state_map[check_colour[0]])
                     operators = [
                         Operator(
-                            data_qubits[center[0], center[1]+1], check_type[check_colour[0]]),
-                        Operator(
                             data_qubits[center[0]+1, center[1]], check_type[check_colour[0]]),
                         Operator(
-                            data_qubits[center[0]-1, center[1]], check_type[check_colour[0]]),
+                            data_qubits[center[0], center[1]+1], check_type[check_colour[0]]),
                         Operator(
-                            data_qubits[center[0], center[1]-1], check_type[check_colour[0]])]
+                            data_qubits[center[0], center[1]-1], check_type[check_colour[0]]),
+                        Operator(
+                            data_qubits[center[0]-1, center[1]], check_type[check_colour[0]])]
                     new_check = Check(operators, center,
                                       ancilla, colour=check_colour[0])
+                    #print(new_check, 'new check')
                 else:
                     ancilla = Qubit(center, initial_state_map[check_colour[1]])
                     operators = [
                         Operator(
-                            data_qubits[center[0], center[1]+1], check_type[check_colour[1]]),
-                        Operator(
                             data_qubits[center[0]+1, center[1]], check_type[check_colour[1]]),
                         Operator(
-                            data_qubits[center[0]-1, center[1]], check_type[check_colour[1]]),
+                            data_qubits[center[0], center[1]-1], check_type[check_colour[1]]),
                         Operator(
-                            data_qubits[center[0], center[1]-1], check_type[check_colour[1]])]
+                            data_qubits[center[0], center[1]+1], check_type[check_colour[1]]),
+                        Operator(
+                            data_qubits[center[0]-1, center[1]], check_type[check_colour[1]])]
                     new_check = Check(operators, center,
                                       ancilla, colour=check_colour[1])
                 schedule.append(new_check)
