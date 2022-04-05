@@ -49,10 +49,10 @@ def test_distance_2_rep_code_2_rounds_measure_data_qubits():
         rep_code, n_code_rounds=2, measure_data_qubits=True)
     circuit = Circuit()
     circuit.to_stim(test_compiler.gates_at_timesteps)
+    print(circuit.stim_circuit, 'stim')
     assert circuit.stim_circuit == stim.Circuit("""R 0 1 2
                                                      TICK
                                                      CX 0 2
-                       
                                                      TICK
                                                      CX 1 2
                                                      TICK
@@ -69,6 +69,7 @@ def test_distance_2_rep_code_2_rounds_measure_data_qubits():
                                                      DETECTOR rec[-1] rec[-2]
                                                      MR 0 1
                                                      DETECTOR rec[-1] rec[-2] rec[-3]
+                                                     OBSERVABLE_INCLUDE(0) rec[-2]
                                                      TICK""")
 
 

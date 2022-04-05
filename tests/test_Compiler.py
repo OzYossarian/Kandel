@@ -1,17 +1,10 @@
 from main.Compiler import Compiler
 from main.QPUs.SquareLatticeQPU import SquareLatticeQPU
 from main.codes.RepetitionCode import RepetitionCode
+from main.codes.RotatedSurfaceCode import RotatedSurfaceCode
 from main.printing.Printer2D import Printer2D
 from main.Circuit import Circuit
 import stim
-
-
-def test_compile_qpu():
-    pass
-    assert test_circuit == stim.Circuit("""R 0 1 2 3 4 5 6
-                                                 CNOT 0 1 2 3 4 5
-                                                 CNOT 2 1 4 3 6 5
-                                                 MR 1 3 5""")
 
 
 def test_compile_code():
@@ -162,3 +155,27 @@ def test_compile_one_round():
 
     assert test_compiler.gates_at_timesteps[3]['initialized_qubits'] == set(
         rep_code.data_qubits.values())
+
+
+def test_compile_rotated_surface_code():
+    test_qpu = SquareLatticeQPU((10, 10))
+    sc = RotatedSurfaceCode(3)
+    test_qpu.embed(sc, (0, 0), (0, 1))
+    test_compiler = Compiler()
+    test_compiler.compile_one_round(
+        test_qpu.codes[1].schedule[0], 0)
+
+    gate_dict = {}
+    for qubit in sc.data_qubits.values():
+        gate_dict[qubit] = 'RZ'
+    for qubit in sc.ancilla_qubits.values():
+        gate_dict[qubit] = 'RZ'
+
+    print(gate_dict, 'gate dict')
+    print(test_compiler.gates_at_timesteps[0]['gates'], '\n')
+    print(test_compiler.gates_at_timesteps[1]['gates'], '\n')
+    print(test_compiler.gates_at_timesteps[2]['gates'], '\n')
+    print(test_compiler.gates_at_timesteps[3]['gates'])
+
+
+test_compile_rotated_surface_code()

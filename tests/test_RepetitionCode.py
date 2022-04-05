@@ -13,7 +13,8 @@ def test_init():
     qubit = d3_rep_code.data_qubits[4]
     assert qubit.coords == 4
     assert qubit.initial_state == State.Zero
-    assert d3_rep_code.logical_operator == d3_rep_code.data_qubits[0]
+    assert d3_rep_code.logical_operator == [
+        Operator(d3_rep_code.data_qubits[0], PauliZ)]
 
 
 def test_init_checks():

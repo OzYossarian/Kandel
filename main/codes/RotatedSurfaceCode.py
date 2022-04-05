@@ -16,6 +16,7 @@ class RotatedSurfaceCode(Code):
         boundary_ancilla_qubits, boundary_checks = self.init_boundary_checks(
             data_qubits, distance)
         ancilla_qubits.update(boundary_ancilla_qubits)
+        print(ancilla_qubits, 'ancilla')
         checks.extend(boundary_checks)
         super().__init__(data_qubits, ancilla_qubits, [checks])
 
@@ -102,8 +103,8 @@ class RotatedSurfaceCode(Code):
             ancilla = Qubit(center, State.Zero)
             ancilla_qubits[center] = ancilla
             operators = [
-                Operator(data_qubits[center[0], center[1]+1], PauliZ),
-                Operator(data_qubits[center[0]+1, center[1]], PauliZ)]
+                Operator(data_qubits[center[0]+1, center[1]], PauliZ),
+                Operator(data_qubits[center[0], center[1]+1], PauliZ)]
             new_check = Check(operators, center, ancilla, colour=Green)
             schedule.append(new_check)
 
@@ -114,7 +115,8 @@ class RotatedSurfaceCode(Code):
             operators = [
                 Operator(data_qubits[center[0], center[1]-1], PauliZ),
                 Operator(data_qubits[center[0]-1, center[1]], PauliZ)]
-            new_check = Check(operators, center, ancilla, colour=Green)
+            new_check = Check(operators, center, ancilla, colour=Green,
+                              initialization_timestep=2)
             schedule.append(new_check)
 
             # top left boundary
@@ -122,8 +124,8 @@ class RotatedSurfaceCode(Code):
             ancilla = Qubit(center, State.Zero)
             ancilla_qubits[center] = ancilla
             operators = [
-                Operator(data_qubits[center[0], center[1]-1], PauliZ),
-                Operator(data_qubits[center[0]+1, center[1]], PauliZ)]
+                Operator(data_qubits[center[0]+1, center[1]], PauliZ),
+                Operator(data_qubits[center[0], center[1]-1], PauliZ)]
             new_check = Check(operators, center, ancilla, colour=Red)
             schedule.append(new_check)
 
@@ -134,6 +136,7 @@ class RotatedSurfaceCode(Code):
             operators = [
                 Operator(data_qubits[center[0], center[1]+1], PauliZ),
                 Operator(data_qubits[center[0]-1, center[1]], PauliZ)]
-            new_check = Check(operators, center, ancilla, colour=Red)
+            new_check = Check(operators, center, ancilla,
+                              colour=Red, initialization_timestep=2)
             schedule.append(new_check)
         return(ancilla_qubits, schedule)
