@@ -42,36 +42,40 @@ class Compiler(object):
 
     def compile_one_round(self, round: [Check], initial_timestep: int):
         for check in round:
-            stabilizer = set()
-            for operator in check.operators:
-                stabilizer.add(operator.pauli.name)
-
             self.initialize_qubits(
-                [check.ancilla], initial_timestep)
+                [check.ancilla], initial_timestep +
+                check.initialization_timestep)
 
             for operator in check.operators:
+
                 self.translate_operator(
                     operator, check.ancilla)
-            if stabilizer == {'Z'}:
-                self.measure_ancilla_qubit(check.ancilla, PauliZ)
 
-            elif stabilizer == {'X'}:
-                pass
-                # self.initialize_qubits
-            elif stabilizer == {'X', 'Z'}:
-                raise Exception(
-                    'Sorry, mixed stabilizers are not supported.')
+            measurement_timestep = len(check.operators) + \
+                initial_timestep+check.initialization_timestep
+
+            self.measure_ancilla_qubit(
+                check.ancilla, measurement_timestep)
 
         return(len(self.gates_at_timesteps))
 
-    def measure_ancilla_qubit(self, qubit: Qubit, basis: Pauli):
-        timestep = self.find_timestep(qubit)
-        if basis == PauliZ:
+    def measure_ancilla_qubit(self, qubit: Qubit, timestep):
+        timestep = self.find_timestep(qubit, timestep)
+
+        if qubit.initial_state == State.Zero:
             self.gates_at_timesteps[timestep]['gates'][qubit] = 'MRZ'
-        elif basis == PauliX:
-            self.gates_at_timesteps[timestep]['gates'][qubit] = 'MRX'
-        elif basis == PauliY:
-            self.gates_at_timesteps[timestep]['gates'][qubit] = 'MRY'
+
+        elif qubit.initial_state == State.Plus:
+            self.gates_at_timesteps[timestep]['gates'][qubit] = "H"
+            self.gates_at_timesteps[timestep]['occupied_qubits'].add(
+                qubit)
+            if timestep+1 not in self.gates_at_timesteps:
+                self.gates_at_timesteps[timestep +
+                                        1] = copy.deepcopy(empty_timestep)
+                self.gates_at_timesteps[timestep+1]['initialized_qubits'] = copy.copy(
+                    self.gates_at_timesteps[timestep]['initialized_qubits'])
+
+            self.gates_at_timesteps[timestep+1]['gates'][qubit] = 'RZ'
 
         for future_timestep in range(timestep, len(self.gates_at_timesteps)):
             self.gates_at_timesteps[future_timestep]['initialized_qubits'].remove(
@@ -147,24 +151,27 @@ class Compiler(object):
                         qubit)
 
     def translate_operator(self, operator: Operator, ancilla: Qubit):
-        if operator.pauli == PauliZ:
-            timestep_control = self.find_timestep(ancilla)
-            timestep_target = self.find_timestep(operator.qubit)
-            timestep = max([timestep_control, timestep_target])
-            self.gates_at_timesteps[timestep]['occupied_qubits'].add(
-                operator.qubit)
-            self.gates_at_timesteps[timestep]['occupied_qubits'].add(
-                ancilla)
+        timestep_ancilla = self.find_timestep(ancilla)
+        timestep_data_qubit = self.find_timestep(operator.qubit)
+        timestep = max([timestep_ancilla, timestep_data_qubit])
 
+        self.gates_at_timesteps[timestep]['occupied_qubits'].add(
+            operator.qubit)
+        self.gates_at_timesteps[timestep]['occupied_qubits'].add(
+            ancilla)
+        if operator.pauli == PauliZ:
             self.gates_at_timesteps[timestep]['gates'][operator.qubit,
                                                        ancilla] = "CNOT"
+        if operator.pauli == PauliX:
+            self.gates_at_timesteps[timestep]['gates'][ancilla,
+                                                       operator.qubit] = "CNOT"
 
-    def find_timestep(self, qubit: Qubit):
-        for timestep in range(len(self.gates_at_timesteps.keys())):
+    def find_timestep(self, qubit: Qubit, start_timestep=0):
+        for timestep in range(start_timestep, len(self.gates_at_timesteps.keys())):
             if qubit not in self.gates_at_timesteps[timestep]['occupied_qubits']:
-                return(timestep)
+                if qubit in self.gates_at_timesteps[timestep]['initialized_qubits']:
+                    return(timestep)
         else:
-
             self.gates_at_timesteps[timestep+1] = copy.deepcopy(empty_timestep)
             self.gates_at_timesteps[timestep+1]['initialized_qubits'] = copy.copy(
                 self.gates_at_timesteps[timestep]['initialized_qubits'])

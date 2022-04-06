@@ -130,9 +130,10 @@ def test_compile_one_round():
     test_qpu.embed(rep_code, (0, 0), 0)
     test_compiler = Compiler()
     test_circuit = Circuit()
+    test_compiler.initialize_qubits(rep_code.data_qubits.values(), 0)
     test_compiler.compile_one_round(
         test_qpu.codes[1].schedule[0], 0)
-    test_compiler.initialize_qubits(rep_code.data_qubits.values(), 0)
+
     gate_dict = {}
     for qubit in rep_code.data_qubits.values():
         gate_dict[qubit] = 'RZ'
@@ -147,8 +148,8 @@ def test_compile_one_round():
 
         gate_dict_t1[check.operators[0].qubit, check.ancilla] = "CNOT"
         gate_dict_t2[check.operators[1].qubit, check.ancilla] = "CNOT"
-
         gate_dict_t3[check.ancilla] = "MRZ"
+
     assert test_compiler.gates_at_timesteps[1]['gates'] == gate_dict_t1
     assert test_compiler.gates_at_timesteps[2]['gates'] == gate_dict_t2
     assert test_compiler.gates_at_timesteps[3]['gates'] == gate_dict_t3
@@ -162,20 +163,30 @@ def test_compile_rotated_surface_code():
     sc = RotatedSurfaceCode(3)
     test_qpu.embed(sc, (0, 0), (0, 1))
     test_compiler = Compiler()
+    test_compiler.initialize_qubits(sc.data_qubits.values(), 0)
     test_compiler.compile_one_round(
         test_qpu.codes[1].schedule[0], 0)
 
-    gate_dict = {}
-    for qubit in sc.data_qubits.values():
-        gate_dict[qubit] = 'RZ'
-    for qubit in sc.ancilla_qubits.values():
-        gate_dict[qubit] = 'RZ'
+    gate_dict_0 = {}
+    gate_dict_1 = {}
+    for data_q in sc.data_qubits.values():
+        gate_dict_0[data_q] = 'RZ'
+    for check in sc.schedule[0]:
+        if check.initialization_timestep == 0:
+            gate_dict_0[check.ancilla] = 'RZ'
+            gate_dict_1[check.ancilla] = 'H'
+        elif check.initialization_timestep == 1:
+            gate_dict_1[check.ancilla] = 'RZ'
 
-    print(gate_dict, 'gate dict')
-    print(test_compiler.gates_at_timesteps[0]['gates'], '\n')
-    print(test_compiler.gates_at_timesteps[1]['gates'], '\n')
-    print(test_compiler.gates_at_timesteps[2]['gates'], '\n')
-    print(test_compiler.gates_at_timesteps[3]['gates'])
+    gate_dict_2 = {sc.ancilla_qubits[(4, 1)]: 'RZ',
+                   ((sc.data_qubits[(4, 2)]), (sc.ancilla_qubits[(3, 2)])): 'CNOT',
+                   ((sc.data_qubits[(2, 2)]), (sc.ancilla_qubits[(1, 2)])): 'CNOT',
+                   ((sc.data_qubits[(2, 0)]), (sc.ancilla_qubits[(1, 0)])): 'CNOT',
+                   ((sc.ancilla_qubits[(2, 1)]), (sc.data_qubits[(3, 1)])): 'CNOT',
+                   ((sc.ancilla_qubits[(2, 3)]), (sc.data_qubits[(3, 3)])): 'CNOT',
+                   ((sc.ancilla_qubits[(0, 3)]), (sc.data_qubits[(1, 3)])): 'CNOT'}
 
-
-test_compile_rotated_surface_code()
+    assert test_compiler.gates_at_timesteps[0]['gates'] == gate_dict_0
+    assert test_compiler.gates_at_timesteps[1]['gates'] == gate_dict_1
+    assert len(test_compiler.gates_at_timesteps[2]['initialized_qubits']) == 16
+    assert test_compiler.gates_at_timesteps[2]['gates'] == gate_dict_2
