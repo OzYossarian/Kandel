@@ -70,7 +70,8 @@ class Printer2D(Printer):
         mid_next = mid(ops[0].qubit.coords, ops[-1].qubit.coords)
         for i in range(weight):
             mid_last = mid_next
-            mid_next = mid(ops[i].qubit.coords, ops[(i + 1) % weight].qubit.coords)
+            mid_next = mid(ops[i].qubit.coords,
+                           ops[(i + 1) % weight].qubit.coords)
             polygon = (check.center, mid_last, ops[i].qubit.coords, mid_next)
             polygon = tuple(
                 self.scale(coords, printout.offset)
