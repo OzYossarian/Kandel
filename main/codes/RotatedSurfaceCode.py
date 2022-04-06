@@ -16,9 +16,8 @@ class RotatedSurfaceCode(Code):
         boundary_ancilla_qubits, boundary_checks = self.init_boundary_checks(
             data_qubits, distance)
         ancilla_qubits.update(boundary_ancilla_qubits)
-        print(ancilla_qubits, 'ancilla')
         checks.extend(boundary_checks)
-        super().__init__(data_qubits, ancilla_qubits, [checks])
+        super().__init__(data_qubits, [checks], ancilla_qubits)
 
     def init_data_qubits(self, distance: int):
         data_qubits = dict()
@@ -39,50 +38,60 @@ class RotatedSurfaceCode(Code):
         schedule = []
         x_middle, y_middle = (distance-1, distance-1)
 
-        # diagonal lines of ancilla qubits
-        colours = (Green, Red)
-
+        check_colours = [Green, Red]
+        check_type = [PauliZ, PauliX]
+        initial_state_map = [State.Zero, State.Plus]
         starting_x, starting_y = (1, y_middle)
-        check_type = {Green: PauliZ, Red: PauliX}
-        initial_state_map = {Green: State.Zero, Red: State.Plus}
+
+        # diagonal lines of ancilla qubits
         for i in range(distance-1):
+
+            """
             if i % 2 == 0:
                 check_colour = [Green, Red]
 
             else:
                 check_colour = [Red, Green]
+            """
 
             for j in range(distance-1):
                 center = (starting_x+j, starting_y-j)
 
                 if j % 2 == 0:
-                    # give these a specific order for compilation convenience?
-                    ancilla = Qubit(center, initial_state_map[check_colour[0]])
+                    # the operators are in a specific order here to make sure
+                    # hook errors don't spread to logicals
+
+                    pauli_op = check_type[i % 2]
+                    ancilla = Qubit(
+                        center, initial_state_map[i % 2])
                     operators = [
                         Operator(
-                            data_qubits[center[0]+1, center[1]], check_type[check_colour[0]]),
+                            data_qubits[center[0]+1, center[1]], pauli_op),
                         Operator(
-                            data_qubits[center[0], center[1]+1], check_type[check_colour[0]]),
+                            data_qubits[center[0], center[1]+1], pauli_op),
                         Operator(
-                            data_qubits[center[0], center[1]-1], check_type[check_colour[0]]),
+                            data_qubits[center[0], center[1]-1], pauli_op),
                         Operator(
-                            data_qubits[center[0]-1, center[1]], check_type[check_colour[0]])]
+                            data_qubits[center[0]-1, center[1]], pauli_op)]
                     new_check = Check(operators, center,
-                                      ancilla, colour=check_colour[0])
-                    #print(new_check, 'new check')
+                                      ancilla, colour=check_colours[i % 2])
+
                 else:
-                    ancilla = Qubit(center, initial_state_map[check_colour[1]])
+
+                    pauli_op = check_type[(i+1) % 2]
+                    ancilla = Qubit(center, initial_state_map[(i+1) % 2])
                     operators = [
                         Operator(
-                            data_qubits[center[0]+1, center[1]], check_type[check_colour[1]]),
+                            data_qubits[center[0]+1, center[1]], pauli_op),
                         Operator(
-                            data_qubits[center[0], center[1]-1], check_type[check_colour[1]]),
+                            data_qubits[center[0], center[1]-1], pauli_op),
                         Operator(
-                            data_qubits[center[0], center[1]+1], check_type[check_colour[1]]),
+                            data_qubits[center[0], center[1]+1], pauli_op),
                         Operator(
-                            data_qubits[center[0]-1, center[1]], check_type[check_colour[1]])]
+                            data_qubits[center[0]-1, center[1]], pauli_op)]
+
                     new_check = Check(operators, center,
-                                      ancilla, colour=check_colour[1])
+                                      ancilla, colour=check_colours[(i+1) % 2])
                 schedule.append(new_check)
                 ancilla_qubits[center] = ancilla
 

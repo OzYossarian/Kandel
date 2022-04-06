@@ -1,5 +1,3 @@
-from time import time
-from numpy import empty
 from main.QPUs.QPU import QPU
 from main.Circuit import Circuit
 from main.codes.Code import Code
@@ -48,12 +46,8 @@ class Compiler(object):
             for operator in check.operators:
                 stabilizer.add(operator.pauli.name)
 
-            # if stabilizer == {'Z'}:
-
             self.initialize_qubits(
                 [check.ancilla], initial_timestep)
-
-            # print('todo')
 
             for operator in check.operators:
                 self.translate_operator(
@@ -72,15 +66,16 @@ class Compiler(object):
 
     def measure_ancilla_qubit(self, qubit: Qubit, basis: Pauli):
         timestep = self.find_timestep(qubit)
-        # self.gates_at_timesteps[timestep]['gates'][qubit] = "RZ"
         if basis == PauliZ:
             self.gates_at_timesteps[timestep]['gates'][qubit] = 'MRZ'
         elif basis == PauliX:
             self.gates_at_timesteps[timestep]['gates'][qubit] = 'MRX'
         elif basis == PauliY:
             self.gates_at_timesteps[timestep]['gates'][qubit] = 'MRY'
-        self.gates_at_timesteps[timestep]['initialized_qubits'].remove(
-            qubit)
+
+        for future_timestep in range(timestep, len(self.gates_at_timesteps)):
+            self.gates_at_timesteps[future_timestep]['initialized_qubits'].remove(
+                qubit)
         self.gates_at_timesteps[timestep]['occupied_qubits'].add(
             qubit)
 
@@ -110,11 +105,14 @@ class Compiler(object):
                 self.gates_at_timesteps[timestep]['gates'][qubits] = 'MRX'
             elif basis == PauliY:
                 self.gates_at_timesteps[timestep]['gates'][qubits] = 'MRY'
+
             for qubit in qubits_to_measure:
-                self.gates_at_timesteps[timestep]['initialized_qubits'].remove(
-                    qubit)
                 self.gates_at_timesteps[timestep]['occupied_qubits'].add(
                     qubit)
+
+                for future_timestep in range(timestep, len(self.gates_at_timesteps)):
+                    self.gates_at_timesteps[future_timestep]['initialized_qubits'].remove(
+                        qubit)
 
     def add_logical_observable(self, logical_op: [Operator], basis: PauliZ, timestep: int):
         qubits = tuple()
@@ -131,14 +129,12 @@ class Compiler(object):
                     self.gates_at_timesteps[timestep-1+i]['initialized_qubits'])
 
         for qubit in qubits:
-            # TODOtimestep = self.find_timestep(qubit)
-
             if qubit not in self.gates_at_timesteps[timestep]['initialized_qubits']:
-                if qubit.initial_state == State(0):
+                if qubit.initial_state == State.Zero:
                     self.gates_at_timesteps[timestep]['gates'][qubit] = "RZ"
                     self.gates_at_timesteps[timestep]['occupied_qubits'].add(
                         qubit)
-                elif qubit.initial_state == State(3):
+                elif qubit.initial_state == State.Plus:
                     self.gates_at_timesteps[timestep]['gates'][qubit] = "RZ"
                     self.gates_at_timesteps[timestep]['occupied_qubits'].add(
                         qubit)

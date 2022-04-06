@@ -12,7 +12,7 @@ class RepetitionCode(Code):
     def __init__(self, distance: int):
         data_qubits, ancilla_qubits, schedule = self.init_checks(distance)
         self.logical_operator = [Operator(data_qubits[0], PauliZ)]
-        super().__init__(data_qubits, ancilla_qubits, [schedule])
+        super().__init__(data_qubits, [schedule], ancilla_qubits)
 
     def init_checks(self, distance: int):
         data_qubits = {2*i: Qubit(2*i, State.Zero)

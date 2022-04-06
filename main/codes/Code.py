@@ -13,8 +13,8 @@ CodeId = Any
 
 class Code:
     def __init__(self, data_qubits: Dict[Coordinates, Qubit],
-                 ancilla_qubits: Dict[Coordinates, Qubit],
-                 schedule: List[List[Check]]):
+                 schedule: List[List[Check]],
+                 ancilla_qubits: Dict[Coordinates, Qubit] = None):
         self.data_qubits = data_qubits
         self.schedule = schedule
         self.checks = set(check for round in schedule for check in round)

@@ -53,3 +53,4 @@ def test_embed_2d_into_3d():
     assert expected_coords == actual_coords
 
 
+test_embed_2d_into_3d()
