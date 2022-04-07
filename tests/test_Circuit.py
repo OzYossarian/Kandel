@@ -1,5 +1,5 @@
-from sre_parse import State
 from main.Circuit import Circuit
+from main.NoiseModel import CodeCapactiyBitFlipNoise, PhenomenologicalNoise
 from main.building_blocks.Qubit import Qubit
 from main.codes.RepetitionCode import RepetitionCode
 from main.QPUs.SquareLatticeQPU import SquareLatticeQPU
@@ -7,6 +7,61 @@ from main.enums import State
 from main. Compiler import Compiler
 from main.building_blocks.Pauli import Pauli, PauliX, PauliY, PauliZ
 import stim
+
+
+def test_distance_2_rep_code_1_round_X_code_capacity_noise():
+    test_qpu = SquareLatticeQPU((3, 1))
+    rep_code = RepetitionCode(2)
+    test_qpu.embed(rep_code, (0, 0), 0)
+    noise_model = CodeCapactiyBitFlipNoise(0.1)
+    test_compiler = Compiler(noise_model)
+    test_compiler.compile_code(rep_code, n_code_rounds=1)
+    circuit = Circuit()
+    circuit.to_stim(test_compiler.gates_at_timesteps)
+    assert circuit.stim_circuit == stim.Circuit("""R 0 1 2      
+                                                X_ERROR(0.1) 0 1
+                                                TICK
+                                                CX 0 2
+                                                TICK
+                                                CX 1 2
+                                                TICK
+                                                MR 2
+                                                DETECTOR rec[-1]
+                                                TICK""")
+
+
+def test_distance_2_rep_code_2_rounds_phenomenological_noise():
+    test_qpu = SquareLatticeQPU((3, 1))
+    rep_code = RepetitionCode(2)
+    test_qpu.embed(rep_code, (0, 0), 0)
+    noise_model = PhenomenologicalNoise(0.1, 0.1)
+    test_compiler = Compiler(noise_model)
+    test_compiler.compile_code(
+        rep_code, n_code_rounds=2)
+    circuit = Circuit()
+    circuit.to_stim(test_compiler.gates_at_timesteps)
+    assert circuit.stim_circuit == stim.Circuit("""R 0 1 2
+                                                    DEPOLARIZE1(0.1) 0 1
+                                                    TICK
+                                                    CX 0 2
+                                                    TICK
+                                                    CX 1 2
+                                                    X_ERROR(0.1) 2
+                                                    TICK
+                                                    MR 2
+                                                    DETECTOR rec[-1]
+                                                    TICK
+                                                    R 2
+                                                    DEPOLARIZE1(0.1) 0 1
+                                                    TICK
+                                                    CX 0 2
+                                                    TICK
+                                                    CX 1 2
+                                                    X_ERROR(0.1) 2
+                                                    TICK
+                                                    MR 2
+                                                    DETECTOR rec[-1] rec[-2]
+                                                    TICK""")
 
 
 def test_distance_2_rep_code_2_rounds():
@@ -116,6 +171,3 @@ def test_distance_4_rep_code_2_rounds_measure_data_qubits():
                                                 OBSERVABLE_INCLUDE(0) rec[-4]
                                                 TICK
                                                 """)
-
-
-test_distance_4_rep_code_2_rounds_measure_data_qubits()

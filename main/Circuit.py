@@ -32,7 +32,14 @@ class Circuit():
                 else:
                     self.translate_qubit_gate(gate, qubits)
 
+            self.translate_noise(gates_at_timesteps[timestep]['noise'])
             self.stim_circuit.append_operation("TICK")
+
+    def translate_noise(self, noise_operations):
+        for qubit, noise in noise_operations.items():
+            #print(noise_operations, 'noise_operations to translate')
+            self.stim_circuit.append_operation(
+                noise[0], [self.coord_to_stim_index[qubit.coords]], noise[1])
 
     def translate_qubit_gate(self, gate: str, qubit: Qubit):
         if qubit.coords not in self.coord_to_stim_index.keys():

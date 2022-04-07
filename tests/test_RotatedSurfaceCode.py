@@ -24,9 +24,6 @@ def test_data_qubits():
     print(d3_sc.data_qubits[(1, 1)])
 
 
-test_data_qubits()
-
-
 def test_init_face_checks():
     face_ancillas, checks = d3_sc.init_face_checks(d3_sc.data_qubits, 3)
     assert list(face_ancillas.keys()) == [(1, 2), (2, 1), (2, 3), (3, 2)]
@@ -68,10 +65,7 @@ def test_init_boundary_checks():
     assert checks[0].operators[0].qubit == d3_sc.data_qubits[(2, 0)]
     assert checks[0].operators == [op_1, op_2]
 
-    assert checks[0].initialization_timestep == 0
-    assert checks[1].initialization_timestep == 2
-    assert checks[2].initialization_timestep == 1
-    assert checks[3].initialization_timestep == 3
-
-
-test_init_boundary_checks()
+    assert checks[0].initialization_timestep == 1
+    assert checks[1].initialization_timestep == 3
+    assert checks[2].initialization_timestep == 0
+    assert checks[3].initialization_timestep == 2

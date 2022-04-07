@@ -1,3 +1,4 @@
+from time import time
 from main.QPUs.QPU import QPU
 from main.Circuit import Circuit
 from main.codes.Code import Code
@@ -11,12 +12,13 @@ import copy
 
 empty_timestep = {'occupied_qubits': set(),
                   'initialized_qubits': set(),
-                  'gates': dict()}
+                  'gates': dict(),
+                  'noise': dict()}
 
 
 class Compiler(object):
     def __init__(self, noise_model=None):
-
+        self.noise_model = noise_model
         self.gates_at_timesteps = dict()
         self.gates_at_timesteps[0] = copy.deepcopy(empty_timestep)
 
@@ -27,18 +29,31 @@ class Compiler(object):
 
     def compile_code(self, code: Code, measure_data_qubits=False, n_code_rounds=1):
 
-        self.initialize_qubits(code.data_qubits.values(), 0)
+        self.initialize_qubits(code.data_qubits.values(), 0, 'data')
         initial_timestep = 0
         for _ in range(n_code_rounds):
+            if self.noise_model.data_qubit_start_round != 0:
+                self.add_noise_start_round_data_qubits(
+                    code.data_qubits.values(), initial_timestep)
+
             for round in code.schedule:
                 initial_timestep = self.compile_one_round(
                     round, initial_timestep)
+            # add phenomenological noise at end of each round
 
         if measure_data_qubits == True:
             self.measure_data_qubits(code,
                                      PauliZ, timestep=initial_timestep-1)
             self.add_logical_observable(code.logical_operator,
                                         PauliZ, timestep=initial_timestep-1)
+
+    def add_noise_start_round_data_qubits(self, data_qubits, timestep):
+        if timestep not in self.gates_at_timesteps:
+            self.gates_at_timesteps[timestep] = copy.deepcopy(empty_timestep)
+            self.gates_at_timesteps[timestep]['initialized_qubits'] = copy.copy(
+                self.gates_at_timesteps[timestep-1]['initialized_qubits'])
+        for qubit in data_qubits:
+            self.gates_at_timesteps[timestep]['noise'][qubit] = self.noise_model.data_qubit_start_round
 
     def compile_one_round(self, round: [Check], initial_timestep: int):
         for check in round:
@@ -64,6 +79,9 @@ class Compiler(object):
 
         if qubit.initial_state == State.Zero:
             self.gates_at_timesteps[timestep]['gates'][qubit] = 'MRZ'
+            if self.noise_model.ancilla_qubit_MZ != 0:
+                self.gates_at_timesteps[timestep -
+                                        1]['noise'][qubit] = self.noise_model.ancilla_qubit_MZ
 
         elif qubit.initial_state == State.Plus:
             self.gates_at_timesteps[timestep]['gates'][qubit] = "H"
@@ -124,7 +142,7 @@ class Compiler(object):
             qubits += (operator.qubit,)
         self.gates_at_timesteps[timestep]['gates'][qubits] = "Observable"
 
-    def initialize_qubits(self, qubits: [Qubit], timestep: int):
+    def initialize_qubits(self, qubits: [Qubit], timestep: int, qubit_type='ancilla'):
         if timestep not in self.gates_at_timesteps:
             for i in range(2):
                 self.gates_at_timesteps[timestep +
@@ -135,6 +153,8 @@ class Compiler(object):
         for qubit in qubits:
             if qubit not in self.gates_at_timesteps[timestep]['initialized_qubits']:
                 if qubit.initial_state == State.Zero:
+                    if qubit_type == 'data' and self.noise_model.data_qubit_RZ != 0:
+                        self.gates_at_timesteps[timestep]['noise'][qubit] = self.noise_model.data_qubit_RZ
                     self.gates_at_timesteps[timestep]['gates'][qubit] = "RZ"
                     self.gates_at_timesteps[timestep]['occupied_qubits'].add(
                         qubit)
@@ -142,6 +162,7 @@ class Compiler(object):
                     self.gates_at_timesteps[timestep]['gates'][qubit] = "RZ"
                     self.gates_at_timesteps[timestep]['occupied_qubits'].add(
                         qubit)
+
                     self.gates_at_timesteps[timestep+1]['gates'][qubit] = "H"
                     self.gates_at_timesteps[timestep+1]['occupied_qubits'].add(
                         qubit)
