@@ -1,4 +1,4 @@
-from main.NoiseModel import CodeCapactiyBitFlipNoise, PhenomenologicalNoise
+from main.NoiseModel import CircuitLevelNoise, CodeCapactiyBitFlipNoise, PhenomenologicalNoise
 
 
 def test_init_code_capacity_bit_flip_noise():

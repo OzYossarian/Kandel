@@ -1,4 +1,5 @@
 from time import time
+from main.NoiseModel import NoiseModel
 from main.QPUs.QPU import QPU
 from main.Circuit import Circuit
 from main.codes.Code import Code
@@ -18,7 +19,12 @@ empty_timestep = {'occupied_qubits': set(),
 
 class Compiler(object):
     def __init__(self, noise_model=None):
-        self.noise_model = noise_model
+
+        if noise_model == None:
+            self.noise_model = NoiseModel()
+        else:
+            self.noise_model = noise_model
+
         self.gates_at_timesteps = dict()
         self.gates_at_timesteps[0] = copy.deepcopy(empty_timestep)
 
