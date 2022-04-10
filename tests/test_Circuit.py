@@ -2,6 +2,7 @@ from main.Circuit import Circuit
 from main.NoiseModel import CodeCapactiyBitFlipNoise, PhenomenologicalNoise
 from main.building_blocks.Qubit import Qubit
 from main.codes.RepetitionCode import RepetitionCode
+from main.codes.RotatedSurfaceCode import RotatedSurfaceCode
 from main.QPUs.SquareLatticeQPU import SquareLatticeQPU
 from main.enums import State
 from main. Compiler import Compiler
@@ -40,6 +41,7 @@ def test_distance_2_rep_code_2_rounds_phenomenological_noise():
         rep_code, n_code_rounds=2)
     circuit = Circuit()
     circuit.to_stim(test_compiler.gates_at_timesteps)
+    print(circuit.stim_circuit)
     assert circuit.stim_circuit == stim.Circuit("""R 0 1 2
                                                     DEPOLARIZE1(0.1) 0 1
                                                     TICK
@@ -171,3 +173,82 @@ def test_distance_4_rep_code_2_rounds_measure_data_qubits():
                                                 OBSERVABLE_INCLUDE(0) rec[-4]
                                                 TICK
                                                 """)
+
+
+def test_distance_3_surface_code_code_capacity():
+    test_qpu = SquareLatticeQPU((10, 10))
+    noise_model = CodeCapactiyBitFlipNoise(0.1)
+    surface_code = RotatedSurfaceCode(3)
+    test_qpu.embed(surface_code, (0, 0), (0, 1))
+    test_compiler = Compiler(noise_model)
+
+    test_compiler.compile_code(
+        surface_code, n_code_rounds=3)
+    circuit = Circuit()
+    circuit.to_stim(test_compiler.gates_at_timesteps)
+    assert str(circuit.stim_circuit[1]) == "X_ERROR(0.1) 0 1 2 3 4 5 6 7 8"
+
+
+def test_distance_5_surface_code_phenomenological_noise():
+    test_qpu = SquareLatticeQPU((10, 10))
+    noise_model = PhenomenologicalNoise(0.1, 0.2)
+    surface_code = RotatedSurfaceCode(3)
+    test_qpu.embed(surface_code, (0, 0), (0, 1))
+    test_compiler = Compiler(noise_model)
+
+    test_compiler.compile_code(
+        surface_code, n_code_rounds=1)
+    circuit = Circuit()
+    circuit.to_stim(test_compiler.gates_at_timesteps)
+    assert circuit.stim_circuit == stim.Circuit("""R 0 1 2 3 4 5 6 7 8 9 10 11
+                                                    DEPOLARIZE1(0.1) 0 1 2 3 4 5 6 7 8
+                                                    TICK
+                                                    R 12
+                                                    H 9 10
+                                                    R 13 14
+                                                    H 11
+                                                    TICK
+                                                    CX 4 12 9 5 10 7 8 13 2 14 11 3
+                                                    R 15
+                                                    TICK
+                                                    CX 3 12 9 2 10 6 5 13 1 14
+                                                    R 16
+                                                    CX 11 0
+                                                    H 15
+                                                    X_ERROR(0.2) 14
+                                                    TICK
+                                                    CX 1 12 9 4 10 4 7 13
+                                                    MR 14
+                                                    DETECTOR rec[-1]
+                                                    CX 7 16
+                                                    H 11
+                                                    CX 15 8
+                                                    X_ERROR(0.2) 11
+                                                    TICK
+                                                    CX 0 12 9 1 10 3 4 13 6 16
+                                                    MR 11
+                                                    DETECTOR rec[-1]
+                                                    CX 15 5
+                                                    X_ERROR(0.2) 12 13 16
+                                                    TICK
+                                                    MR 12
+                                                    DETECTOR rec[-1]
+                                                    H 9 10
+                                                    MR 13
+                                                    DETECTOR rec[-1]
+                                                    MR 16
+                                                    DETECTOR rec[-1]
+                                                    H 15
+                                                    X_ERROR(0.2) 9 10 15
+                                                    TICK
+                                                    MR 9
+                                                    DETECTOR rec[-1]
+                                                    MR 10
+                                                    DETECTOR rec[-1]
+                                                    MR 15
+                                                    DETECTOR rec[-1]
+                                                    TICK
+                                    """)
+
+
+test_distance_5_surface_code_phenomenological_noise()

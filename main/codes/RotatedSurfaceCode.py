@@ -1,25 +1,36 @@
-from typing import Dict
-
+from typing import Dict, List, Tuple
 from main.building_blocks.Check import Check
 from main.building_blocks.Operator import Operator
 from main.building_blocks.Pauli import PauliZ, PauliX
 from main.building_blocks.Qubit import Qubit
 from main.codes.Code import Code
 from main.enums import State
-from main.Colour import Red, Green, Blue
+from main.Colour import Red, Green
 
 
 class RotatedSurfaceCode(Code):
-    def __init__(self, distance):
+    def __init__(self, distance: int):
         data_qubits = self.init_data_qubits(distance)
         ancilla_qubits, checks = self.init_face_checks(data_qubits, distance)
         boundary_ancilla_qubits, boundary_checks = self.init_boundary_checks(
             data_qubits, distance)
         ancilla_qubits.update(boundary_ancilla_qubits)
         checks.extend(boundary_checks)
+        # for now just considering one type of logical error and therefore
+        # one type of logical operator, this is the logical X operator
+        self.logical_operator = [
+            Operator(data_qubits[(i*2, distance-1)], PauliX) for i in range(distance)]
         super().__init__(data_qubits, [checks], ancilla_qubits)
 
-    def init_data_qubits(self, distance: int):
+    def init_data_qubits(self, distance: int) -> List[Qubit]:
+        """Initializes data qubits
+
+        Args:
+            distance (int): distance of the code (width of the lattice)
+
+        Returns:
+            List[Qubit]: list of data qubits
+        """
         data_qubits = dict()
         y_middle = distance-1
 
@@ -33,11 +44,21 @@ class RotatedSurfaceCode(Code):
             starting_y += 1
         return(data_qubits)
 
-    def init_face_checks(self, data_qubits: [Qubit], distance: int):
+    def init_face_checks(self, data_qubits: List[Qubit],
+                         distance: int) -> Tuple[List[Qubit], List[Check]]:
+        """Initializes the non-boundary checks
+
+        Args:
+            data_qubits (List[Qubit]): list of data qubits
+            distance (int): distance of the code
+
+        Returns:
+            Tuple[List[Qubit], List[Check]]: A tuple containing a list of data
+                                             qubits and a list of checks
+        """
         ancilla_qubits = dict()
         schedule = []
-        x_middle, y_middle = (distance-1, distance-1)
-
+        y_middle = distance-1
         check_colours = [Green, Red]
         check_type = [PauliZ, PauliX]
         initial_state_map = [State.Zero, State.Plus]
@@ -92,12 +113,23 @@ class RotatedSurfaceCode(Code):
 
         return(ancilla_qubits, schedule)
 
-    def init_boundary_checks(self, data_qubits: [Qubit], distance: int):
+    def init_boundary_checks(self, data_qubits: List[Qubit],
+                             distance: int) -> Tuple[List[Qubit], List[Check]]:
+        """Initializes the boundary checks
+
+        Args:
+            data_qubits (List[Qubit]): list of data qubits
+            distance (int): distance of the code
+
+        Returns:
+            Tuple[List[Qubit], List[Check]]: A tuple containing a list of data
+                                             qubits and a list of checks
+        """
         ancilla_qubits = dict()
         schedule = []
 
         x_middle, y_middle = distance-1, distance-1
-        # y_top = d
+
         for i in range(0, distance//2):
             # bottom left boundary
             center = (2*i+1, y_middle-2*(i+1))

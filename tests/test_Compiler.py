@@ -158,7 +158,41 @@ def test_compile_one_round():
         rep_code.data_qubits.values())
 
 
-def test_compile_rotated_surface_code():
+def test_compile_rotated_surface_code_three_rounds():
+    test_qpu = SquareLatticeQPU((10, 10))
+    sc = RotatedSurfaceCode(3)
+    test_qpu.embed(sc, (0, 0), (0, 1))
+    test_compiler = Compiler()
+    test_compiler.initialize_qubits(sc.data_qubits.values(), 0)
+    test_compiler.compile_code(
+        test_qpu.codes[1], measure_data_qubits=True, n_code_rounds=3)
+
+    gate_dict_0 = {}
+    gate_dict_1 = {}
+    for data_q in sc.data_qubits.values():
+        gate_dict_0[data_q] = 'RZ'
+    for check in sc.schedule[0]:
+        if check.initialization_timestep == 0:
+            gate_dict_0[check.ancilla] = 'RZ'
+            gate_dict_1[check.ancilla] = 'H'
+        elif check.initialization_timestep == 1:
+            gate_dict_1[check.ancilla] = 'RZ'
+
+    gate_dict_2 = {sc.ancilla_qubits[(4, 1)]: 'RZ',
+                   ((sc.data_qubits[(4, 2)]), (sc.ancilla_qubits[(3, 2)])): 'CNOT',
+                   ((sc.data_qubits[(2, 2)]), (sc.ancilla_qubits[(1, 2)])): 'CNOT',
+                   ((sc.data_qubits[(2, 0)]), (sc.ancilla_qubits[(1, 0)])): 'CNOT',
+                   ((sc.ancilla_qubits[(2, 1)]), (sc.data_qubits[(3, 1)])): 'CNOT',
+                   ((sc.ancilla_qubits[(2, 3)]), (sc.data_qubits[(3, 3)])): 'CNOT',
+                   ((sc.ancilla_qubits[(0, 3)]), (sc.data_qubits[(1, 3)])): 'CNOT'}
+
+    assert test_compiler.gates_at_timesteps[0]['gates'] == gate_dict_0
+    assert test_compiler.gates_at_timesteps[1]['gates'] == gate_dict_1
+    assert len(test_compiler.gates_at_timesteps[2]['initialized_qubits']) == 16
+    assert test_compiler.gates_at_timesteps[2]['gates'] == gate_dict_2
+
+
+def test_compile_rotated_surface_code_one_round():
     test_qpu = SquareLatticeQPU((10, 10))
     sc = RotatedSurfaceCode(3)
     test_qpu.embed(sc, (0, 0), (0, 1))
@@ -190,3 +224,4 @@ def test_compile_rotated_surface_code():
     assert test_compiler.gates_at_timesteps[1]['gates'] == gate_dict_1
     assert len(test_compiler.gates_at_timesteps[2]['initialized_qubits']) == 16
     assert test_compiler.gates_at_timesteps[2]['gates'] == gate_dict_2
+    assert len(test_compiler.gates_at_timesteps[7]['gates']) == 3
