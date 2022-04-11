@@ -11,7 +11,9 @@ class Operator(object):
         return f"Operator acting on qubits \n   {self.qubit} \nWith pauli \n    pauli={self.pauli}\n"
 
     def __eq__(self, other):
-        if self.qubit == other.qubit and self.pauli == other.pauli:
+        if isinstance(other, Operator) \
+                and self.qubit == other.qubit \
+                and self.pauli == other.pauli:
             return True
         else:
             return False

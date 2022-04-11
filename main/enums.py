@@ -6,8 +6,3 @@ class State(Enum):
     One = 1
     Plus = 2
     Minus = 3
-
-
-class Layout(Enum):
-    Hexagonal = 0
-    Brickwork = 1

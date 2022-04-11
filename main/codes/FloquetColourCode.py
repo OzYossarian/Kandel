@@ -1,7 +1,7 @@
 from main.codes.HexaquetCode import HexaquetCode
 
 
-class HoneycombCode(HexaquetCode):
+class FloquetColourCode(HexaquetCode):
     def __init__(self, distance: int):
-        schedule = ['RX', 'GY', 'BZ']
+        schedule = ['RX', 'GZ', 'BX', 'RZ', 'GX', 'BZ']
         super().__init__(distance, schedule)

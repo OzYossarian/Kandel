@@ -14,8 +14,8 @@ class Printout:
         self.offset = offset
 
     def save(self, filename: str):
-        #now = datetime.now().strftime('%Y%m%d_%H%M%S')
-        filename = f'{output_path()}/{filename}.jpg'  # _{now}.jpg'
+        now = datetime.now().strftime('%Y%m%d_%H%M%S')
+        filename = f'{output_path()}/{filename}_{now}.jpg'
         Path(Path(filename).parent).mkdir(parents=True, exist_ok=True)
         self.image = ImageOps.flip(self.image)
         self.image.save(filename)

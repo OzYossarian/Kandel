@@ -1,7 +1,6 @@
 from main.QPUs.SquareLatticeQPU import SquareLatticeQPU
 from main.codes.RepetitionCode import RepetitionCode
 from main.codes.TriangularColourCode import TriangularColourCode
-from main.enums import Layout
 
 
 def test_square_lattice_qpu():
@@ -36,14 +35,10 @@ def test_embed_1d_into_3d():
 
 
 def test_embed_2d_into_3d():
-    code = TriangularColourCode(3, Layout.Hexagonal)
+    code = TriangularColourCode(3)
     qpu = SquareLatticeQPU((10, 10, 10))
-    plaquette_centers = {
-        code.hexagonal_square_lattice_coords(check.center)
-        for check in code.checks}
-    qubit_coords = {
-        code.hexagonal_square_lattice_coords(qubit.coords)
-        for qubit in code.data_qubits.values()}
+    plaquette_centers = {check.center for check in code.checks}
+    qubit_coords = {qubit.coords for qubit in code.data_qubits.values()}
 
     qpu.embed(code, (1, 1, 1), (1, 2))
     expected_centers = {(1, 1+x, 1+y) for (x, y) in plaquette_centers}
