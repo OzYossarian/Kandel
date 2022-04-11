@@ -1,7 +1,16 @@
-from main.codes.HexaquetCode import HexaquetCode
+from main.Colour import Red, Green, Blue
+from main.building_blocks.Pauli import PauliX, PauliZ
+from main.codes.TicTacToeCode import TicTacToeCode
 
 
-class FloquetColourCode(HexaquetCode):
+class FloquetColourCode(TicTacToeCode):
     def __init__(self, distance: int):
-        schedule = ['RX', 'GZ', 'BX', 'RZ', 'GX', 'BZ']
-        super().__init__(distance, schedule)
+        tic_tac_toe = [
+            (Red, PauliX),
+            (Green, PauliZ),
+            (Blue, PauliX),
+            (Red, PauliZ),
+            (Green, PauliX),
+            (Blue, PauliZ),
+        ]
+        super().__init__(distance, tic_tac_toe)

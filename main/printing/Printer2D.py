@@ -1,6 +1,6 @@
 from PIL import Image
 
-from main.Colour import Black, Colour
+from main.Colour import Black, Colour, White
 from main.building_blocks.Check import Check
 from main.codes.Code import Code
 from main.QPUs.QPU import QPU
@@ -18,17 +18,23 @@ class Printer2D(Printer):
         x_max = max(x for (x, y) in qpu.qubits)
         y_max = max(y for (x, y) in qpu.qubits)
         size = self.scale((x_max, y_max), (2, 2))
-        image = Image.new('RGB', size, (255, 255, 255))
         data_qubit_diameter = self.scale_factor/10
+
+        # Make a separate printout for each 'round' of the QPU - e.g. Floquet
+        # codes measure different stabilizers in each round.
         rounds = 1 \
             if len(qpu.codes) == 0 \
             else max(len(code.schedule) for code in qpu.codes.values())
-        printouts = [Printout(image, offset=(1, 1)) for _ in range(rounds)]
+        printouts = [
+            Printout(Image.new('RGB', size, White.rgb), offset=(1, 1))
+            for _ in range(rounds)]
+
         for round in range(rounds):
             printout = printouts[round]
+            # Print each code currently embedded in the QPU.
             for code in qpu.codes.values():
                 self._print_code(code, round, printout)
-            # Now print all QPU qubits
+            # Now print all other QPU qubits.
             for qubit in qpu.qubits.values():
                 self._print_qubit(qubit, printout, data_qubit_diameter, Black)
             printout.save(f'{filename}_round_{round}')

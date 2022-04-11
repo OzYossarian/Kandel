@@ -6,7 +6,6 @@ from main.codes.Code import Code
 
 
 class FloquetCode(Code):
-    def __init__(self, data_qubits: Dict[Coordinates, type(Qubit)],
-                 schedule: List[Iterable[type(Check)]]):
-        assert len(schedule) > 1  # Defining feature of a Floquet code
+    def __init__(self, data_qubits: Dict[Coordinates, Qubit],
+                 schedule: List[List[Check]]):
         super().__init__(data_qubits, schedule)

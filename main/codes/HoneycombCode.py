@@ -1,7 +1,12 @@
-from main.codes.HexaquetCode import HexaquetCode
+from main.Colour import Red, Green, Blue
+from main.building_blocks.Pauli import PauliX, PauliY, PauliZ
+from main.codes.TicTacToeCode import TicTacToeCode
 
 
-class HoneycombCode(HexaquetCode):
+class HoneycombCode(TicTacToeCode):
     def __init__(self, distance: int):
-        schedule = ['RX', 'GY', 'BZ']
-        super().__init__(distance, schedule)
+        tic_tac_toe = [
+            (Red, PauliX),
+            (Green, PauliY),
+            (Blue, PauliZ)]
+        super().__init__(distance, tic_tac_toe)

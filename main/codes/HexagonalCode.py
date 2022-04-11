@@ -1,5 +1,6 @@
 from typing import Dict, List, Tuple
 
+from main.Colour import Red, Green, Blue
 from main.building_blocks.Check import Check
 from main.building_blocks.Qubit import Coordinates, Qubit
 from main.codes.Code import Code
@@ -8,6 +9,7 @@ from main.codes.Code import Code
 class HexagonalCode(Code):
     def __init__(self, data_qubits: Dict[Coordinates, Qubit],
                  schedule: List[List[Check]]):
+        self.colours = [Red, Green, Blue]
         super().__init__(data_qubits, schedule)
 
     @staticmethod
