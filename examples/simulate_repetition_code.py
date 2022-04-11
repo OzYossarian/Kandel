@@ -13,18 +13,11 @@
 #     name: python3
 # ---
 
-from sre_parse import State
-from main.Circuit import Circuit
-from main.building_blocks.Qubit import Qubit
+from main.compiling.Circuit import Circuit
 from main.codes.RepetitionCode import RepetitionCode
 from main.QPUs.SquareLatticeQPU import SquareLatticeQPU
-from main.enums import State
-from main. Compiler import Compiler
-from main.building_blocks.Pauli import Pauli, PauliX, PauliY, PauliZ
-import stim
+from main.compiling.Compiler import Compiler
 from main.printing.Printer2D import Printer2D
-from IPython.display import Image
-
 
 # ### Create a QPU
 

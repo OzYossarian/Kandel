@@ -14,13 +14,8 @@
 # ---
 
 from IPython.display import Image
-from sre_parse import State
-from main.Circuit import Circuit
-from main.building_blocks.Qubit import Qubit
 from main.codes.RotatedSurfaceCode import RotatedSurfaceCode
 from main.QPUs.SquareLatticeQPU import SquareLatticeQPU
-from main.enums import State
-from main. Compiler import Compiler
 from main.printing.Printer2D import Printer2D
 
 

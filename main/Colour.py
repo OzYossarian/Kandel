@@ -1,13 +1,12 @@
 from typing import Tuple
 
+from main.utils import DebugFriendly
 
-class Colour:
+
+class Colour(DebugFriendly):
     def __init__(self, name: str, rgb: Tuple[int, int, int]):
         self.name = name
         self.rgb = rgb
-
-    def __repr__(self):
-        return(self.name)
 
 
 Red = Colour('red', (255, 0, 0))

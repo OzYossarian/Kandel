@@ -1,14 +1,11 @@
 from typing import Tuple
 from main.enums import State
-
+from main.utils import DebugFriendly
 
 Coordinates = Tuple[int, ...] | int
 
 
-class Qubit(object):
+class Qubit(DebugFriendly):
     def __init__(self, coords: Coordinates, initial_state: State):
         self.coords = coords
         self.initial_state = initial_state
-
-    def __repr__(self):
-        return f"position={self.coords}, state=|{self.initial_state.value}>"

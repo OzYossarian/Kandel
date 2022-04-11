@@ -1,10 +1,8 @@
-from main.Compiler import Compiler
+from main.compiling.Compiler import Compiler
 from main.QPUs.SquareLatticeQPU import SquareLatticeQPU
 from main.codes.RepetitionCode import RepetitionCode
 from main.codes.RotatedSurfaceCode import RotatedSurfaceCode
-from main.printing.Printer2D import Printer2D
-from main.Circuit import Circuit
-import stim
+from main.compiling.Circuit import Circuit
 
 
 def test_compile_code():

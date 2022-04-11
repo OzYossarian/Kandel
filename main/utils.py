@@ -4,6 +4,11 @@ from typing import Tuple
 from pathlib import Path
 
 
+class DebugFriendly:
+    def __repr__(self):
+        return str(vars(self))
+
+
 def output_path() -> Path:
     root = Path(__file__).parent.parent
     output = Path(root, 'output')

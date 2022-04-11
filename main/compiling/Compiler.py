@@ -1,9 +1,8 @@
-from time import time
-from main.NoiseModel import NoiseModel
+from main.compiling.NoiseModel import NoiseModel
 from main.QPUs.QPU import QPU
-from main.Circuit import Circuit
+from main.compiling.Circuit import Circuit
 from main.codes.Code import Code
-from main.building_blocks.Pauli import Pauli, PauliX, PauliZ, PauliY
+from main.building_blocks.Pauli import PauliX, PauliZ, PauliY
 from main.building_blocks.Qubit import Qubit
 from main.building_blocks.Operator import Operator
 from main.building_blocks.Check import Check

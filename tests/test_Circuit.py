@@ -1,12 +1,9 @@
-from main.Circuit import Circuit
-from main.NoiseModel import CodeCapactiyBitFlipNoise, PhenomenologicalNoise
-from main.building_blocks.Qubit import Qubit
+from main.compiling.Circuit import Circuit
+from main.compiling.NoiseModel import CodeCapactiyBitFlipNoise, PhenomenologicalNoise
 from main.codes.RepetitionCode import RepetitionCode
 from main.codes.RotatedSurfaceCode import RotatedSurfaceCode
 from main.QPUs.SquareLatticeQPU import SquareLatticeQPU
-from main.enums import State
-from main. Compiler import Compiler
-from main.building_blocks.Pauli import Pauli, PauliX, PauliY, PauliZ
+from main.compiling.Compiler import Compiler
 import stim
 
 
