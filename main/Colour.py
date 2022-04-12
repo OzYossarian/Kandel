@@ -7,6 +7,7 @@ class Colour(DebugFriendly):
     def __init__(self, name: str, rgb: Tuple[int, int, int]):
         self.name = name
         self.rgb = rgb
+        super().__init__(['name'])
 
 
 Red = Colour('red', (255, 0, 0))

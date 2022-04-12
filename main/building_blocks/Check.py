@@ -3,9 +3,10 @@ from typing import List
 from main.Colour import Colour
 from main.building_blocks.Operator import Operator
 from main.building_blocks.Qubit import Qubit, Coordinates
+from main.utils import DebugFriendly
 
 
-class Check:
+class Check(DebugFriendly):
     def __init__(self, operators: List[Operator], center: Coordinates = None,
                  ancilla: Qubit = None, colour: Colour = None,
                  initialization_timestep: int = 0):
@@ -14,3 +15,4 @@ class Check:
         self.colour = colour
         self.ancilla = ancilla
         self.initialization_timestep = initialization_timestep
+        super().__init__(['operators', 'colour'])

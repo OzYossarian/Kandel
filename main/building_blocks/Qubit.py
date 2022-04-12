@@ -9,3 +9,4 @@ class Qubit(DebugFriendly):
     def __init__(self, coords: Coordinates, initial_state: State):
         self.coords = coords
         self.initial_state = initial_state
+        super().__init__(['coords'])

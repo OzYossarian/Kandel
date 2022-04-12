@@ -9,6 +9,7 @@ class Pauli(DebugFriendly):
         # Not to be confused with the colour of an edge/plaquette/etc. when
         # using e.g. colour code.
         self.colour = colour
+        super().__init__(['name'])
 
 
 PauliX = Pauli('X', Red)
