@@ -36,7 +36,7 @@ def test_embed_1d_into_3d():
 
 def test_embed_2d_into_3d():
     code = TriangularColourCode(3)
-    qpu = SquareLatticeQPU((10, 10, 10))
+    qpu = SquareLatticeQPU((30, 30, 30))
     plaquette_centers = {check.center for check in code.checks}
     qubit_coords = {qubit.coords for qubit in code.data_qubits.values()}
 
@@ -46,6 +46,3 @@ def test_embed_2d_into_3d():
     expected_coords = {(1, 1+x, 1+y) for (x, y) in qubit_coords}
     actual_coords = {qubit.coords for qubit in code.data_qubits.values()}
     assert expected_coords == actual_coords
-
-
-test_embed_2d_into_3d()

@@ -3,7 +3,7 @@ from jsbeautifier import beautify, default_options
 from json import JSONEncoder
 from numbers import Number
 from statistics import mean
-from typing import Tuple, Any
+from typing import List, Tuple, Any
 from pathlib import Path
 
 
@@ -18,7 +18,7 @@ class DebugFriendlyEncoder(JSONEncoder):
 
 
 class DebugFriendly:
-    def __init__(self, repr_keys):
+    def __init__(self, repr_keys: List):
         """Small base class to make it easy to set up nice string
         representations of classes.
 
