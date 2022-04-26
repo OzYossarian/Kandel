@@ -19,7 +19,8 @@ class RotatedSurfaceCode(Code):
         # for now just considering one type of logical error and therefore
         # one type of logical operator, this is the logical X operator
         self.logical_operator = [
-            Operator(data_qubits[(i*2, distance-1)], PauliX) for i in range(distance)]
+            Operator(data_qubits[(distance-1, i*2)], PauliX) for i in range(distance)]
+
         super().__init__(data_qubits, [checks], ancilla_qubits)
 
     def init_data_qubits(self, distance: int) -> List[Qubit]:

@@ -12,7 +12,7 @@ def test_compile_code():
     test_compiler = Compiler()
 
     test_compiler.compile_code(
-        rep_code, n_code_rounds=1)
+        rep_code, repeat_block=False, final_block=False)
     gate_dict = {}
     for qubit in rep_code.data_qubits.values():
         gate_dict[qubit] = 'RZ'
@@ -26,7 +26,7 @@ def test_compile_code():
     test_compiler = Compiler()
 
     test_compiler.compile_code(
-        rep_code, n_code_rounds=1, measure_data_qubits=True)
+        rep_code, repeat_block=False, final_block=False, measure_data_qubits=True)
 
     gate_dict = {}
     gate_measure_dict = {}
@@ -38,10 +38,11 @@ def test_compile_code():
     for qubit in rep_code.ancilla_qubits.values():
         gate_dict[qubit] = 'RZ'
 
-        gate_measure_dict[(data_qubits, (qubit,))] = 'MRZ'
+        gate_measure_dict[((data_qubits), (), qubit)] = 'MRZ'
         gate_measure_dict[qubit] = 'MRZ'
 
     gate_measure_dict[(rep_code.data_qubits[0],)] = 'Observable'
+
     assert test_compiler.gates_at_timesteps[0]['gates'] == gate_dict
     assert test_compiler.gates_at_timesteps[3]['gates'] == gate_measure_dict
 
@@ -51,7 +52,7 @@ def test_compile_code():
     test_compiler = Compiler()
 
     test_compiler.compile_code(
-        rep_code, n_code_rounds=1)
+        rep_code, repeat_block=False, final_block=False)
     gate_dict = {}
     measurement_dict = {}
     for qubit in rep_code.data_qubits.values():
@@ -66,7 +67,7 @@ def test_compile_code():
     test_compiler_2_rounds = Compiler()
 
     test_compiler_2_rounds.compile_code(
-        rep_code, n_code_rounds=2)
+        rep_code, repeat_block=False, final_block=True)
     gate_dict = {}
 
     for i in range(3):
@@ -80,7 +81,7 @@ def test_compile_code():
     test_compiler_3_rounds = Compiler()
 
     test_compiler_3_rounds.compile_code(
-        rep_code, n_code_rounds=3)
+        rep_code, repeat_block=True, final_block=True)
 
     for i in range(3):
         assert test_compiler_3_rounds.gates_at_timesteps[i][
@@ -89,10 +90,6 @@ def test_compile_code():
     for i in range(5, 8):
         assert test_compiler_3_rounds.gates_at_timesteps[i][
             'gates'] == test_compiler.gates_at_timesteps[i-4]['gates']
-
-    for i in range(9, 12):
-        assert test_compiler_3_rounds.gates_at_timesteps[i][
-            'gates'] == test_compiler.gates_at_timesteps[i-8]['gates']
 
 
 def test_initialize_qubits():
@@ -163,7 +160,7 @@ def test_compile_rotated_surface_code_three_rounds():
     test_compiler = Compiler()
     test_compiler.initialize_qubits(sc.data_qubits.values(), 0)
     test_compiler.compile_code(
-        test_qpu.codes[1], measure_data_qubits=True, n_code_rounds=3)
+        test_qpu.codes[1], measure_data_qubits=True)
 
     gate_dict_0 = {}
     gate_dict_1 = {}

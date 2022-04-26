@@ -1,3 +1,4 @@
+from cgi import test
 from main.compiling.Circuit import Circuit
 from main.compiling.NoiseModel import CodeCapactiyBitFlipNoise, PhenomenologicalNoise
 from main.codes.RepetitionCode import RepetitionCode
@@ -13,10 +14,11 @@ def test_distance_2_rep_code_1_round_X_code_capacity_noise():
     test_qpu.embed(rep_code, (0, 0), 0)
     noise_model = CodeCapactiyBitFlipNoise(0.1)
     test_compiler = Compiler(noise_model)
-    test_compiler.compile_code(rep_code, n_code_rounds=1)
+    test_compiler.compile_code(rep_code, repeat_block=False, final_block=False)
     circuit = Circuit()
-    circuit.to_stim(test_compiler.gates_at_timesteps)
-    assert circuit.stim_circuit == stim.Circuit("""R 0 1 2      
+    circuit.to_stim(test_compiler.gates_at_timesteps,
+                    test_compiler.detector_qubits)
+    assert circuit.full_circuit == stim.Circuit("""R 0 1 2
                                                 X_ERROR(0.1) 0 1
                                                 TICK
                                                 CX 0 2
@@ -35,20 +37,22 @@ def test_distance_2_rep_code_2_rounds_phenomenological_noise():
     noise_model = PhenomenologicalNoise(0.1, 0.1)
     test_compiler = Compiler(noise_model)
     test_compiler.compile_code(
-        rep_code, n_code_rounds=2)
+        rep_code, measure_data_qubits=True)
     circuit = Circuit()
-    circuit.to_stim(test_compiler.gates_at_timesteps)
-    assert circuit.stim_circuit == stim.Circuit("""R 0 1 2
-                                                    DEPOLARIZE1(0.1) 0 1
-                                                    TICK
-                                                    CX 0 2
-                                                    TICK
-                                                    CX 1 2
-                                                    X_ERROR(0.1) 2
-                                                    TICK
-                                                    MR 2
-                                                    DETECTOR rec[-1]
-                                                    TICK
+    circuit.to_stim(test_compiler.gates_at_timesteps,
+                    test_compiler.detector_qubits, n_code_rounds=3)
+    assert circuit.full_circuit == stim.Circuit("""R 0 1 2
+                                                DEPOLARIZE1(0.1) 0 1
+                                                TICK
+                                                CX 0 2
+                                                TICK
+                                                CX 1 2
+                                                X_ERROR(0.1) 2
+                                                TICK
+                                                MR 2
+                                                DETECTOR rec[-1]
+                                                TICK
+                                                REPEAT 1 {
                                                     R 2
                                                     DEPOLARIZE1(0.1) 0 1
                                                     TICK
@@ -59,37 +63,64 @@ def test_distance_2_rep_code_2_rounds_phenomenological_noise():
                                                     TICK
                                                     MR 2
                                                     DETECTOR rec[-1] rec[-2]
-                                                    TICK""")
+                                                    TICK
+                                                }
+                                                R 2
+                                                DEPOLARIZE1(0.1) 0 1                                                
+                                                TICK
+                                                CX 0 2
+                                                TICK
+                                                CX 1 2
+                                                X_ERROR(0.1) 2
+                                                TICK
+                                                MR 2
+                                                DETECTOR rec[-1] rec[-2]
+                                                MR 0 1
+                                                DETECTOR rec[-1] rec[-2] rec[-3]
+                                                OBSERVABLE_INCLUDE(0) rec[-2]
+                                                TICK""")
 
 
-def test_distance_2_rep_code_2_rounds():
+def test_distance_2_rep_code_10_rounds():
     test_qpu = SquareLatticeQPU((3, 1))
     rep_code = RepetitionCode(2)
     test_qpu.embed(rep_code, (0, 0), 0)
     test_compiler = Compiler()
 
     test_compiler.compile_code(
-        rep_code, n_code_rounds=2)
+        rep_code)
     circuit = Circuit()
-    circuit.to_stim(test_compiler.gates_at_timesteps)
-    assert circuit.stim_circuit == stim.Circuit("""R 0 1 2
-                                                     TICK
-                                                     CX 0 2
-                                                     TICK
-                                                     CX 1 2
-                                                     TICK
-                                                     MR 2
-                                                     DETECTOR rec[-1]
-                                                     TICK
-                                                     R 2
-                                                     TICK
-                                                     CX 0 2
-                                                     TICK
-                                                     CX 1 2
-                                                     TICK
-                                                     MR 2
-                                                     DETECTOR rec[-1] rec[-2]
-                                                     TICK""")
+    circuit.to_stim(test_compiler.gates_at_timesteps,
+                    test_compiler.detector_qubits, n_code_rounds=10)
+    assert circuit.full_circuit == stim.Circuit("""R 0 1 2
+                                                TICK
+                                                CX 0 2
+                                                TICK
+                                                CX 1 2
+                                                TICK
+                                                MR 2
+                                                DETECTOR rec[-1]
+                                                TICK
+                                                REPEAT 8 {
+                                                    R 2
+                                                    TICK
+                                                    CX 0 2
+                                                    TICK
+                                                    CX 1 2
+                                                    TICK
+                                                    MR 2
+                                                    DETECTOR rec[-1] rec[-2]
+                                                    TICK
+                                                }
+                                                R 2
+                                                TICK
+                                                CX 0 2
+                                                TICK
+                                                CX 1 2
+                                                TICK
+                                                MR 2
+                                                DETECTOR rec[-1] rec[-2]
+                                                TICK""")
 
 
 def test_distance_2_rep_code_2_rounds_measure_data_qubits():
@@ -99,10 +130,11 @@ def test_distance_2_rep_code_2_rounds_measure_data_qubits():
     test_compiler = Compiler()
 
     test_compiler.compile_code(
-        rep_code, n_code_rounds=2, measure_data_qubits=True)
+        rep_code, repeat_block=False, measure_data_qubits=True)
     circuit = Circuit()
-    circuit.to_stim(test_compiler.gates_at_timesteps)
-    assert circuit.stim_circuit == stim.Circuit("""R 0 1 2
+    circuit.to_stim(test_compiler.gates_at_timesteps,
+                    test_compiler.detector_qubits)
+    assert circuit.full_circuit == stim.Circuit("""R 0 1 2
                                                      TICK
                                                      CX 0 2
                                                      TICK
@@ -131,10 +163,11 @@ def test_distance_4_rep_code_2_rounds_measure_data_qubits():
     test_qpu.embed(rep_code, (0, 0), 0)
     test_compiler = Compiler()
     test_compiler.compile_code(
-        rep_code, n_code_rounds=2, measure_data_qubits=True)
+        rep_code, final_block=False, measure_data_qubits=True)
     circuit = Circuit()
-    circuit.to_stim(test_compiler.gates_at_timesteps)
-    assert circuit.stim_circuit == stim.Circuit("""R 0 1 2 3 4 5 6
+    circuit.to_stim(test_compiler.gates_at_timesteps,
+                    test_compiler.detector_qubits)
+    assert circuit.full_circuit == stim.Circuit("""R 0 1 2 3 4 5 6
                                                 TICK
                                                 CX 0 4 1 5 2 6
                                                 TICK
@@ -164,7 +197,7 @@ def test_distance_4_rep_code_2_rounds_measure_data_qubits():
                                                 MR 2
                                                 DETECTOR rec[-1] rec[-2] rec[-5]
                                                 MR 3
-                                                DETECTOR rec[-1] rec[-2] rec[-5]                                                
+                                                DETECTOR rec[-1] rec[-2] rec[-5]
                                                 OBSERVABLE_INCLUDE(0) rec[-4]
                                                 TICK
                                                 """)
@@ -178,13 +211,17 @@ def test_distance_3_surface_code_code_capacity():
     test_compiler = Compiler(noise_model)
 
     test_compiler.compile_code(
-        surface_code, n_code_rounds=3)
+        surface_code, repeat_block=False, final_block=False, measure_data_qubits=True)
     circuit = Circuit()
-    circuit.to_stim(test_compiler.gates_at_timesteps)
-    assert str(circuit.stim_circuit[1]) == "X_ERROR(0.1) 0 1 2 3 4 5 6 7 8"
+    circuit.to_stim(test_compiler.gates_at_timesteps,
+                    test_compiler.detector_qubits)
+    assert str(circuit.full_circuit[1]) == "X_ERROR(0.1) 0 1 2 3 4 5 6 7 8"
+    assert circuit.full_circuit.num_detectors == 8
+    assert circuit.full_circuit.num_observables == 1
+    assert circuit.full_circuit.num_qubits == 17
 
 
-def test_distance_5_surface_code_phenomenological_noise():
+def test_distance_5_surface_code_1_round_phenomenological_noise():
     test_qpu = SquareLatticeQPU((10, 10))
     noise_model = PhenomenologicalNoise(0.1, 0.2)
     surface_code = RotatedSurfaceCode(3)
@@ -192,10 +229,12 @@ def test_distance_5_surface_code_phenomenological_noise():
     test_compiler = Compiler(noise_model)
 
     test_compiler.compile_code(
-        surface_code, n_code_rounds=1)
+        surface_code, repeat_block=False, final_block=False)
     circuit = Circuit()
-    circuit.to_stim(test_compiler.gates_at_timesteps)
-    assert circuit.stim_circuit == stim.Circuit("""R 0 1 2 3 4 5 6 7 8 9 10 11
+    circuit.to_stim(test_compiler.gates_at_timesteps,
+                    test_compiler.detector_qubits)
+
+    assert circuit.full_circuit == stim.Circuit("""R 0 1 2 3 4 5 6 7 8 9 10 11
                                                     DEPOLARIZE1(0.1) 0 1 2 3 4 5 6 7 8
                                                     TICK
                                                     R 12
@@ -222,7 +261,6 @@ def test_distance_5_surface_code_phenomenological_noise():
                                                     TICK
                                                     CX 0 12 9 1 10 3 4 13 6 16
                                                     MR 11
-                                                    DETECTOR rec[-1]
                                                     CX 15 5
                                                     X_ERROR(0.2) 12 13 16
                                                     TICK
@@ -236,11 +274,24 @@ def test_distance_5_surface_code_phenomenological_noise():
                                                     H 15
                                                     X_ERROR(0.2) 9 10 15
                                                     TICK
-                                                    MR 9
-                                                    DETECTOR rec[-1]
-                                                    MR 10
-                                                    DETECTOR rec[-1]
-                                                    MR 15
-                                                    DETECTOR rec[-1]
+                                                    MR 9 10 15
                                                     TICK
                                     """)
+
+
+def test_distance_5_surface_code_5_rounds_phenomenological_noise():
+    test_qpu = SquareLatticeQPU((10, 10))
+    noise_model = PhenomenologicalNoise(0.1, 0.2)
+    surface_code = RotatedSurfaceCode(5)
+    test_qpu.embed(surface_code, (0, 0), (0, 1))
+    test_compiler = Compiler(noise_model)
+
+    test_compiler.compile_code(surface_code,
+                               measure_data_qubits=True)
+    circuit = Circuit()
+    circuit.to_stim(test_compiler.gates_at_timesteps,
+                    test_compiler.detector_qubits,
+                    5)
+    assert circuit.full_circuit.num_detectors == 6*12
+    assert circuit.full_circuit.num_observables == 1
+    assert circuit.full_circuit.num_qubits == 49

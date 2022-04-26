@@ -9,11 +9,11 @@ from main.building_blocks.Check import Check
 from main.enums import State
 import copy
 
-
 empty_timestep = {'occupied_qubits': set(),
                   'initialized_qubits': set(),
                   'gates': dict(),
-                  'noise': dict()}
+                  'noise': dict(),
+                  'repeat': False}
 
 
 class Compiler(object):
@@ -26,21 +26,33 @@ class Compiler(object):
 
         self.gates_at_timesteps = dict()
         self.gates_at_timesteps[0] = copy.deepcopy(empty_timestep)
+        self.detector_qubits = set()
 
-    def compile_qpu(self, qpu: QPU, circuit: Circuit, n_timesteps: int = 1, perfect_round=False):
+    def compile_qpu(self, qpu: QPU, circuit: Circuit, n_timesteps: int = 1):
         for code in qpu.codes:
             self.compile_code(code, circuit, n_timesteps)
-        if perfect_round == True:
-            pass
-        # TODO add a round with perfect measurements
         circuit.to_stim(self.gates_at_timesteps)
 
-    def compile_code(self, code: Code, measure_data_qubits=False,
-                     n_code_rounds=1):
-
+    def compile_code(self, code: Code, repeat_block=True,
+                     final_block=True, measure_data_qubits=False,
+                     ):
         self.initialize_qubits(code.data_qubits.values(), 0, 'data')
         initial_timestep = 0
-        for _ in range(n_code_rounds):
+        for ancilla_qubit in code.ancilla_qubits.values():
+            if ancilla_qubit.initial_state == State.Zero:
+                self.detector_qubits.add(ancilla_qubit)
+
+        if self.noise_model.data_qubit_start_round != 0:
+            self.add_noise_start_round_data_qubits(
+                code.data_qubits.values(), initial_timestep)
+
+        for round in code.schedule:
+            initial_timestep = self.compile_one_round(
+                round, initial_timestep)
+
+        if repeat_block == True:
+            start_timestep_repeat_block = initial_timestep  # - 1
+            # need to compile two rounds because of repeat block
             if self.noise_model.data_qubit_start_round != 0:
                 self.add_noise_start_round_data_qubits(
                     code.data_qubits.values(), initial_timestep)
@@ -49,11 +61,24 @@ class Compiler(object):
                 initial_timestep = self.compile_one_round(
                     round, initial_timestep)
 
+            for t in range(start_timestep_repeat_block, initial_timestep):
+                self.gates_at_timesteps[t]['repeat'] = True
+
+        if final_block == True:
+            if self.noise_model.data_qubit_start_round != 0:
+                self.add_noise_start_round_data_qubits(
+                    code.data_qubits.values(), initial_timestep)
+            for round in code.schedule:
+                initial_timestep = self.compile_one_round(
+                    round, initial_timestep)
+
         if measure_data_qubits == True:
             self.measure_data_qubits(code,
-                                     PauliZ, timestep=initial_timestep-1)
+                                     PauliZ,
+                                     timestep=initial_timestep-1)
             self.add_logical_observable(code.logical_operator,
-                                        PauliZ, timestep=initial_timestep-1)
+                                        PauliZ,
+                                        timestep=initial_timestep-1)
 
     def add_noise_start_round_data_qubits(self, data_qubits, timestep):
         if timestep not in self.gates_at_timesteps:
@@ -91,6 +116,7 @@ class Compiler(object):
             if self.noise_model.ancilla_qubit_MZ != 0:
                 self.gates_at_timesteps[timestep -
                                         1]['noise'][qubit] = self.noise_model.ancilla_qubit_MZ
+
         elif qubit.initial_state == State.Plus:
             self.gates_at_timesteps[timestep]['gates'][qubit] = "H"
             self.gates_at_timesteps[timestep]['occupied_qubits'].add(
@@ -122,16 +148,18 @@ class Compiler(object):
         """
         for check in code.schedule[0]:
             qubits_to_measure = tuple()
-            qubits_for_detector = tuple()
+            data_qubits_measured = tuple()
 
             for operator in check.operators:
-                if operator.qubit in self.gates_at_timesteps[timestep]['initialized_qubits']:
 
-                    qubits_to_measure += (operator.qubit,)
+                # because there is an overlap
+                if operator.qubit in self.gates_at_timesteps[timestep]['initialized_qubits']:
+                    qubits_to_measure += (operator.qubit, )
                 else:
-                    qubits_for_detector += (operator.qubit,)
-            qubits_for_detector += (check.ancilla,)
-            qubits = (qubits_to_measure, qubits_for_detector)
+                    data_qubits_measured += (operator.qubit,)
+
+            qubits = (qubits_to_measure, data_qubits_measured,
+                      check.ancilla)
 
             # add case where data qubits are already measured!
             if basis == PauliZ:

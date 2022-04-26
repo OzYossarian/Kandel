@@ -83,7 +83,7 @@ def test_init_boundary_checks():
 
 
 def test_logical_operator():
-    d3_logical_op = [Operator(d3_sc.data_qubits[(0, 2)], PauliX,),
+    d3_logical_op = [Operator(d3_sc.data_qubits[(2, 0)], PauliX,),
                      Operator(d3_sc.data_qubits[(2, 2)], PauliX,),
-                     Operator(d3_sc.data_qubits[(4, 2)], PauliX,)]
+                     Operator(d3_sc.data_qubits[(2, 4)], PauliX,)]
     assert d3_sc.logical_operator == d3_logical_op
