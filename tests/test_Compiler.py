@@ -3,6 +3,33 @@ from main.QPUs.SquareLatticeQPU import SquareLatticeQPU
 from main.codes.RepetitionCode import RepetitionCode
 from main.codes.RotatedSurfaceCode import RotatedSurfaceCode
 from main.compiling.Circuit import Circuit
+from main.compiling.NoiseModel import CircuitLevelNoise
+
+
+def test_compile_code_circuit_level_noise():
+    test_qpu = SquareLatticeQPU((3, 1))
+    rep_code = RepetitionCode(2)
+    test_qpu.embed(rep_code, (0, 0), 0)
+    noise_model = CircuitLevelNoise(0.1, 0.15, 0.05, 0.03)
+    test_compiler = Compiler(noise_model)
+    test_compiler.compile_code(rep_code, repeat_block=False, final_block=False)
+    d_0 = rep_code.data_qubits[0]
+    d_1 = rep_code.data_qubits[2]
+    anc = rep_code.ancilla_qubits[1]
+
+    noise_timestep_0 = {d_0: ['X_Error', 0.15], d_1: [
+        'X_Error', 0.15], anc: ['X_Error', 0.15]}
+    noise_timestep_1 = {(d_0, anc): ['DEPOLARIZE2', 0.05], d_1: [
+        'DEPOLARIZE1', 0.1]}
+    noise_timestep_2 = {(d_1, anc): [
+        'DEPOLARIZE2', 0.05], d_0: ['DEPOLARIZE1', 0.1],
+        anc: ['X_Error', 0.03]}
+    noise_timestep_3 = {d_0: ['DEPOLARIZE1', 0.1], d_1: ['DEPOLARIZE1', 0.1]}
+
+    assert test_compiler.gates_at_timesteps[0]['noise'] == noise_timestep_0
+    assert test_compiler.gates_at_timesteps[1]['noise'] == noise_timestep_1
+    assert test_compiler.gates_at_timesteps[2]['noise'] == noise_timestep_2
+    assert test_compiler.gates_at_timesteps[3]['noise'] == noise_timestep_3
 
 
 def test_compile_code():

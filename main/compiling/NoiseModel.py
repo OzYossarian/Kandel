@@ -21,7 +21,8 @@ class NoiseModel(object):
             'ancilla_qubit_MZ': 0,
             'single_qubit_gate': 0,
             'two_qubit_gate': 0,
-            'data_qubit_start_round': 0
+            'data_qubit_start_round': 0,
+            'idling_noise': 0,
         }
         for key in noise_settings.keys():
             self.__dict__[key] = noise_settings[key]
@@ -78,5 +79,6 @@ class CircuitLevelNoise(NoiseModel):
              'ancilla_qubit_RZ': ['X_Error', p_sp],
              'ancilla_qubit_MZ': ['X_Error', p_m],
              'single_qubit_gate': ['DEPOLARIZE1', p_1],
+             'idling_noise': ['DEPOLARIZE1', p_1],
              'two_qubit_gate': ['DEPOLARIZE2', p_2]}
         )

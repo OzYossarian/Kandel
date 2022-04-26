@@ -25,7 +25,6 @@ class Circuit():
                 self.stim_circuit = stim.Circuit()
             elif gates_at_timesteps[timestep]['repeat'] == False and before_repeat_block == False:
                 before_repeat_block = True
-                #                self.full_circuit += self.stim_circuit
                 if n_code_rounds > 2:
                     repeat_block = stim.CircuitRepeatBlock(
                         n_code_rounds-2, self.stim_circuit)

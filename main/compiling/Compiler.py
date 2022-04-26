@@ -37,6 +37,7 @@ class Compiler(object):
                      final_block=True, measure_data_qubits=False,
                      ):
         self.initialize_qubits(code.data_qubits.values(), 0, 'data')
+
         initial_timestep = 0
         for ancilla_qubit in code.ancilla_qubits.values():
             if ancilla_qubit.initial_state == State.Zero:
@@ -51,7 +52,7 @@ class Compiler(object):
                 round, initial_timestep)
 
         if repeat_block == True:
-            start_timestep_repeat_block = initial_timestep  # - 1
+            start_timestep_repeat_block = initial_timestep
             # need to compile two rounds because of repeat block
             if self.noise_model.data_qubit_start_round != 0:
                 self.add_noise_start_round_data_qubits(
@@ -79,6 +80,15 @@ class Compiler(object):
             self.add_logical_observable(code.logical_operator,
                                         PauliZ,
                                         timestep=initial_timestep-1)
+
+        if self.noise_model.idling_noise != 0:
+            self.add_idling_noise()
+
+    def add_idling_noise(self):
+        for timestep in self.gates_at_timesteps:
+            for qubit in self.gates_at_timesteps[timestep]['initialized_qubits']:
+                if qubit not in self.gates_at_timesteps[timestep]['occupied_qubits']:
+                    self.gates_at_timesteps[timestep]['noise'][qubit] = self.noise_model.idling_noise
 
     def add_noise_start_round_data_qubits(self, data_qubits, timestep):
         if timestep not in self.gates_at_timesteps:
@@ -193,12 +203,18 @@ class Compiler(object):
 
         for qubit in qubits:
             if qubit not in self.gates_at_timesteps[timestep]['initialized_qubits']:
+
+                if qubit_type == 'data' and self.noise_model.data_qubit_RZ != 0:
+                    self.gates_at_timesteps[timestep]['noise'][qubit] = self.noise_model.data_qubit_RZ
+                elif qubit_type == 'ancilla' and self.noise_model.ancilla_qubit_RZ != 0:
+                    self.gates_at_timesteps[timestep]['noise'][qubit] = self.noise_model.ancilla_qubit_RZ
+
                 if qubit.initial_state == State.Zero:
-                    if qubit_type == 'data' and self.noise_model.data_qubit_RZ != 0:
-                        self.gates_at_timesteps[timestep]['noise'][qubit] = self.noise_model.data_qubit_RZ
+
                     self.gates_at_timesteps[timestep]['gates'][qubit] = "RZ"
                     self.gates_at_timesteps[timestep]['occupied_qubits'].add(
                         qubit)
+
                 elif qubit.initial_state == State.Plus:
                     self.gates_at_timesteps[timestep]['gates'][qubit] = "RZ"
                     self.gates_at_timesteps[timestep]['occupied_qubits'].add(
@@ -221,10 +237,16 @@ class Compiler(object):
             operator.qubit)
         self.gates_at_timesteps[timestep]['occupied_qubits'].add(
             ancilla)
+
+        if self.noise_model.two_qubit_gate != 0:
+            self.gates_at_timesteps[timestep]['noise'][(
+                operator.qubit, ancilla)] = self.noise_model.two_qubit_gate
+
         if operator.pauli == PauliZ:
             self.gates_at_timesteps[timestep]['gates'][operator.qubit,
                                                        ancilla] = "CNOT"
         if operator.pauli == PauliX:
+            # assuming the ancilla qubit is in the |+> state
             self.gates_at_timesteps[timestep]['gates'][ancilla,
                                                        operator.qubit] = "CNOT"
 
