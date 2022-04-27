@@ -17,19 +17,28 @@ def test_compile_code_circuit_level_noise():
     d_1 = rep_code.data_qubits[2]
     anc = rep_code.ancilla_qubits[1]
 
-    noise_timestep_0 = {d_0: ['X_Error', 0.15], d_1: [
-        'X_Error', 0.15], anc: ['X_Error', 0.15]}
-    noise_timestep_1 = {(d_0, anc): ['DEPOLARIZE2', 0.05], d_1: [
-        'DEPOLARIZE1', 0.1]}
-    noise_timestep_2 = {(d_1, anc): [
-        'DEPOLARIZE2', 0.05], d_0: ['DEPOLARIZE1', 0.1],
-        anc: ['X_Error', 0.03]}
-    noise_timestep_3 = {d_0: ['DEPOLARIZE1', 0.1], d_1: ['DEPOLARIZE1', 0.1]}
+    noise_timestep_0 = {d_0: [['X_Error', 0.15]], d_1: [[
+        'X_Error', 0.15]], anc: [['X_Error', 0.15]]}
+    noise_timestep_1 = {(d_0, anc): [['DEPOLARIZE2', 0.05]], d_1: [[
+        'DEPOLARIZE1', 0.1]]}
+    noise_timestep_2 = {(d_1, anc): [[
+        'DEPOLARIZE2', 0.05]], d_0: [['DEPOLARIZE1', 0.1]],
+        anc: [['X_Error', 0.03]]}
+    noise_timestep_3 = {d_0: [['DEPOLARIZE1', 0.1]],
+                        d_1: [['DEPOLARIZE1', 0.1]]}
 
     assert test_compiler.gates_at_timesteps[0]['noise'] == noise_timestep_0
     assert test_compiler.gates_at_timesteps[1]['noise'] == noise_timestep_1
     assert test_compiler.gates_at_timesteps[2]['noise'] == noise_timestep_2
     assert test_compiler.gates_at_timesteps[3]['noise'] == noise_timestep_3
+
+    test_compiler = Compiler(noise_model)
+    test_compiler.compile_code(
+        rep_code, repeat_block=False, final_block=False, measure_data_qubits=True)
+    noise_timestep_2 = {(d_1, anc): [
+        'DEPOLARIZE2', 0.05], d_0: [['DEPOLARIZE1', 0.1], ['X_Error', 0.3]],
+        anc: [['X_Error', 0.03]]}
+    test_compiler.gates_at_timesteps[2]['noise'] == noise_timestep_2
 
 
 def test_compile_code():

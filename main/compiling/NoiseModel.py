@@ -19,6 +19,7 @@ class NoiseModel(object):
             'data_qubit_RZ': 0,
             'ancilla_qubit_RZ': 0,
             'ancilla_qubit_MZ': 0,
+            'data_qubit_MZ': 0,
             'single_qubit_gate': 0,
             'two_qubit_gate': 0,
             'data_qubit_start_round': 0,
@@ -78,6 +79,7 @@ class CircuitLevelNoise(NoiseModel):
             {'data_qubit_RZ': ['X_Error', p_sp],
              'ancilla_qubit_RZ': ['X_Error', p_sp],
              'ancilla_qubit_MZ': ['X_Error', p_m],
+             'data_qubit_MZ': ['X_Error', p_m],
              'single_qubit_gate': ['DEPOLARIZE1', p_1],
              'idling_noise': ['DEPOLARIZE1', p_1],
              'two_qubit_gate': ['DEPOLARIZE2', p_2]}

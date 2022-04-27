@@ -60,8 +60,9 @@ def test_generate_nx_graph():
 
 
 def test_nx_graph_to_pymatching_graph():
-    nx_matching_graph = decoder.detector_error_model_to_nx_graph()
-    pymatching_graph = decoder.nx_graph_to_pymatching_graph(nx_matching_graph)
+    nx_matching_graph = decoder_code_capacity.detector_error_model_to_nx_graph()
+    pymatching_graph = decoder_code_capacity.nx_graph_to_pymatching_graph(
+        nx_matching_graph)
     assert pymatching_graph.num_nodes == 6  # one node is added
 
     # the added node is connected to all other nodes
@@ -98,5 +99,4 @@ def test_decode_samples_code_capacity():
         assert actual == predicted
 
 
-#def test_decode_samples_circuit_level_noise():
-
+# def test_decode_samples_circuit_level_noise():

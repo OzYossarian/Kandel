@@ -53,9 +53,21 @@ class Circuit():
         self.full_circuit += self.stim_circuit
 
     def translate_noise(self, noise_operations):
-        for qubit, noise in noise_operations.items():
-            self.stim_circuit.append_operation(
-                noise[0], [self.coord_to_stim_index[qubit.coords]], noise[1])
+        for noise_target, noise in noise_operations.items():
+            for noise_term in noise:
+
+                # two qubit noise
+                if type(noise_target) == tuple:
+                    self.stim_circuit.append_operation(
+                        noise_term[0], [self.coord_to_stim_index[
+                            noise_target[0].coords],
+                            self.coord_to_stim_index[noise_target[1].coords]],
+                        noise_term[1])
+
+                # single qubit noise
+                else:
+                    self.stim_circuit.append_operation(
+                        noise_term[0], [self.coord_to_stim_index[noise_target.coords]], noise_term[1])
 
     def translate_qubit_gate(self, gate: str, qubit: Qubit):
         if qubit.coords not in self.coord_to_stim_index.keys():
