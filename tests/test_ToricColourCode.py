@@ -30,7 +30,7 @@ def test_distance_4_toric_colour_code():
     for check in colour_code.checks:
         neighbours = colour_code.get_neighbours(check.center)
         expected_coords = {
-            colour_code._wrap_coords(coords) for coords in neighbours}
+            colour_code.wrap_coords(coords) for coords in neighbours}
         check_qubit_coords = {
             operator.qubit.coords for operator in check.operators}
         assert expected_coords == check_qubit_coords
