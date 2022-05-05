@@ -1,17 +1,18 @@
-from main.Colour import Colour, Red, Blue, Green
+from main.building_blocks.PauliLetter import PauliLetter
+from main.building_blocks.Qubit import Qubit
 from main.utils import DebugFriendly
 
 
 class Pauli(DebugFriendly):
-    def __init__(self, name: str, colour: Colour):
-        self.name = name
-        # Paulis come with a default colour to be used e.g. when printing.
-        # Not to be confused with the colour of an edge/plaquette/etc. when
-        # using e.g. colour code.
-        self.colour = colour
-        super().__init__(['name'])
+    def __init__(self, qubit: Qubit, letter: PauliLetter):
+        self.qubit = qubit
+        self.letter = letter
+        super().__init__(['qubit', 'letter'])
 
-
-PauliX = Pauli('X', Red)
-PauliY = Pauli('Y', Blue)
-PauliZ = Pauli('Z', Green)
+    def __eq__(self, other):
+        if isinstance(other, Pauli) \
+                and self.qubit == other.qubit \
+                and self.letter == other.letter:
+            return True
+        else:
+            return False

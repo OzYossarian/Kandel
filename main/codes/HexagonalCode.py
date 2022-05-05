@@ -32,8 +32,8 @@ class HexagonalCode(Code):
         return (x_coord - 4) % 6 == 0
 
     @staticmethod
-    def plaquette_in_shifted_column(plaquette_center_x_coord: int):
-        return bool(((plaquette_center_x_coord - 4) // 6) % 2)
+    def plaquette_in_shifted_column(plaquette_anchor_x_coord: int):
+        return bool(((plaquette_anchor_x_coord - 4) // 6) % 2)
 
     @staticmethod
     def data_qubit_in_shifted_column(data_qubit_x_coord: int):

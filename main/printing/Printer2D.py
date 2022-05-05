@@ -49,10 +49,10 @@ class Printer2D(Printer):
         # Qubits in the check must be given in 'polygonal order' - that is,
         # if we were to represent the check as a polygon as we usually do
         # (e.g. colour code, surface code) then adjacent qubits in the list
-        # of keys of 'check.operators' should be adjacent in this polygon.
-        weight = len(check.operators)
+        # of keys of 'check.paulis' should be adjacent in this polygon.
+        weight = len(check.paulis)
         if weight == 1:
-            qubit = check.operators[0].qubit
+            qubit = check.paulis[0].qubit
             self._print_qubit(qubit, printout, self.scale_factor / 2, Black)
         if weight == 2:
             self._print_weight_2_check(check, printout)
@@ -60,31 +60,31 @@ class Printer2D(Printer):
             self._print_higher_weight_check(check, printout, weight)
 
     def _print_weight_2_check(self, check: Check, printout: Printout):
-        ops = check.operators  # Quick shorthand
-        midpoint = mid(ops[0].qubit.coords, ops[1].qubit.coords)
+        paulis = check.paulis  # Quick shorthand
+        midpoint = mid(paulis[0].qubit.coords, paulis[1].qubit.coords)
         midpoint = self.scale(midpoint, printout.offset)
         for i in [0, 1]:
             colour = check.colour \
                 if check.colour is not None \
-                else ops[i].pauli.colour
-            endpoint = self.scale(ops[i].qubit.coords, printout.offset)
+                else paulis[i].letter.colour
+            endpoint = self.scale(paulis[i].qubit.coords, printout.offset)
             line = (endpoint, midpoint)
             printout.draw.line(line, colour.rgb, self.scale_factor // 4)
 
     def _print_higher_weight_check(self, check: Check, printout: Printout, weight: int):
-        ops = check.operators  # Quick shorthand
-        mid_next = mid(ops[0].qubit.coords, ops[-1].qubit.coords)
+        paulis = check.paulis  # Quick shorthand
+        mid_next = mid(paulis[0].qubit.coords, paulis[-1].qubit.coords)
         for i in range(weight):
             mid_last = mid_next
-            mid_next = mid(ops[i].qubit.coords,
-                           ops[(i + 1) % weight].qubit.coords)
-            polygon = (check.center, mid_last, ops[i].qubit.coords, mid_next)
+            mid_next = mid(paulis[i].qubit.coords,
+                           paulis[(i + 1) % weight].qubit.coords)
+            polygon = (check.anchor, mid_last, paulis[i].qubit.coords, mid_next)
             polygon = tuple(
                 self.scale(coords, printout.offset)
                 for coords in polygon)
             colour = check.colour \
                 if check.colour is not None \
-                else ops[i].pauli.colour
+                else paulis[i].letter.colour
             printout.draw.polygon(polygon, colour.rgb)
 
     def _print_qubit(self, qubit: Qubit, printout: Printout,

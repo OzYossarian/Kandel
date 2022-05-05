@@ -43,7 +43,7 @@ class SquareLatticeQPU(QPU):
             self.qubits[qubit.coords] = qubit
 
         for check in code.checks:
-            check.center = embed_coords(check.center)
+            check.anchor = embed_coords(check.anchor)
 
         code_id = len(self.codes) + 1
         self.codes[code_id] = code

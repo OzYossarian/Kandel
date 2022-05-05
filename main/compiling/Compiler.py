@@ -2,9 +2,9 @@ from main.compiling.NoiseModel import NoiseModel
 from main.QPUs.QPU import QPU
 from main.compiling.Circuit import Circuit
 from main.codes.Code import Code
-from main.building_blocks.Pauli import PauliX, PauliZ, PauliY
+from main.building_blocks.PauliLetter import PauliX, PauliZ, PauliY
 from main.building_blocks.Qubit import Qubit
-from main.building_blocks.Operator import Operator
+from main.building_blocks.Pauli import Pauli
 from main.building_blocks.Check import Check
 from main.enums import State
 import copy
@@ -18,8 +18,7 @@ empty_timestep = {'occupied_qubits': set(),
 
 class Compiler(object):
     def __init__(self, noise_model: NoiseModel = None):
-
-        if noise_model == None:
+        if noise_model is None:
             self.noise_model = NoiseModel()
         else:
             self.noise_model = noise_model
@@ -29,13 +28,11 @@ class Compiler(object):
         self.detector_qubits = set()
 
     def compile_qpu(self, qpu: QPU, circuit: Circuit, n_timesteps: int = 1):
-        for code in qpu.codes:
-            self.compile_code(code, circuit, n_timesteps)
-        circuit.to_stim(self.gates_at_timesteps)
+        pass
 
-    def compile_code(self, code: Code, repeat_block=True,
-                     final_block=True, measure_data_qubits=False,
-                     ):
+    def compile_code(
+            self, code: Code, repeat_block=True, final_block=True,
+            measure_data_qubits=False):
         self.initialize_qubits(code.data_qubits.values(), 0, 'data')
 
         initial_timestep = 0
@@ -51,7 +48,7 @@ class Compiler(object):
             initial_timestep = self.compile_one_round(
                 round, initial_timestep)
 
-        if repeat_block == True:
+        if repeat_block:
             start_timestep_repeat_block = initial_timestep
             # need to compile two rounds because of repeat block
             if self.noise_model.data_qubit_start_round != 0:
@@ -65,7 +62,7 @@ class Compiler(object):
             for t in range(start_timestep_repeat_block, initial_timestep):
                 self.gates_at_timesteps[t]['repeat'] = True
 
-        if final_block == True:
+        if final_block:
             if self.noise_model.data_qubit_start_round != 0:
                 self.add_noise_start_round_data_qubits(
                     code.data_qubits.values(), initial_timestep)
@@ -73,7 +70,7 @@ class Compiler(object):
                 initial_timestep = self.compile_one_round(
                     round, initial_timestep)
 
-        if measure_data_qubits == True:
+        if measure_data_qubits:
             self.measure_data_qubits(code,
                                      PauliZ,
                                      timestep=initial_timestep-1)
@@ -110,13 +107,13 @@ class Compiler(object):
                 [check.ancilla], initial_timestep +
                 check.initialization_timestep)
 
-            for operator in check.operators:
+            for pauli in check.paulis:
 
-                self.translate_operator(
-                    operator, check.ancilla)
+                self.translate_pauli(
+                    pauli, check.ancilla)
 
-            measurement_timestep = len(check.operators) + \
-                initial_timestep+check.initialization_timestep
+            measurement_timestep = len(check.paulis) + \
+                                   initial_timestep + check.initialization_timestep
 
             self.measure_ancilla_qubit(
                 check.ancilla, measurement_timestep)
@@ -175,13 +172,13 @@ class Compiler(object):
             qubits_to_measure = tuple()
             data_qubits_measured = tuple()
 
-            for operator in check.operators:
+            for pauli in check.paulis:
 
                 # because there is an overlap
-                if operator.qubit in self.gates_at_timesteps[timestep]['initialized_qubits']:
-                    qubits_to_measure += (operator.qubit, )
+                if pauli.qubit in self.gates_at_timesteps[timestep]['initialized_qubits']:
+                    qubits_to_measure += (pauli.qubit, )
                 else:
-                    data_qubits_measured += (operator.qubit,)
+                    data_qubits_measured += (pauli.qubit,)
 
             qubits = (qubits_to_measure, data_qubits_measured,
                       check.ancilla)
@@ -209,10 +206,10 @@ class Compiler(object):
                     self.gates_at_timesteps[future_timestep]['initialized_qubits'].remove(
                         qubit)
 
-    def add_logical_observable(self, logical_op: [Operator], basis: PauliZ, timestep: int):
+    def add_logical_observable(self, logical_op: [Pauli], basis: PauliZ, timestep: int):
         qubits = tuple()
-        for operator in logical_op:
-            qubits += (operator.qubit,)
+        for pauli in logical_op:
+            qubits += (pauli.qubit,)
         self.gates_at_timesteps[timestep]['gates'][qubits] = "Observable"
 
     def initialize_qubits(self, qubits: [Qubit], timestep: int, qubit_type='ancilla'):
@@ -255,27 +252,27 @@ class Compiler(object):
                     self.gates_at_timesteps[future_timestep]['initialized_qubits'].add(
                         qubit)
 
-    def translate_operator(self, operator: Operator, ancilla: Qubit):
+    def translate_pauli(self, pauli: Pauli, ancilla: Qubit):
         timestep_ancilla = self.find_timestep(ancilla)
-        timestep_data_qubit = self.find_timestep(operator.qubit)
+        timestep_data_qubit = self.find_timestep(pauli.qubit)
         timestep = max([timestep_ancilla, timestep_data_qubit])
 
         self.gates_at_timesteps[timestep]['occupied_qubits'].add(
-            operator.qubit)
+            pauli.qubit)
         self.gates_at_timesteps[timestep]['occupied_qubits'].add(
             ancilla)
 
         if self.noise_model.two_qubit_gate != 0:
             self.gates_at_timesteps[timestep]['noise'][(
-                operator.qubit, ancilla)] = [self.noise_model.two_qubit_gate]
+                pauli.qubit, ancilla)] = [self.noise_model.two_qubit_gate]
 
-        if operator.pauli == PauliZ:
-            self.gates_at_timesteps[timestep]['gates'][operator.qubit,
+        if pauli.letter == PauliZ:
+            self.gates_at_timesteps[timestep]['gates'][pauli.qubit,
                                                        ancilla] = "CNOT"
-        if operator.pauli == PauliX:
+        if pauli.letter == PauliX:
             # assuming the ancilla qubit is in the |+> state
             self.gates_at_timesteps[timestep]['gates'][ancilla,
-                                                       operator.qubit] = "CNOT"
+                                                       pauli.qubit] = "CNOT"
 
     def find_timestep(self, qubit: Qubit, start_timestep=0):
         for timestep in range(start_timestep, len(self.gates_at_timesteps.keys())):

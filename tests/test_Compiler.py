@@ -177,8 +177,8 @@ def test_compile_one_round():
     gate_dict_t3 = {}
     for check in rep_code.checks:
 
-        gate_dict_t1[check.operators[0].qubit, check.ancilla] = "CNOT"
-        gate_dict_t2[check.operators[1].qubit, check.ancilla] = "CNOT"
+        gate_dict_t1[check.paulis[0].qubit, check.ancilla] = "CNOT"
+        gate_dict_t2[check.paulis[1].qubit, check.ancilla] = "CNOT"
         gate_dict_t3[check.ancilla] = "MRZ"
 
     assert test_compiler.gates_at_timesteps[1]['gates'] == gate_dict_t1

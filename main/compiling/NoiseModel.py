@@ -2,18 +2,19 @@ from typing import Dict
 
 
 class NoiseModel(object):
-    def __init__(self, noise_settings: Dict = dict()):
+    def __init__(self, noise_settings=None):
         """Parent class for generating a noise model
 
         Args:
-            noise_settings (Dict, optional): Keys are the type of noise and
-                                             the values are the probability
-                                             that this type of noise occurs.
-                                             See CodeCapacityBitFlipNoise,
-                                             PhenomenologicalNoise and
-                                             CircuitLevelNoise for examples.
-                                             Defaults to dict().
+            noise_settings (Dict, optional):
+                Keys are the type of noise and the values are the probability
+                that this type of noise occurs. See CodeCapacityBitFlipNoise,
+                PhenomenologicalNoise and CircuitLevelNoise for examples.
+                Defaults to dict().
         """
+
+        if noise_settings is None:
+            noise_settings = dict()
 
         default_input = {
             'data_qubit_RZ': 0,

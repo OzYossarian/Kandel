@@ -6,8 +6,8 @@ def test_distance_3_triangular_colour_code():
     assert len(colour_code.schedule) == 1
     assert len(colour_code.checks) == 2 * 3
 
-    plaquette_centers = {check.center for check in colour_code.checks}
-    assert plaquette_centers == {(4, 2), (10, 4), (10, 0)}
+    plaquette_anchors = {check.anchor for check in colour_code.checks}
+    assert plaquette_anchors == {(4, 2), (10, 4), (10, 0)}
 
     data_qubit_coords = set(colour_code.data_qubits.keys())
     assert data_qubit_coords == {
@@ -19,7 +19,7 @@ def test_distance_3_triangular_colour_code():
         (12, 2),
         (14, 0)}
 
-    plaquette_weights = {len(check.operators) for check in colour_code.checks}
+    plaquette_weights = {len(check.paulis) for check in colour_code.checks}
     assert plaquette_weights == {4}
 
 
@@ -28,7 +28,7 @@ def test_distance_5_triangular_colour_code():
     assert len(colour_code.data_qubits) == 19
     assert len(colour_code.schedule) == 1
     assert len(colour_code.checks) == 2*9
-    plaquette_centers = {check.center for check in colour_code.checks}
-    assert len(plaquette_centers) == 9
-    plaquette_weights = {len(check.operators) for check in colour_code.checks}
+    plaquette_anchors = {check.anchor for check in colour_code.checks}
+    assert len(plaquette_anchors) == 9
+    plaquette_weights = {len(check.paulis) for check in colour_code.checks}
     assert plaquette_weights == {4, 6}

@@ -16,22 +16,22 @@ def test_distance_4_toric_colour_code():
         for y in [2, 6, 10]})
     assert data_qubit_coords == expected_coords
 
-    plaquette_centers = {check.center for check in colour_code.checks}
-    expected_centers = {
+    plaquette_anchors = {check.anchor for check in colour_code.checks}
+    expected_anchors = {
         (x, y)
         for x in [4, 16]
         for y in [2, 6, 10]}
-    expected_centers.update({
+    expected_anchors.update({
         (x, y)
         for x in [10, 22]
         for y in [0, 4, 8]})
-    assert plaquette_centers == expected_centers
+    assert plaquette_anchors == expected_anchors
 
     for check in colour_code.checks:
-        neighbours = colour_code.get_neighbours(check.center)
+        neighbours = colour_code.get_neighbours(check.anchor)
         expected_coords = {
             colour_code.wrap_coords(coords) for coords in neighbours}
         check_qubit_coords = {
-            operator.qubit.coords for operator in check.operators}
+            pauli.qubit.coords for pauli in check.paulis}
         assert expected_coords == check_qubit_coords
 

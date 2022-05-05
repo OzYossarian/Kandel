@@ -23,8 +23,8 @@ class ToricHexagonalCode(HexagonalCode):
         # Leave checks to be defined later.
         super().__init__(data_qubits, [])
 
-    def colourful_plaquette_centers(self) -> List[Tuple[Coordinates, Colour]]:
-        colourful_centers = []
+    def colourful_plaquette_anchors(self) -> List[Tuple[Coordinates, Colour]]:
+        colourful_anchors = []
         for x in range(4, self.width, 6):
             for y in range(2, self.height, 4):
                 y_shift = 0
@@ -34,9 +34,9 @@ class ToricHexagonalCode(HexagonalCode):
                     colour_shift = 1
                 coords = (x, y + y_shift)
                 colour = (((y - 2) // 4) + colour_shift) % 3
-                colourful_centers.append((coords, self.colours[colour]))
+                colourful_anchors.append((coords, self.colours[colour]))
 
-        return colourful_centers
+        return colourful_anchors
 
     def wrap_coords(self, coords: Tuple[int, int]):
         (x, y) = coords

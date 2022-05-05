@@ -1,11 +1,6 @@
-from timeit import repeat
 from typing import Tuple
-from xml.dom.minidom import Element
 import stim
 from main.building_blocks.Qubit import Qubit
-from main.building_blocks.Pauli import Pauli, PauliX, PauliZ, PauliY
-from main.building_blocks.Check import Check
-from main.enums import State
 
 
 class Circuit():
@@ -19,11 +14,11 @@ class Circuit():
         self.stim_circuit = stim.Circuit()
         for timestep in gates_at_timesteps:
 
-            if gates_at_timesteps[timestep]['repeat'] == True and before_repeat_block == True:
+            if gates_at_timesteps[timestep]['repeat'] and before_repeat_block:
                 before_repeat_block = False
                 self.full_circuit += self.stim_circuit
                 self.stim_circuit = stim.Circuit()
-            elif gates_at_timesteps[timestep]['repeat'] == False and before_repeat_block == False:
+            elif not gates_at_timesteps[timestep]['repeat'] and not before_repeat_block:
                 before_repeat_block = True
                 if n_code_rounds > 2:
                     repeat_block = stim.CircuitRepeatBlock(
@@ -76,16 +71,15 @@ class Circuit():
         self.stim_circuit.append_operation(
             gate, self.coord_to_stim_index[qubit.coords])
 
-    def add_observable(self, qubits: (Qubit)):
-
+    def add_observable(self, qubits: Tuple[Qubit]):
         observable_list = []
         for qubit in qubits:
             observable_list.append(
                 stim.target_rec(self.measured_qubits[qubit]))
         self.stim_circuit.append_operation(
-            "OBSERVABLE_INCLUDE", (observable_list))
+            "OBSERVABLE_INCLUDE", observable_list)
 
-    def translate_two_qubit_gate(self, gate: str, qubits: (Qubit)):
+    def translate_two_qubit_gate(self, gate: str, qubits: Tuple[Qubit]):
         stim_qubits = []
         for qubit in qubits:
             if qubit.coords not in self.coord_to_stim_index.keys():
@@ -94,12 +88,12 @@ class Circuit():
             stim_qubits.append(self.coord_to_stim_index[qubit.coords])
         self.stim_circuit.append_operation(gate, stim_qubits)
 
-    def translate_data_qubit_measurement_gates(self, measurement_gate: str,
-                                               data_qubits_to_measure: Tuple[Qubit],
-                                               data_qubits_measured: Tuple[Qubit],
-                                               ancilla_qubit: Qubit,
-                                               detector_qubits: Tuple[Qubit]):
-
+    def translate_data_qubit_measurement_gates(
+            self, measurement_gate: str,
+            data_qubits_to_measure: Tuple[Qubit],
+            data_qubits_measured: Tuple[Qubit],
+            ancilla_qubit: Qubit,
+            detector_qubits: Tuple[Qubit]):
         detector_list = []
         for index, data_qubit in enumerate(data_qubits_to_measure):
             self.stim_circuit.append_operation(
@@ -115,10 +109,11 @@ class Circuit():
                     self.measured_qubits[data_qubit]))
             detector_list.append(stim.target_rec(
                 self.measured_qubits[ancilla_qubit]))
-            self.stim_circuit.append_operation("DETECTOR", (detector_list))
+            self.stim_circuit.append_operation("DETECTOR", detector_list)
 
-    def translate_measurement_gates(self, measurement_gate: str, qubit: Qubit,
-                                    detector_qubits: set[Qubit] = None):
+    def translate_measurement_gates(
+            self, measurement_gate: str, qubit: Qubit,
+            detector_qubits: set[Qubit] = None):
         if qubit.coords not in self.coord_to_stim_index.keys():
             self.coord_to_stim_index[qubit.coords] = len(
                 self.coord_to_stim_index.keys())
@@ -127,11 +122,11 @@ class Circuit():
 
         for measured_qubits in self.measured_qubits:
             self.measured_qubits[measured_qubits] -= 1
-        if qubit in self.measured_qubits and qubit in detector_qubits:
-            self.stim_circuit.append_operation(
-                "DETECTOR", [stim.target_rec(-1), stim.target_rec(self.measured_qubits[qubit])])
-        else:
-            if qubit in detector_qubits:
+        if qubit in detector_qubits:
+            if qubit in self.measured_qubits:
+                self.stim_circuit.append_operation(
+                    "DETECTOR", [stim.target_rec(-1), stim.target_rec(self.measured_qubits[qubit])])
+            else:
                 self.stim_circuit.append_operation(
                     "DETECTOR", [stim.target_rec(-1)])
 

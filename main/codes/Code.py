@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Dict, Any, List, Iterable
+from typing import Dict, Any, List
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from main.QPUs.QPU import QPU
@@ -12,9 +12,10 @@ CodeId = Any
 
 
 class Code:
-    def __init__(self, data_qubits: Dict[Coordinates, Qubit],
-                 schedule: List[List[Check]],
-                 ancilla_qubits: Dict[Coordinates, Qubit] = None):
+    def __init__(
+            self, data_qubits: Dict[Coordinates, Qubit],
+            schedule: List[List[Check]],
+            ancilla_qubits: Dict[Coordinates, Qubit] = None):
         self.data_qubits = data_qubits
         # Declare schedule and checks here but use separate method to set them
         self.schedule = None
@@ -27,7 +28,7 @@ class Code:
         self.ancilla_qubits = ancilla_qubits
         # TODO - add [n,k,d] parameters?
 
-    def set_schedule(self, schedule):
+    def set_schedule(self, schedule: List[List[Check]]):
         """Made this method separate so that it can be called after a call to
         super().__init__ in subclasses. See subclasses for why it's useful.
         """

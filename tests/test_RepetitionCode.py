@@ -1,7 +1,5 @@
-from main.building_blocks.Check import Check
-from main.building_blocks.Operator import Operator
-from main.building_blocks.Pauli import PauliZ
-from main.building_blocks.Qubit import Qubit
+from main.building_blocks.Pauli import Pauli
+from main.building_blocks.PauliLetter import PauliZ
 from main.codes.RepetitionCode import RepetitionCode
 from main.enums import State
 
@@ -14,15 +12,15 @@ def test_init():
     assert qubit.coords == 4
     assert qubit.initial_state == State.Zero
     assert d3_rep_code.logical_operator == [
-        Operator(d3_rep_code.data_qubits[0], PauliZ)]
+        Pauli(d3_rep_code.data_qubits[0], PauliZ)]
 
 
 def test_init_checks():
-    expected_center = 3
+    expected_anchor = 3
     last_check = d3_rep_code.schedule[0][-1]
-    assert last_check.center == expected_center
-    check_qubits = {op.qubit for op in last_check.operators}
+    assert last_check.anchor == expected_anchor
+    check_qubits = {pauli.qubit for pauli in last_check.paulis}
     expected_qubits = {d3_rep_code.data_qubits[2], d3_rep_code.data_qubits[4]}
     assert check_qubits == expected_qubits
-    check_paulis = [op.pauli for op in last_check.operators]
+    check_paulis = [pauli.letter for pauli in last_check.paulis]
     assert check_paulis == [PauliZ, PauliZ]
