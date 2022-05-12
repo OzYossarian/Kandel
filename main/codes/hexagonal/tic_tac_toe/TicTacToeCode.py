@@ -15,11 +15,11 @@ TicTacToeRoute = List[Tuple[Colour, PauliLetter]]
 
 
 class TicTacToeCode(ToricHexagonalCode, FloquetCode):
-    def __init__(self, distance: int, tic_tac_toe: TicTacToeRoute):
+    def __init__(self, distance: int, tic_tac_toe_route: TicTacToeRoute):
         super().__init__(distance)
-        assert self.follows_tic_tac_toe_rules(tic_tac_toe)
-        assert self.is_good_code(tic_tac_toe)
-        self.tic_tac_toe = tic_tac_toe
+        assert self.follows_tic_tac_toe_rules(tic_tac_toe_route)
+        assert self.is_good_code(tic_tac_toe_route)
+        self.tic_tac_toe_route = tic_tac_toe_route
 
         checks, borders = self.create_checks()
         stabilizers, relearned = self.find_stabilized_plaquettes()
@@ -28,9 +28,17 @@ class TicTacToeCode(ToricHexagonalCode, FloquetCode):
 
         schedule = [
             checks[(colour, pauli_letter)]
-            for colour, pauli_letter in tic_tac_toe]
+            for colour, pauli_letter in tic_tac_toe_route]
 
         self.set_schedule_and_detectors(schedule, detectors)
+
+        # Save some of the variables used above so that we can reference
+        # them in tests.
+        self.checks_by_type = checks
+        self.borders = borders
+        self.stabilizers = stabilizers
+        self.relearned = relearned
+        self.detector_blueprints = detector_blueprints
 
     @staticmethod
     def follows_tic_tac_toe_rules(tic_tac_toe_route):
@@ -83,7 +91,7 @@ class TicTacToeCode(ToricHexagonalCode, FloquetCode):
         # Some edge types (squares of the tic-tac-tie grid) may not be used -
         # quickly note down which ones are used.
         edge_types_used = {colour: set() for colour in self.colours}
-        for (colour, pauli_letter) in self.tic_tac_toe:
+        for (colour, pauli_letter) in self.tic_tac_toe_route:
             edge_types_used[colour].add(pauli_letter)
 
         checks = defaultdict(list)
@@ -136,14 +144,14 @@ class TicTacToeCode(ToricHexagonalCode, FloquetCode):
         stabilized = defaultdict(lambda: defaultdict(list))
         relearned = defaultdict(lambda: defaultdict(bool))
 
-        length = len(self.tic_tac_toe)
+        length = len(self.tic_tac_toe_route)
         # We checked that this code is 'good', so after the first 4 steps,
         # the stabilizer pattern repeats every `length` steps. Thus we only
         # need to know what happens in the first 4 + length steps to know
         # the stabilizer patterns for all timesteps.
         repeats_after = length + 4
         for t in range(repeats_after):
-            edge_colour, edge_letter = self.tic_tac_toe[t % length]
+            edge_colour, edge_letter = self.tic_tac_toe_route[t % length]
             # Picture tic-tac-toe grid: let (edge_colour, edge_letter) be the
             # 'current element' of the grid.
             
@@ -274,12 +282,12 @@ class TicTacToeCode(ToricHexagonalCode, FloquetCode):
             length + 4 -> 4
             length + 5 -> 5
         """
-        length = len(self.tic_tac_toe)
+        length = len(self.tic_tac_toe_route)
         return ((length - 4 + time) % length) + 4
 
     def plan_detectors_of_type(self, colour, letter, stabilizers, relearned):
         detector_blueprints = []
-        length = len(self.tic_tac_toe)
+        length = len(self.tic_tac_toe_route)
         # Make a note of the first potential detector we find. Since the code
         # repeats, this helps us to know when to stop searching for detectors.
         first_detector_start = None
@@ -326,7 +334,7 @@ class TicTacToeCode(ToricHexagonalCode, FloquetCode):
         return detector_blueprints
 
     def create_detectors(self, detector_blueprints, borders):
-        detectors: List[List[Detector]] = [[] for _ in self.tic_tac_toe]
+        detectors: List[List[Detector]] = [[] for _ in self.tic_tac_toe_route]
         # Loop through all red plaquettes, then green, then blue.
         for colour in self.colours:
             anchors = self.colourful_plaquette_anchors[colour]

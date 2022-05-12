@@ -10,9 +10,7 @@ class Pauli(DebugFriendly):
         super().__init__(['qubit', 'letter'])
 
     def __eq__(self, other):
-        if isinstance(other, Pauli) \
-                and self.qubit == other.qubit \
-                and self.letter == other.letter:
-            return True
-        else:
-            return False
+        return \
+            type(self) == type(other) and \
+            self.qubit == other.qubit and \
+            self.letter == other.letter
