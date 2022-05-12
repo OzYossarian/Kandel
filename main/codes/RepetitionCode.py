@@ -10,9 +10,9 @@ from main.enums import State
 
 class RepetitionCode(Code):
     def __init__(self, distance: int):
-        data_qubits, ancilla_qubits, schedule = self.init_checks(distance)
+        data_qubits, ancilla_qubits, checks = self.init_checks(distance)
         self.logical_operator = [Pauli(data_qubits[0], PauliZ)]
-        super().__init__(data_qubits, [schedule], ancilla_qubits)
+        super().__init__(data_qubits, [checks], None, ancilla_qubits)
 
     def init_checks(self, distance: int):
         data_qubits = {2*i: Qubit(2*i, State.Zero)

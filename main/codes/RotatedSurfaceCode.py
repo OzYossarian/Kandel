@@ -21,7 +21,7 @@ class RotatedSurfaceCode(Code):
         self.logical_operator = [
             Pauli(data_qubits[(distance - 1, i * 2)], PauliX) for i in range(distance)]
 
-        super().__init__(data_qubits, [checks], ancilla_qubits)
+        super().__init__(data_qubits, [checks], None, ancilla_qubits)
 
     def init_data_qubits(self, distance: int) -> List[Qubit]:
         """Initializes data qubits

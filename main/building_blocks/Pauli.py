@@ -1,6 +1,6 @@
 from main.building_blocks.PauliLetter import PauliLetter
 from main.building_blocks.Qubit import Qubit
-from main.utils import DebugFriendly
+from main.utils.DebugFriendly import DebugFriendly
 
 
 class Pauli(DebugFriendly):

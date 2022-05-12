@@ -1,7 +1,7 @@
 from typing import Tuple
 
-from main.codes.HexagonalCode import HexagonalCode
-from main.codes.ToricColourCode import ToricColourCode
+from main.codes.hexagonal.HexagonalCode import HexagonalCode
+from main.codes.hexagonal.ToricColourCode import ToricColourCode
 
 
 class TriangularColourCode(HexagonalCode):

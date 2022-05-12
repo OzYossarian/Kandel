@@ -3,7 +3,7 @@ from typing import List
 from main.Colour import Colour
 from main.building_blocks.Pauli import Pauli
 from main.building_blocks.Qubit import Qubit, Coordinates
-from main.utils import DebugFriendly
+from main.utils.DebugFriendly import DebugFriendly
 
 
 class Check(DebugFriendly):
@@ -11,7 +11,10 @@ class Check(DebugFriendly):
             self, paulis: List[Pauli], anchor: Coordinates = None,
             ancilla: Qubit = None, colour: Colour = None,
             initialization_timestep: int = 0):
-        """
+        """A check is a Pauli operator that is actually measured as part of
+        the code. In some codes the checks are just the stabilizers (e.g.
+        surface code, colour code), but this need not be the case (e.g.
+        Floquet codes).
 
         Args:
             paulis:

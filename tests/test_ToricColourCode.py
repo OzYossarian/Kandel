@@ -1,4 +1,4 @@
-from main.codes.ToricColourCode import ToricColourCode
+from main.codes.hexagonal.ToricColourCode import ToricColourCode
 
 
 def test_distance_4_toric_colour_code():

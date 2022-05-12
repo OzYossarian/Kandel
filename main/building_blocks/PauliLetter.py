@@ -1,5 +1,5 @@
 from main.Colour import Colour, Red, Blue, Green
-from main.utils import DebugFriendly
+from main.utils.DebugFriendly import DebugFriendly
 
 
 class PauliLetter(DebugFriendly):

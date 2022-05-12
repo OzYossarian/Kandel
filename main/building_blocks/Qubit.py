@@ -1,6 +1,6 @@
 from typing import Tuple
 from main.enums import State
-from main.utils import DebugFriendly
+from main.utils.DebugFriendly import DebugFriendly
 
 Coordinates = Tuple[int, ...] | int
 

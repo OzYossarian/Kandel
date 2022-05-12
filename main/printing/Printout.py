@@ -4,7 +4,7 @@ from typing import Tuple
 from PIL import Image, ImageDraw, ImageOps
 from pathlib import Path
 
-from main.utils import output_path
+from main.utils.utils import output_path
 
 
 class Printout:

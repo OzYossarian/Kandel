@@ -1,4 +1,4 @@
-from main.utils import DebugFriendly
+from main.utils.DebugFriendly import DebugFriendly
 
 
 class TestDebugFriendly(DebugFriendly):
@@ -8,6 +8,10 @@ class TestDebugFriendly(DebugFriendly):
 
 
 def test_debug_friendly():
-    text = 'some_string'
+    text = 'some string'
     obj = TestDebugFriendly(text)
-    assert str(obj) == f"{{\n    \"something\": \"{text}\"\n}}"
+    assert str(obj) == "{'something': 'some string'}"
+
+
+def test_modulo_duplicates():
+    assert False

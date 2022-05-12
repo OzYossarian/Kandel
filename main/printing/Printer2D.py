@@ -7,7 +7,7 @@ from main.QPUs.QPU import QPU
 from main.building_blocks.Qubit import Qubit
 from main.printing.Printer import Printer
 from main.printing.Printout import Printout
-from main.utils import mid
+from main.utils.utils import mid
 
 
 class Printer2D(Printer):
