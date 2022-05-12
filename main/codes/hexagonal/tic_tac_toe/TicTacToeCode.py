@@ -32,20 +32,21 @@ class TicTacToeCode(ToricHexagonalCode, FloquetCode):
 
         self.set_schedule_and_detectors(schedule, detectors)
 
-    def follows_tic_tac_toe_rules(self):
+    @staticmethod
+    def follows_tic_tac_toe_rules(tic_tac_toe_route):
         """Tic-tac-toe rules state that the type of edges measured at each
         timestep must differ in column and row from those measured at the
         previous timestep.
         """
-        length = len(self.tic_tac_toe)
+        length = len(tic_tac_toe_route)
         valid = length > 0
         if valid:
-            this_colour, this_letter = self.tic_tac_toe[0]
+            this_colour, this_letter = tic_tac_toe_route[0]
         else:
             this_colour, this_letter = (None, None)
         i = 0
         while valid and i < length:
-            next_colour, next_letter = self.tic_tac_toe[(i+1) % length]
+            next_colour, next_letter = tic_tac_toe_route[(i + 1) % length]
             valid = this_colour != next_colour and this_letter != next_letter
             this_colour = next_colour
             this_letter = next_letter
