@@ -17,9 +17,9 @@ TicTacToeRoute = List[Tuple[Colour, PauliLetter]]
 class TicTacToeCode(ToricHexagonalCode, FloquetCode):
     def __init__(self, distance: int, tic_tac_toe: TicTacToeRoute):
         super().__init__(distance)
+        assert self.follows_tic_tac_toe_rules(tic_tac_toe)
+        assert self.is_good_code(tic_tac_toe)
         self.tic_tac_toe = tic_tac_toe
-        assert self.follows_tic_tac_toe_rules()
-        assert self.is_good_code()
 
         checks, borders = self.create_checks()
         stabilizers, relearned = self.find_stabilized_plaquettes()
@@ -53,7 +53,8 @@ class TicTacToeCode(ToricHexagonalCode, FloquetCode):
             i += 1
         return valid
 
-    def is_good_code(self):
+    @staticmethod
+    def is_good_code(tic_tac_toe_route):
         """This method assumes code follows tic tac toe rules already.
         Once a tic-tac-toe code has seven of the nine plaquette types in its
         stabilizer group, it will always have seven, regardless of which
@@ -62,9 +63,9 @@ class TicTacToeCode(ToricHexagonalCode, FloquetCode):
         timesteps, and occurs if and only if we choose a 'cycle' of four
         colours in the first four steps, e.g. RGBR, GRBG, etc.
         """
-        start = [colour for colour, _ in self.tic_tac_toe[:4]]
+        start = [colour for colour, _ in tic_tac_toe_route[:4]]
         first_three_colours_differ = len(set(start[:3])) == 3
-        length = len(self.tic_tac_toe)
+        length = len(tic_tac_toe_route)
         start_colours_form_cycle = start[0] == start[3 % length]
         return first_three_colours_differ and start_colours_form_cycle
 
