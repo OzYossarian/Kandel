@@ -410,3 +410,4 @@ def test_distance_5_surface_code_5_rounds_phenomenological_noise():
     assert circuit.full_circuit.num_detectors == 6*12
     assert circuit.full_circuit.num_observables == 1
     assert circuit.full_circuit.num_qubits == 49
+    circuit.full_circuit.detector

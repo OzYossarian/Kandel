@@ -89,7 +89,8 @@ class PymatchingDecoder():
                 print('here?')
                 # No symptoms for this error.
                 # Code probably has distance 1.
-                # Accept it and keep going, though of course decoding will probably perform terribly.
+                # Accept it and keep going, though of course decoding will
+                # probably perform terribly.
                 return
             if len(dets) == 1:
                 dets = [dets[0], boundary_node]
@@ -100,7 +101,8 @@ class PymatchingDecoder():
                 edge_data = g.get_edge_data(*dets)
                 old_p = edge_data["error_probability"]
                 old_frame_changes = edge_data["qubit_id"]
-                # If frame changes differ, the code has distance 2; just keep whichever was first.
+                # If frame changes differ, the code has distance 2; just keep
+                # whichever was first.
                 if set(old_frame_changes) == set(frame_changes):
                     p = p * (1 - old_p) + old_p * (1 - p)
                     g.remove_edge(*dets)
@@ -128,6 +130,7 @@ class PymatchingDecoder():
             graph.add_edge(k, num_detectors + 1, weight=9999999999)
         graph.add_edge(num_detectors, num_detectors + 1, weight=9999999999,
                        qubit_id=list(range(num_observables)))
+        print(graph.edges(data=True))
         return pymatching.Matching(graph)
 
     def decode_samples(self, samples):

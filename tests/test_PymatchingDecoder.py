@@ -80,7 +80,7 @@ def test_decode_samples_code_capacity():
     circuit = Circuit()
     circuit.to_stim(test_compiler.gates_at_timesteps,
                     test_compiler.detector_qubits)
-    stim_circuit = circuit.stim_circuit
+    stim_circuit = circuit.full_circuit
     decoder = PymatchingDecoder(
         stim_circuit.detector_error_model(decompose_errors=True))
 
