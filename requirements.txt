@@ -10,7 +10,6 @@ decorator==5.1.1
 EditorConfig==0.12.3
 entrypoints==0.4
 executing==0.8.3
-FaultTolerantQPU==0.1.dev0
 flake8==4.0.1
 fonttools==4.31.2
 iniconfig==1.1.1
