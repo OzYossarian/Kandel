@@ -9,6 +9,7 @@ from main.enums import State
 
 class ToricHexagonalCode(HexagonalCode):
     def __init__(self, distance: int):
+        assert distance % 4 == 0
         self.distance = distance
         self.width = 2 * (8 + 4) * (distance // 4)
         self.height = 3 * 4 * (distance // 4)
@@ -23,7 +24,7 @@ class ToricHexagonalCode(HexagonalCode):
                     data_qubits[coords] = Qubit(coords, State.Zero)
 
         # Leave checks to be defined later.
-        super().__init__(data_qubits, None)
+        super().__init__(data_qubits, [])
 
     @property
     def colourful_plaquette_anchors(self) -> Dict[Colour, Coordinates]:
