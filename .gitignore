@@ -51,9 +51,6 @@ coverage.xml
 .hypothesis/
 .pytest_cache/
 
-# jupyter notebooks
-**.ipynb
-
 # Translations
 *.mo
 *.pot
