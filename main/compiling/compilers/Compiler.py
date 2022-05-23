@@ -38,7 +38,7 @@ class Compiler(object):
         pass
 
     def compile_code(
-            self, code: Code, layers: int, perfect_final_layer: bool,
+            self, code: Code, layers: int, perfect_final_layer: bool = True,
             tick: int = 0, circuit: Circuit = None):
         assert layers > 0
 
