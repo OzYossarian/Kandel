@@ -5,7 +5,7 @@ from main.building_blocks.Qubit import Qubit
 from main.compiling.Circuit import Circuit
 from main.compiling.Gate import Gate
 from main.compiling.compilers.Compiler import Compiler
-from main.compiling.noise.NoiseModel import NoiseModel
+from main.compiling.noise.models.NoiseModel import NoiseModel
 from main.compiling.syndrome_extraction.cnot_order.CNOTOrderer import CNOTOrderer
 from main.compiling.syndrome_extraction.extractors.SyndromeExtractor import SyndromeExtractor
 from main.enums import State

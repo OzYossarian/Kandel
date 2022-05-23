@@ -3,21 +3,23 @@ from typing import Iterable
 from main.building_blocks.Check import Check
 from main.compiling.Gate import Gate
 from main.QPUs.QPU import QPU
-from main.compiling.Circuit import Circuit
 from main.codes.Code import Code
 from main.building_blocks.PauliLetter import PauliX, PauliZ, PauliY
 from main.building_blocks.Qubit import Qubit
 from main.building_blocks.Pauli import Pauli
 from main.compiling.Circuit import Circuit
-from main.compiling.noise.NoiseModel import NoiseModel
+from main.compiling.noise.models.NoNoise import NoNoise
+from main.compiling.noise.models.NoiseModel import NoiseModel
 from main.compiling.syndrome_extraction.extractors.SyndromeExtractor import SyndromeExtractor
 from main.enums import State
 
 
 class Compiler(object):
     def __init__(
-            self, noise_model: NoiseModel,
+            self, noise_model: NoiseModel | None,
             syndrome_extractor: SyndromeExtractor):
+        if noise_model is None:
+            noise_model = NoNoise()
         self.noise_model = noise_model
         self.syndrome_extractor = syndrome_extractor
         self.state_init_gates = {

@@ -1,4 +1,4 @@
-from main.compiling.noise.Noise import Noise
+from main.compiling.noise.noises.Noise import Noise
 
 
 class OneQubitNoise(Noise):

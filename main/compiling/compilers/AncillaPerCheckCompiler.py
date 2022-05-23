@@ -1,5 +1,5 @@
 from main.compiling.compilers.Compiler import Compiler
-from main.compiling.noise.NoiseModel import NoiseModel
+from main.compiling.noise.models.NoiseModel import NoiseModel
 from main.compiling.syndrome_extraction.extractors.SyndromeExtractor import SyndromeExtractor
 
 

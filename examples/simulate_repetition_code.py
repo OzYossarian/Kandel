@@ -16,7 +16,9 @@
 from main.compiling.Circuit import Circuit
 from main.codes.RepetitionCode import RepetitionCode
 from main.QPUs.SquareLatticeQPU import SquareLatticeQPU
-from main.compiling.Compiler import Compiler
+from main.compiling.compilers.Compiler import Compiler
+from main.compiling.syndrome_extraction.cnot_order.TrivialOrderer import TrivialOrderer
+from main.compiling.syndrome_extraction.extractors.SyndromeExtractor import SyndromeExtractor
 from main.printing.Printer2D import Printer2D
 
 # ### Create a QPU
@@ -40,20 +42,21 @@ Image(url="../output/small_18_rep_code_qpu_round_0.jpg")
 # ### Compile the repetition code to stim
 
 # +
-test_compiler = Compiler()
 
-test_compiler.compile_code(
-    rep_code, n_code_rounds=3, measure_data_qubits=True)
-circuit = Circuit()
-circuit.to_stim(test_compiler.gates_at_timesteps)
-print(circuit.stim_circuit)
+syndrome_extractor = SyndromeExtractor(TrivialOrderer())
+test_compiler = Compiler(
+    noise_model=None, syndrome_extractor=syndrome_extractor)
+
+stim_circuit = test_compiler.compile_code(
+    rep_code, layers=3, perfect_final_layer=True)
+print(stim_circuit)
 
 # -
 
 # ### Simulate the stim circuit
 
 # +
-sampler = circuit.stim_circuit.compile_detector_sampler()
+sampler = stim_circuit.compile_detector_sampler()
 print(sampler.sample(shots=10))
 
 
