@@ -27,6 +27,7 @@ class Code:
         self.schedule = None
         self.checks = None
         self.detectors = None
+        self.schedule_length = None
         if schedule:
             self.set_schedule_and_detectors(schedule, detectors)
 
@@ -43,6 +44,7 @@ class Code:
         super().__init__ in subclasses. See subclasses for why it's useful.
         """
         self.schedule = schedule
+        self.schedule_length = len(schedule)
         self.checks = set(check for round in schedule for check in round)
         if len(self.schedule) == 1 and detectors is None:
             # Default case: each detector is made of one check measured

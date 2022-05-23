@@ -11,7 +11,7 @@ from main.utils.utils import mid
 
 
 class Printer2D(Printer):
-    def __init__(self, scale_factor: int = 10):
+    def __init__(self, scale_factor: int = 20):
         super().__init__(scale_factor)
 
     def print_qpu(self, qpu: type(QPU), filename: str):
@@ -24,7 +24,7 @@ class Printer2D(Printer):
         # codes measure different stabilizers in each round.
         rounds = 1 \
             if len(qpu.codes) == 0 \
-            else max(len(code.schedule) for code in qpu.codes.values())
+            else max(code.schedule_length for code in qpu.codes.values())
         printouts = [
             Printout(Image.new('RGB', size, White.rgb), offset=(1, 1))
             for _ in range(rounds)]
@@ -40,8 +40,8 @@ class Printer2D(Printer):
             printout.save(f'{filename}_round_{round}')
 
     def _print_code(self, code: Code, round: int, printout: Printout):
-        rounds = len(code.schedule)
-        checks = code.schedule[round % rounds]
+        # TODO - print code without embedding on a QPU.
+        checks = code.schedule[round % code.schedule_length]
         for check in checks:
             self._print_check(check, printout)
 
@@ -63,13 +63,25 @@ class Printer2D(Printer):
         paulis = check.paulis  # Quick shorthand
         midpoint = mid(paulis[0].qubit.coords, paulis[1].qubit.coords)
         midpoint = self.scale(midpoint, printout.offset)
+        anchor = self.scale(check.anchor, printout.offset)
+
+        if midpoint == anchor:
+            # We're going to end up drawing a line to represent this check
+            def draw(line, rgb):
+                printout.draw.line(line, rgb, self.scale_factor // 4)
+        else:
+            # We're going to draw two triangles to represent this check
+            def draw(polygon, rgb):
+                printout.draw.polygon(polygon, rgb)
+
         for i in [0, 1]:
             colour = check.colour \
                 if check.colour is not None \
                 else paulis[i].letter.colour
-            endpoint = self.scale(paulis[i].qubit.coords, printout.offset)
-            line = (endpoint, midpoint)
-            printout.draw.line(line, colour.rgb, self.scale_factor // 4)
+            qubit_coords = self.scale(paulis[i].qubit.coords, printout.offset)
+            # Polygon will be a line if anchor and midpoint are the same.s
+            polygon = tuple({anchor, qubit_coords, midpoint})
+            draw(polygon, colour.rgb)
 
     def _print_higher_weight_check(self, check: Check, printout: Printout, weight: int):
         paulis = check.paulis  # Quick shorthand

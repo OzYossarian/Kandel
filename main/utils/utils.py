@@ -5,7 +5,7 @@ from pathlib import Path
 
 
 def output_path() -> Path:
-    root = Path(__file__).parent.parent
+    root = Path(__file__).parent.parent.parent
     output = Path(root, 'output')
     return output
 

@@ -26,6 +26,6 @@ class RepetitionCode(Code):
             anchor = 2*i + 1
             ancilla = Qubit(anchor, State.Zero)
             ancilla_qubits[anchor] = ancilla
-            new_check = Check(paulis, anchor, ancilla)
+            new_check = Check(paulis, anchor, ancilla=ancilla)
             schedule.append(new_check)
         return data_qubits, ancilla_qubits, schedule

@@ -2,10 +2,9 @@ from typing import Dict, List, Tuple
 from main.building_blocks.Check import Check
 from main.building_blocks.Pauli import Pauli
 from main.building_blocks.PauliLetter import PauliZ, PauliX
-from main.building_blocks.Qubit import Qubit
+from main.building_blocks.Qubit import Qubit, Coordinates
 from main.codes.Code import Code
 from main.enums import State
-from main.Colour import Red, Green
 
 
 class RotatedSurfaceCode(Code):
@@ -19,19 +18,12 @@ class RotatedSurfaceCode(Code):
         # for now just considering one type of logical error and therefore
         # one type of logical operator, this is the logical X operator
         self.logical_operator = [
-            Pauli(data_qubits[(distance - 1, i * 2)], PauliX) for i in range(distance)]
+            Pauli(data_qubits[(distance - 1, i * 2)], PauliX)
+            for i in range(distance)]
 
         super().__init__(data_qubits, [checks], None, ancilla_qubits)
 
-    def init_data_qubits(self, distance: int) -> List[Qubit]:
-        """Initializes data qubits
-
-        Args:
-            distance (int): distance of the code (width of the lattice)
-
-        Returns:
-            List[Qubit]: list of data qubits
-        """
+    def init_data_qubits(self, distance: int):
         data_qubits = dict()
         y_middle = distance-1
 
@@ -39,66 +31,33 @@ class RotatedSurfaceCode(Code):
         starting_x, starting_y = (0, y_middle)
         for i in range(distance):
             for j in range(distance):
-                data_qubits[(starting_x+j, starting_y-j)
-                            ] = Qubit((starting_x+j, starting_y-j), State(0))
+                coords = (starting_x+j, starting_y-j)
+                data_qubits[coords] = Qubit(coords, State(0))
             starting_x += 1
             starting_y += 1
         return data_qubits
 
-    def init_face_checks(self, data_qubits: List[Qubit],
-                         distance: int) -> Tuple[List[Qubit], List[Check]]:
-        """Initializes the non-boundary checks
-
-        Args:
-            data_qubits (List[Qubit]): list of data qubits
-            distance (int): distance of the code
-
-        Returns:
-            Tuple[List[Qubit], List[Check]]: A tuple containing a list of data
-                                             qubits and a list of checks
-        """
+    def init_face_checks(self, data_qubits: Dict[Coordinates, Qubit], distance: int):
         ancilla_qubits = dict()
         schedule = []
         y_middle = distance-1
-        check_colours = [Green, Red]
-        pauli_letters = [PauliZ, PauliX]
-        initial_state_map = [State.Zero, State.Plus]
+        pauli_letters = [PauliX, PauliZ]
         starting_x, starting_y = (1, y_middle)
 
         # diagonal lines of ancilla qubits
         for i in range(distance-1):
             for j in range(distance-1):
+                (x, y) = (starting_x+j, starting_y-j)
                 anchor = (starting_x+j, starting_y-j)
-
-                if j % 2 == 0:
-                    # the paulis are in a specific order here to make sure
-                    # hook errors don't spread to logicals
-
-                    letter = pauli_letters[i % 2]
-                    ancilla = Qubit(
-                        anchor, initial_state_map[i % 2])
-                    paulis = [
-                        Pauli(data_qubits[anchor[0]+1, anchor[1]], letter),
-                        Pauli(data_qubits[anchor[0], anchor[1]+1], letter),
-                        Pauli(data_qubits[anchor[0], anchor[1]-1], letter),
-                        Pauli(data_qubits[anchor[0]-1, anchor[1]], letter)]
-                    new_check = Check(
-                        paulis, anchor, ancilla, colour=check_colours[i % 2],
-                        initialization_timestep=(i+1) % 2)
-
-                else:
-                    letter = pauli_letters[(i+1) % 2]
-                    ancilla = Qubit(anchor, initial_state_map[(i+1) % 2])
-                    paulis = [
-                        Pauli(data_qubits[anchor[0]+1, anchor[1]], letter),
-                        Pauli(data_qubits[anchor[0], anchor[1]-1], letter),
-                        Pauli(data_qubits[anchor[0], anchor[1]+1], letter),
-                        Pauli(data_qubits[anchor[0]-1, anchor[1]], letter)]
-                    new_check = Check(
-                        paulis, anchor, ancilla,
-                        colour=check_colours[(i+1) % 2],
-                        initialization_timestep=i % 2)
-                schedule.append(new_check)
+                letter = pauli_letters[x % 2]
+                ancilla = Qubit(anchor)
+                paulis = [
+                    Pauli(data_qubits[anchor[0]+1, anchor[1]], letter),
+                    Pauli(data_qubits[anchor[0], anchor[1]+1], letter),
+                    Pauli(data_qubits[anchor[0]-1, anchor[1]], letter),
+                    Pauli(data_qubits[anchor[0], anchor[1]-1], letter)]
+                check = Check(paulis, anchor, ancilla=ancilla)
+                schedule.append(check)
                 ancilla_qubits[anchor] = ancilla
 
             starting_x += 1
@@ -106,18 +65,8 @@ class RotatedSurfaceCode(Code):
 
         return ancilla_qubits, schedule
 
-    def init_boundary_checks(self, data_qubits: List[Qubit],
-                             distance: int) -> Tuple[List[Qubit], List[Check]]:
-        """Initializes the boundary checks
-
-        Args:
-            data_qubits (List[Qubit]): list of data qubits
-            distance (int): distance of the code
-
-        Returns:
-            Tuple[List[Qubit], List[Check]]: A tuple containing a list of data
-                                             qubits and a list of checks
-        """
+    def init_boundary_checks(
+            self, data_qubits: Dict[Coordinates, Qubit], distance: int):
         ancilla_qubits = dict()
         schedule = []
 
@@ -131,8 +80,7 @@ class RotatedSurfaceCode(Code):
             paulis = [
                 Pauli(data_qubits[anchor[0] + 1, anchor[1]], PauliZ),
                 Pauli(data_qubits[anchor[0], anchor[1] + 1], PauliZ)]
-            new_check = Check(paulis, anchor, ancilla,
-                              colour=Green, initialization_timestep=1)
+            new_check = Check(paulis, anchor, ancilla=ancilla)
             schedule.append(new_check)
 
             # top right boundary
@@ -142,8 +90,7 @@ class RotatedSurfaceCode(Code):
             paulis = [
                 Pauli(data_qubits[anchor[0], anchor[1] - 1], PauliZ),
                 Pauli(data_qubits[anchor[0] - 1, anchor[1]], PauliZ)]
-            new_check = Check(paulis, anchor, ancilla, colour=Green,
-                              initialization_timestep=3)
+            new_check = Check(paulis, anchor, ancilla=ancilla)
             schedule.append(new_check)
 
             # top left boundary
@@ -153,9 +100,7 @@ class RotatedSurfaceCode(Code):
             paulis = [
                 Pauli(data_qubits[anchor[0] + 1, anchor[1]], PauliX),
                 Pauli(data_qubits[anchor[0], anchor[1] - 1], PauliX)]
-            new_check = Check(paulis, anchor, ancilla,
-                              initialization_timestep=0,
-                              colour=Red)
+            new_check = Check(paulis, anchor, ancilla=ancilla)
             schedule.append(new_check)
 
             # bottom right boundary
@@ -165,7 +110,6 @@ class RotatedSurfaceCode(Code):
             paulis = [
                 Pauli(data_qubits[anchor[0], anchor[1] + 1], PauliX),
                 Pauli(data_qubits[anchor[0] - 1, anchor[1]], PauliX)]
-            new_check = Check(paulis, anchor, ancilla,
-                              colour=Red, initialization_timestep=2)
+            new_check = Check(paulis, anchor, ancilla=ancilla)
             schedule.append(new_check)
         return ancilla_qubits, schedule
