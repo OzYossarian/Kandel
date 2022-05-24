@@ -3,10 +3,10 @@ from typing import List
 from main.building_blocks.Check import Check
 from main.building_blocks.Pauli import Pauli
 from main.building_blocks.PauliLetter import PauliX, PauliZ
-from main.compiling.syndrome_extraction.cnot_order.CNOTOrderer import CNOTOrderer
+from main.compiling.syndrome_extraction.controlled_gate_orderers.ControlledGateOrderer import ControlledGateOrderer
 
 
-class RotatedSurfaceCodeOrderer(CNOTOrderer):
+class RotatedSurfaceCodeOrderer(ControlledGateOrderer):
     def __init__(self):
         super().__init__()
         self.orders = {

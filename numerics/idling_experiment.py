@@ -1,8 +1,8 @@
 from main.codes.RotatedSurfaceCode import RotatedSurfaceCode
 from main.compiling.compilers.Compiler import Compiler
 from main.compiling.noise.models.CodeCapacityBitFlipNoise import CodeCapacityBitFlipNoise
-from main.compiling.syndrome_extraction.cnot_order.RotatedSurfaceCodeOrderer import RotatedSurfaceCodeOrderer
-from main.compiling.syndrome_extraction.extractors.CSSExtractor import CSSExtractor
+from main.compiling.syndrome_extraction.controlled_gate_orderers.RotatedSurfaceCodeOrderer import RotatedSurfaceCodeOrderer
+from main.compiling.syndrome_extraction.extractors.CSSExtractor import PurePauliWordExtractor
 from main.decoding.PymatchingDecoder import PymatchingDecoder
 import numpy as np
 
@@ -18,7 +18,7 @@ class IdlingExperiment():
             self.initialize_circuit(noise_model)
 
     def initialize_circuit(self, noise_model, decoder='pymatching'):
-        syndrome_extractor = CSSExtractor(RotatedSurfaceCodeOrderer())
+        syndrome_extractor = PurePauliWordExtractor(RotatedSurfaceCodeOrderer())
         compiler = Compiler(noise_model, syndrome_extractor)
         stim_circuit = compiler.compile_code(
             self.code, layers=self.distance, perfect_final_layer=True)

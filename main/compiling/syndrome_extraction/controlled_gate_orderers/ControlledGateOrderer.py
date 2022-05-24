@@ -5,7 +5,7 @@ from main.building_blocks.Check import Check
 from main.building_blocks.Pauli import Pauli
 
 
-class CNOTOrderer(ABC):
+class ControlledGateOrderer(ABC):
     def __init__(self):
         # When extracting a syndrome, CNOTs between data qubits and ancilla
         # qubit(s) are used. The order of these CNOTs matters - firstly to

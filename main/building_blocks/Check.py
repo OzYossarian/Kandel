@@ -9,7 +9,7 @@ from main.utils.DebugFriendly import DebugFriendly
 class Check(DebugFriendly):
     def __init__(
             self, paulis: List[Pauli], anchor: Coordinates = None,
-             colour: Colour = None, ancilla: Qubit = None):
+            colour: Colour = None):
         """A check is a Pauli operator that is actually measured as part of
         the code. In some codes the checks are just the stabilizers (e.g.
         surface code, colour code), but this need not be the case (e.g.
@@ -41,7 +41,7 @@ class Check(DebugFriendly):
         # attribute notes down, for any given round number, where the
         # measurement of this check came in the ordering of all measurements
         # performed on the code, according to Stim.
-        self.ancilla = ancilla
+        self.ancilla = None
         self.measurements = {}
 
         super().__init__(['paulis', 'colour'])

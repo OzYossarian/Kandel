@@ -1,3 +1,4 @@
+from abc import abstractmethod, ABC
 from typing import Iterable
 
 from main.building_blocks.Check import Check
@@ -14,7 +15,7 @@ from main.compiling.syndrome_extraction.extractors.SyndromeExtractor import Synd
 from main.enums import State
 
 
-class Compiler(object):
+class Compiler(ABC):
     def __init__(
             self, noise_model: NoiseModel | None,
             syndrome_extractor: SyndromeExtractor):
@@ -39,7 +40,8 @@ class Compiler(object):
 
     def compile_code(
             self, code: Code, layers: int, perfect_final_layer: bool = True,
-            tick: int = 0, circuit: Circuit = None):
+            extract_checks_sequentially: bool = False, tick: int = 0,
+            circuit: Circuit = None):
         assert layers > 0
 
         # Can compile onto an existing circuit (e.g. in a lattice surgery
@@ -48,9 +50,9 @@ class Compiler(object):
             assert tick == 0
             circuit = Circuit()
 
-        # TODO - If code doesn't already have them, add ancilla qubits to it
-        #  at this point, based on what type of compiler this is, e.g. single
-        #  ancilla compiler, native two-qubit measurement compiler, etc.
+        # If this is the first time this code is being compiled, add ancilla
+        # qubits (if needed)
+        self.add_ancilla_qubits(code)
 
         new_data_qubits = [
             qubit for qubit in code.data_qubits.values()
@@ -98,6 +100,11 @@ class Compiler(object):
 
         return circuit.to_stim()
 
+    @abstractmethod
+    def add_ancilla_qubits(self, code):
+        # Implementation specific!
+        pass
+
     def compile_layer(self, tick: int, layer: int, code: Code, circuit: Circuit):
         for i in range(code.schedule_length):
             round = (layer * code.schedule_length) + i
@@ -116,15 +123,26 @@ class Compiler(object):
             self, round_number: int, code: Code, tick: int,
             circuit: Circuit):
         self.add_start_of_round_noise(code, tick - 1, circuit)
-
         # We will eventually return the tick we're on after one whole round
         # has been compiled.
         final_tick = tick
+
+        # TODO - something like the following. The current design (only
+        #  letting the syndrome extractor handle one check at a time)
+        #  only works because ancilla measurement and initialisation
+        #  right now always only require one gate. When user can pass in
+        #  own native gate set, this may not be true - e.g. reset in X
+        #  basis may be done by resetting to Z then applying H.
+        # round = code.schedule[round_number % code.schedule_length]
+        # tick = self.syndrome_extractor.extract_round(
+        #     tick, round, round_number, circuit, self)
+        # return tick
+
         for check in code.schedule[round_number % code.schedule_length]:
             check_tick = self.syndrome_extractor.extract_check(
                 tick, check, circuit, self, round_number)
-
-            if self.syndrome_extractor.extract_checks_sequentially:
+        #
+            if not self.syndrome_extractor.extract_checks_in_parallel:
                 # If extracting one check at a time, need to increase the
                 # 'main' tick variable, so that checks aren't compiled in
                 # parallel.

@@ -17,7 +17,7 @@ from main.compiling.Circuit import Circuit
 from main.codes.RepetitionCode import RepetitionCode
 from main.QPUs.SquareLatticeQPU import SquareLatticeQPU
 from main.compiling.compilers.Compiler import Compiler
-from main.compiling.syndrome_extraction.cnot_order.TrivialOrderer import TrivialOrderer
+from main.compiling.syndrome_extraction.controlled_gate_orderers.TrivialOrderer import TrivialOrderer
 from main.compiling.syndrome_extraction.extractors.SyndromeExtractor import SyndromeExtractor
 from main.printing.Printer2D import Printer2D
 

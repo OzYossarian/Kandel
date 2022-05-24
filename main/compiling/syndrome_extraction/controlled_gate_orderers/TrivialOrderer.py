@@ -1,8 +1,8 @@
 from main.building_blocks.Check import Check
-from main.compiling.syndrome_extraction.cnot_order.CNOTOrderer import CNOTOrderer
+from main.compiling.syndrome_extraction.controlled_gate_orderers.ControlledGateOrderer import ControlledGateOrderer
 
 
-class TrivialOrderer(CNOTOrderer):
+class TrivialOrderer(ControlledGateOrderer):
     def __init__(self):
         super().__init__()
 

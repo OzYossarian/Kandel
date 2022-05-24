@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Dict, Any, List
+from typing import Dict, Any, List, Set
 from typing import TYPE_CHECKING
 
 from main.building_blocks.Detector import Detector
@@ -18,23 +18,18 @@ class Code:
     def __init__(
             self, data_qubits: Dict[Coordinates, Qubit] | List[Qubit],
             schedule: List[List[Check]] = None,
-            detectors: List[List[Detector]] = None,
-            ancilla_qubits: Dict[Coordinates, Qubit] | List[Qubit] = None):
+            detectors: List[List[Detector]] = None):
         self.data_qubits = data_qubits
         # Declare attributes here but use separate method to set them.
         # Allows for a code to be partially instantiated but then for
         # schedule and detector to be set later.
-        self.schedule = None
-        self.checks = None
-        self.detectors = None
-        self.schedule_length = None
+        self.schedule: List[List[Check]] | None = None
+        self.checks: Set[Check] | None = None
+        self.detectors: List[List[Detector]] | None = None
+        self.schedule_length: int | None = None
         if schedule:
             self.set_schedule_and_detectors(schedule, detectors)
 
-        # TODO - ideally, code shouldn't care about ancillas - these have no
-        #  place in the mathematical definition of a code, so are just
-        #  implementation details. Compiler should handle, perhaps.
-        self.ancilla_qubits = ancilla_qubits
         # TODO - add [n,k,d] parameters?
 
     def set_schedule_and_detectors(

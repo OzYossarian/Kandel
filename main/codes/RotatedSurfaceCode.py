@@ -21,7 +21,7 @@ class RotatedSurfaceCode(Code):
             Pauli(data_qubits[(distance - 1, i * 2)], PauliX)
             for i in range(distance)]
 
-        super().__init__(data_qubits, [checks], None, ancilla_qubits)
+        super().__init__(data_qubits, [checks])
 
     def init_data_qubits(self, distance: int):
         data_qubits = dict()
@@ -56,7 +56,7 @@ class RotatedSurfaceCode(Code):
                     Pauli(data_qubits[anchor[0], anchor[1]+1], letter),
                     Pauli(data_qubits[anchor[0]-1, anchor[1]], letter),
                     Pauli(data_qubits[anchor[0], anchor[1]-1], letter)]
-                check = Check(paulis, anchor, ancilla=ancilla)
+                check = Check(paulis, anchor)
                 schedule.append(check)
                 ancilla_qubits[anchor] = ancilla
 
@@ -80,7 +80,7 @@ class RotatedSurfaceCode(Code):
             paulis = [
                 Pauli(data_qubits[anchor[0] + 1, anchor[1]], PauliZ),
                 Pauli(data_qubits[anchor[0], anchor[1] + 1], PauliZ)]
-            new_check = Check(paulis, anchor, ancilla=ancilla)
+            new_check = Check(paulis, anchor)
             schedule.append(new_check)
 
             # top right boundary
@@ -90,7 +90,7 @@ class RotatedSurfaceCode(Code):
             paulis = [
                 Pauli(data_qubits[anchor[0], anchor[1] - 1], PauliZ),
                 Pauli(data_qubits[anchor[0] - 1, anchor[1]], PauliZ)]
-            new_check = Check(paulis, anchor, ancilla=ancilla)
+            new_check = Check(paulis, anchor)
             schedule.append(new_check)
 
             # top left boundary
@@ -100,7 +100,7 @@ class RotatedSurfaceCode(Code):
             paulis = [
                 Pauli(data_qubits[anchor[0] + 1, anchor[1]], PauliX),
                 Pauli(data_qubits[anchor[0], anchor[1] - 1], PauliX)]
-            new_check = Check(paulis, anchor, ancilla=ancilla)
+            new_check = Check(paulis, anchor)
             schedule.append(new_check)
 
             # bottom right boundary
@@ -110,6 +110,6 @@ class RotatedSurfaceCode(Code):
             paulis = [
                 Pauli(data_qubits[anchor[0], anchor[1] + 1], PauliX),
                 Pauli(data_qubits[anchor[0] - 1, anchor[1]], PauliX)]
-            new_check = Check(paulis, anchor, ancilla=ancilla)
+            new_check = Check(paulis, anchor)
             schedule.append(new_check)
         return ancilla_qubits, schedule

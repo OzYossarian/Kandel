@@ -5,9 +5,9 @@ from main.codes.RepetitionCode import RepetitionCode
 from main.compiling.noise.models.CircuitLevelNoise import CircuitLevelNoise
 from main.compiling.noise.models.CodeCapacityBitFlipNoise import CodeCapacityBitFlipNoise
 from main.compiling.noise.models.PhenomenologicalNoise import PhenomenologicalNoise
-from main.compiling.syndrome_extraction.cnot_order.RotatedSurfaceCodeOrderer import RotatedSurfaceCodeOrderer
-from main.compiling.syndrome_extraction.cnot_order.TrivialOrderer import TrivialOrderer
-from main.compiling.syndrome_extraction.extractors.CSSExtractor import CSSExtractor
+from main.compiling.syndrome_extraction.controlled_gate_orderers.RotatedSurfaceCodeOrderer import RotatedSurfaceCodeOrderer
+from main.compiling.syndrome_extraction.controlled_gate_orderers.TrivialOrderer import TrivialOrderer
+from main.compiling.syndrome_extraction.extractors.CSSExtractor import PurePauliWordExtractor
 from main.compiling.syndrome_extraction.extractors.SyndromeExtractor import SyndromeExtractor
 
 
@@ -287,7 +287,7 @@ def test_distance_4_rep_code_2_layers_measure_data_qubits():
 def test_distance_3_surface_code_code_capacity():
     noise_model = CodeCapacityBitFlipNoise(0.1)
     surface_code = RotatedSurfaceCode(3)
-    syndrome_extractor = CSSExtractor(RotatedSurfaceCodeOrderer())
+    syndrome_extractor = PurePauliWordExtractor(RotatedSurfaceCodeOrderer())
     test_compiler = Compiler(noise_model, syndrome_extractor)
 
     stim_circuit = test_compiler.compile_code(surface_code, layers=1)
@@ -300,7 +300,7 @@ def test_distance_3_surface_code_code_capacity():
 def test_distance_5_surface_code_1_layer_phenomenological_noise():
     noise_model = PhenomenologicalNoise(0.1, 0.2)
     surface_code = RotatedSurfaceCode(3)
-    syndrome_extractor = CSSExtractor(RotatedSurfaceCodeOrderer())
+    syndrome_extractor = PurePauliWordExtractor(RotatedSurfaceCodeOrderer())
     test_compiler = Compiler(noise_model, syndrome_extractor)
     stim_circuit = test_compiler.compile_code(
         surface_code, layers=1, perfect_final_layer=False)
@@ -352,7 +352,7 @@ def test_distance_5_surface_code_1_layer_phenomenological_noise():
 def test_distance_3_surface_code_1_layer_circuit_level_noise():
     noise_model = CircuitLevelNoise(0.1, 0.2, 0.3, 0.4)
     surface_code = RotatedSurfaceCode(3)
-    syndrome_extractor = CSSExtractor(RotatedSurfaceCodeOrderer())
+    syndrome_extractor = PurePauliWordExtractor(RotatedSurfaceCodeOrderer())
     test_compiler = Compiler(noise_model,syndrome_extractor)
 
     stim_circuit = test_compiler.compile_code(
@@ -364,7 +364,7 @@ def test_distance_3_surface_code_1_layer_circuit_level_noise():
 def test_distance_5_surface_code_5_layers_phenomenological_noise():
     noise_model = PhenomenologicalNoise(0.1, 0.2)
     surface_code = RotatedSurfaceCode(5)
-    syndrome_extractor = CSSExtractor(RotatedSurfaceCodeOrderer())
+    syndrome_extractor = PurePauliWordExtractor(RotatedSurfaceCodeOrderer())
     test_compiler = Compiler(noise_model, syndrome_extractor)
 
     stim_circuit = test_compiler.compile_code(
