@@ -13,7 +13,13 @@ class AncillaPerCheckCompiler(Compiler):
 
     def add_ancilla_qubits(self, code: Code):
         for check in code.checks:
-            # For each check, just create an ancilla wherever the anchor is
             if check.ancilla is None:
-                check.ancilla = Qubit(check.anchor)
+                # For each check, just create an ancilla wherever the anchor is -
+                # or use the one that's already there.
+                if check.anchor in code.ancilla_qubits:
+                    ancilla = code.ancilla_qubits[check.anchor]
+                else:
+                    ancilla = Qubit(check.anchor)
+                    code.ancilla_qubits[check.anchor] = ancilla
+                check.ancilla = ancilla
 

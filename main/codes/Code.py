@@ -30,6 +30,8 @@ class Code:
         if schedule:
             self.set_schedule_and_detectors(schedule, detectors)
 
+        # Compiler will set up ancilla qubits later if needed
+        self.ancilla_qubits = {}
         # TODO - add [n,k,d] parameters?
 
     def set_schedule_and_detectors(
