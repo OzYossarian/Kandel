@@ -1,6 +1,6 @@
 from typing import Type
 
-from main.compiling.noise.noises.MeasurementNoise import MeasurementNoise
+from main.compiling.noise.noises.OneBitNoise import OneBitNoise
 from main.compiling.noise.noises.Noise import Noise
 from main.compiling.noise.noises.OneQubitNoise import OneQubitNoise
 from main.compiling.noise.noises.TwoQubitNoise import TwoQubitNoise
@@ -29,4 +29,4 @@ class NoiseModel:
         self.two_qubit_gate: Noise = \
             default_to_uniform_noise(two_qubit_gate, TwoQubitNoise)
         self.measurement: Noise = \
-            default_to_uniform_noise(measurement, MeasurementNoise)
+            default_to_uniform_noise(measurement, OneBitNoise)

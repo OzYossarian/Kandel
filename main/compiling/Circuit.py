@@ -6,7 +6,7 @@ import stim
 from main.building_blocks.Check import Check
 from main.building_blocks.Qubit import Qubit
 from main.compiling.Gate import Gate
-
+from main.compiling.noise.models.NoiseModel import NoiseModel
 
 RepeatBlock = Tuple[int, int, int] | None
 
@@ -29,6 +29,9 @@ class Circuit:
         plus noise arising because we're about to perform a measurement.
         """
         self.gates = defaultdict(lambda: defaultdict(list))
+        # Maintain a set of all of the qubits we've come across - used when
+        # adding idle noise later.
+        self.qubits = set()
         self.stim_indexes = {}
         # Track at which ticks qubits were initialised and measured, so we
         # say whether a qubit is currently initialised or not.
@@ -56,7 +59,7 @@ class Circuit:
         # but not yet measured
         inits = [t for t in sorted(self.init_ticks[qubit]) if t <= tick]
         measures = [t for t in sorted(self.measure_ticks[qubit]) if t <= tick]
-        return max(inits, default=0) > max(measures, default=0)
+        return max(inits, default=-1) > max(measures, default=-1)
 
     def initialise(self, tick: int, gates: List[Gate]):
         # Initialise a single qubit using the specified gates.
@@ -94,7 +97,11 @@ class Circuit:
             gates = self.gates[tick][qubit]
             gates.append(gate)
             if len(gates) > 1:
+                # Only time a qubit can have multiple gates at the same tick
+                # is when they're all noise gates.
                 assert all([gate.is_noise for gate in gates])
+            # Add this to the set of qubits we've come across in the circuit.
+            self.qubits.add(qubit)
 
     def add_noise(self, tick, noise_gate: Gate):
         self.add_gate(tick, noise_gate, is_noise=True)
@@ -113,9 +120,30 @@ class Circuit:
 
     def compress(self):
         # Return a copy of this circuit with unnecessary idle time removed.
+        # TODO - implement!
         raise NotImplementedError
 
-    def to_stim(self):
+    def add_idle_noise(self, noise_model: NoiseModel):
+        # Not a good idea to call this method before compression is done.
+        if noise_model.idling is not None and len(self.gates) > 0:
+            gates = sorted(self.gates.items())
+            for tick, qubit_gates in gates:
+                # Only interested in even ticks, where non-noise gates happen.
+                if tick % 2 == 0:
+                    # Find out which qubits were idle at this tick. These are those
+                    # that are initialised but not involved in any gate.
+                    initialised_qubits = {
+                        qubit for qubit in self.qubits
+                        if self.is_initialised(tick, qubit)}
+                    active_qubits = set(qubit_gates.keys())
+                    idle_qubits = initialised_qubits.difference(active_qubits)
+                    for qubit in idle_qubits:
+                        noise_gate = noise_model.idling.gate([qubit])
+                        self.add_noise(tick+1, noise_gate)
+
+    def to_stim(self, noise_model: NoiseModel):
+        # First, go through the circuit and add idling noise.
+        self.add_idle_noise(noise_model)
         # Track which gates have been compiled to stim.
         compiled = defaultdict(bool)
         full_circuit = stim.Circuit()
@@ -125,9 +153,10 @@ class Circuit:
         # Track how many measurements have been made in total - this lets us
         # say how many measurements ago a specific measurement was, which is
         # vital for compiling detectors.
+        # TODO - Craig Gidney has a dedicated MeasurementTracker class - watch
+        #  his videos and read his code! Maybe this is better.
         measurements = 0
         last_tick = -1
-        # TODO - add idle noise.
         for tick, qubit_gates in sorted(self.gates.items()):
             # Check whether we need to close a repeat block
             repeats = self.left_repeat_block(tick, last_tick)

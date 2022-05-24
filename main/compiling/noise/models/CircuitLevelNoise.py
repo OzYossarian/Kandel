@@ -1,5 +1,5 @@
 from main.compiling.noise.models.NoiseModel import NoiseModel
-from main.compiling.noise.noises.MeasurementNoise import MeasurementNoise
+from main.compiling.noise.noises.OneBitNoise import OneBitNoise
 from main.compiling.noise.noises.OneQubitNoise import OneQubitNoise
 from main.compiling.noise.noises.TwoQubitNoise import TwoQubitNoise
 
@@ -10,7 +10,7 @@ class CircuitLevelNoise(NoiseModel):
             idling: OneQubitNoise | float,
             one_qubit_gate: OneQubitNoise | float,
             two_qubit_gate: TwoQubitNoise | float,
-            measurement: MeasurementNoise | float):
+            measurement: OneBitNoise | float):
 
         super().__init__(
             initialisation=initialisation,

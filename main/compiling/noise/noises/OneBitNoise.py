@@ -1,7 +1,7 @@
 from main.compiling.noise.noises.Noise import Noise
 
 
-class MeasurementNoise(Noise):
+class OneBitNoise(Noise):
     def __init__(self, p):
         super().__init__()
         self.p = p

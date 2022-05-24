@@ -13,7 +13,7 @@ from main.enums import State
 class PurePauliWordExtractor(SyndromeExtractor):
     def __init__(
             self, controlled_gate_orderer: ControlledGateOrderer,
-            extract_checks_in_parallel: bool):
+            extract_checks_in_parallel: bool = True):
         # This extractor is optimised for codes where every check is a
         # 'pure' pauli word - i.e. just one repeated letter, e.g. surface code
         # (always XX...X or ZZ...Z), repetition code (always ZZ) or

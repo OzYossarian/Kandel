@@ -98,7 +98,7 @@ class Compiler(ABC):
 
         # TODO - add observable
 
-        return circuit.to_stim()
+        return circuit.to_stim(self.noise_model)
 
     @abstractmethod
     def add_ancilla_qubits(self, code):
@@ -129,8 +129,9 @@ class Compiler(ABC):
 
         # TODO - something like the following. The current design (only
         #  letting the syndrome extractor handle one check at a time)
-        #  only works because ancilla measurement and initialisation
-        #  right now always only require one gate. When user can pass in
+        #  only works because ancilla measurement, initialisation and data
+        #  qubit rotation right now always require exactly one gate, so
+        #  everything stays in sync. When the user can pass in their
         #  own native gate set, this may not be true - e.g. reset in X
         #  basis may be done by resetting to Z then applying H.
         # round = code.schedule[round_number % code.schedule_length]
@@ -141,7 +142,7 @@ class Compiler(ABC):
         for check in code.schedule[round_number % code.schedule_length]:
             check_tick = self.syndrome_extractor.extract_check(
                 tick, check, circuit, self, round_number)
-        #
+
             if not self.syndrome_extractor.extract_checks_in_parallel:
                 # If extracting one check at a time, need to increase the
                 # 'main' tick variable, so that checks aren't compiled in
@@ -165,7 +166,7 @@ class Compiler(ABC):
         # Note down how many ticks were needed - we will return the tick we're on
         # after the initialisation is complete.
         ticks_needed = 0
-        noise = self.noise_model.one_qubit_gate
+        noise = self.noise_model.initialisation
 
         for qubit in qubits:
             # Figure out which gates are needed to initialise in the given state
@@ -177,7 +178,7 @@ class Compiler(ABC):
             # Add noise, if needed.
             if noise is not None:
                 for i in range(len(init_gates)):
-                    noise_tick = tick + (2 * gates_needed + 1)
+                    noise_tick = tick + (2 * gates_needed - 1)
                     circuit.add_noise(noise_tick, noise.gate([qubit]))
 
             ticks_needed = max(ticks_needed, 2 * gates_needed)
