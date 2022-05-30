@@ -32,7 +32,7 @@ class Circuit:
         # The core of this class is a nested dictionary of instructions,
         # keyed first by tick, then by qubit. Values are then lists of
         # instructions acting on that qubit and that tick.
-        self.instructions : Dict[int, Dict[Qubit, List[Instruction]]] = \
+        self.instructions: Dict[int, Dict[Qubit, List[Instruction]]] = \
             defaultdict(lambda: defaultdict(list))
         # Maintain a set of all of the qubits we've come across - used when
         # adding idle noise later.

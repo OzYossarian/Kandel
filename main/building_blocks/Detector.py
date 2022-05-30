@@ -1,6 +1,9 @@
+from collections import defaultdict
+from functools import reduce
 from typing import List, Tuple
 
 from main.building_blocks.Check import Check
+from main.building_blocks.PauliWord import PauliWord
 from main.utils.DebugFriendly import DebugFriendly
 
 
@@ -27,15 +30,30 @@ class Detector(DebugFriendly):
         self.triggers_measured = set()
 
         def get_stabilizer(face: List[Tuple[int, Check]]):
-            face = sorted(face)
+            # Pauli multiplication is not commutative so order matters.
+            face = sorted(face, key=lambda check: check[0])
             checks = [check for (_, check) in face]
             paulis = [pauli for check in checks for pauli in check.paulis]
+            # Sort these paulis into qubit order so that comparison between
+            # lid and floor in a minute is valid.
+            paulis = sorted(paulis, key=lambda pauli: pauli.qubit.coords)
+            # Group by the qubit that the Paulis are applied to
+            pauli_letters = defaultdict(list)
+            for pauli in paulis:
+                pauli_letters[pauli.qubit].append(pauli.letter)
+            # Multiply together the Paulis on each qubit.
+            products = [
+                reduce(lambda x, y: x.times(y), letters)
+                for letters in pauli_letters.values()]
+            word = PauliWord.from_letters(products)
+            return word
 
-        # TODO - redo how detectors are triggered. Turn them into circuit
-        #  instructions, and have the triggers set up between the detector
-        #  instruction and the dependent measurement instructions. Perhaps
-        #  create a dedicated Detectorist class to track it all (a bit like
-        #  Craig Gidney's MeasurementTracker class?)
+        self.floor_word = get_stabilizer(self.floor)
+        self.lid_word = get_stabilizer(self.lid)
+        # Allow sign difference - e.g. can measure XXXX and -XXXX and still
+        # build a detector from this.
+        assert self.floor_word.word == self.lid_word.word
+
         for (t, check) in self.lid:
             if t == 0:
                 self.triggers.add(check)

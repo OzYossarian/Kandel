@@ -2,6 +2,7 @@ from abc import abstractmethod, ABC
 from typing import Iterable
 
 from main.building_blocks.Check import Check
+from main.building_blocks.Observable import Observable
 from main.compiling.Instruction import Instruction
 from main.QPUs.QPU import QPU
 from main.codes.Code import Code
@@ -40,7 +41,7 @@ class Compiler(ABC):
 
     def compile_code(
             self, code: Code, layers: int, perfect_final_layer: bool = True,
-            extract_checks_sequentially: bool = False, tick: int = 0,
+            tracked_observable: Observable = None, tick: int = 0,
             circuit: Circuit = None):
         # TODO - perfect final layer should actually just be perfect lid
         #  measurements of every detector the final time it's learned. Means
@@ -200,6 +201,8 @@ class Compiler(ABC):
                 # parallel.
                 tick = check_tick
             final_tick = max(final_tick, check_tick)
+
+        # TODO - update observable
 
         return final_tick
 

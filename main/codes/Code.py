@@ -48,9 +48,9 @@ class Code:
         if len(self.schedule) == 1 and detectors is None:
             # Default case: each detector is made of one check measured
             # twice in consecutive rounds.
-            self.detectors = [
+            self.detectors = [[
                 Detector([(-1, check)], [(0, check)])
-                for check in self.schedule[0]]
+                for check in self.schedule[0]]]
         else:
             # If the length of the schedule is more than 1, force the user to
             # pass in the detectors - can't (yet?) automatically figure this
