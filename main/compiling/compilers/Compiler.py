@@ -2,7 +2,7 @@ from abc import abstractmethod, ABC
 from typing import Iterable
 
 from main.building_blocks.Check import Check
-from main.compiling.Gate import Gate
+from main.compiling.Instruction import Instruction
 from main.QPUs.QPU import QPU
 from main.codes.Code import Code
 from main.building_blocks.PauliLetter import PauliX, PauliZ, PauliY
@@ -23,14 +23,14 @@ class Compiler(ABC):
             noise_model = NoNoise()
         self.noise_model = noise_model
         self.syndrome_extractor = syndrome_extractor
-        self.state_init_gates = {
+        self.state_init_instructions = {
             State.Zero: ['RZ'],
             State.One: ['RZ', 'X'],
             State.Plus: ['RX'],
             State.Minus: ['RX', 'Z'],
             State.I: ['RY'],
             State.MinusI: ['RY', 'X']}
-        self.measurement_gates = {
+        self.basis_measurements = {
             PauliX: 'MX',
             PauliY: 'MY',
             PauliZ: 'MZ'}
@@ -42,6 +42,57 @@ class Compiler(ABC):
             self, code: Code, layers: int, perfect_final_layer: bool = True,
             extract_checks_sequentially: bool = False, tick: int = 0,
             circuit: Circuit = None):
+        # TODO - perfect final layer should actually just be perfect lid
+        #  measurements of every detector the final time it's learned. Means
+        #  detectors should be given a 'stabilizer' attribute or something to
+        #  identify those that measure the same stabilizer - e.g. in a random
+        #  tic-tac-toe code, the same stabilizer might be learned as part of
+        #  different detectors - one with six measurements, one with twelve
+        #  measurements, etc. But in a 'perfect final round', we just want to
+        #  do a perfect measurement of the lid of the detector that measures
+        #  this stabilizer last, and imperfect measurements on the floor and
+        #  lid of all other detectors that measure this stabilizer.
+
+        # TODO - optionally measure data qubits at the end so that we can
+        #  check the value of a logical observable. Caveats:
+        #  1. I think this will necessitate passing in the logical observable
+        #     at the outset, because the basis in which to measure the data
+        #     qubits will depend on this?
+        #  2. What does this mean for the perfect final layer? One option:
+        #     perfect final layer becomes this layer of individual data qubit
+        #     measurements, then stabilizers can be reconstructed from these
+        #     individual data qubits, forming a detector lid of a new
+        #     detector? But this only works if the data qubits are measured
+        #     in the right bases, I guess? And these bases might not be the
+        #     ones needed for the logical observable?
+        #         Another option: once a perfect measurement has been made
+        #     on a qubit, don't allow any further noise?? Then do the data
+        #     qubit measurements perfectly too ofc, but this would mean we
+        #     wouldn't need to reconstruct whole stabilizers? AH but it's a
+        #     little more precise than that - consider the following:
+        #     suppose we do a perfect measurement of a check via an ancilla,
+        #     an error can appear on a data qubit AFTER the CNOT/control gate
+        #     that incorporated it into the ancilla measurement, then this
+        #     error will change what the outcome of the individual data qubit
+        #     measurement would otherwise have been, but won't be passed into
+        #     any decoder, ruining the experiment. So if we choose this
+        #     option, we must stop all noise on a data qubit AS SOON AS this
+        #     control gate that's part of the perfect check measurement is
+        #     reached. AND must also ensure no noise can reach this data qubit
+        #     by other means - e.g. an error on a LATER ancilla that's also
+        #     connected to this data qubit via a control gate?
+        #         Bloody fiddly - option two means no need to worry about the
+        #     bases we measure the data qubits in, but might be impractically
+        #     difficult? AH but we only need to measure data qubits to the
+        #     extent that we can detect an error ON THE LOGICAL OBSERVABLE -
+        #     that is, for a single data qubit that IS involved in the logical
+        #     observable, we need to be able to detect an error after the
+        #     aforementioned final control gate and before the perfect single
+        #     data qubit measurement. So maybe we don't need to reconstruct
+        #     all stabilizers? But still not 100% sure the basis needed for
+        #     the logical observable and the basis needed to reconstruct a
+        #     stabilizer (and thus create one final detector) will coincide.
+
         assert layers > 0
 
         # Can compile onto an existing circuit (e.g. in a lattice surgery
@@ -117,7 +168,7 @@ class Compiler(ABC):
         noise = self.noise_model.data_qubit_start_round
         if noise is not None:
             for qubit in code.data_qubits.values():
-                circuit.add_noise(tick, noise.gate([qubit]))
+                circuit.add_instruction(tick, noise.instruction([qubit]))
 
     def compile_round(
             self, round_number: int, code: Code, tick: int,
@@ -152,35 +203,40 @@ class Compiler(ABC):
 
         return final_tick
 
-    def measure_qubit(self, qubit: Qubit, tick: int, basis: Pauli, circuit: Circuit, check: Check, round: int):
+    def measure_qubit(
+            self, qubit: Qubit, tick: int, basis: Pauli, circuit: Circuit,
+            check: Check, round: int):
         # TODO - generalise for native multi-qubit measurements.
         noise = self.noise_model.measurement
         params = noise.params if noise is not None else ()
-        gate_name = self.measurement_gates[basis]
-        measurement_gate = Gate([qubit], gate_name, params, is_measurement=True)
-        circuit.measure(tick, measurement_gate, check, round)
+        measurement_name = self.basis_measurements[basis]
+        measurement = Instruction(
+            [qubit], measurement_name, params, is_measurement=True)
+        circuit.measure(tick, measurement, check, round)
         return tick + 2
 
     def initialize_qubits(self, qubits: Iterable[Qubit], tick: int, circuit: Circuit):
         # TODO - user passes in own native gate set.
-        # Note down how many ticks were needed - we will return the tick we're on
-        # after the initialisation is complete.
+        # Note down how many ticks were needed - we will return the tick
+        # we're on after the initialisation is complete.
         ticks_needed = 0
         noise = self.noise_model.initialisation
 
         for qubit in qubits:
-            # Figure out which gates are needed to initialise in the given state
-            init_gates = [
-                Gate([qubit], gate_name)
-                for gate_name in self.state_init_gates[qubit.initial_state]]
-            circuit.initialise(tick, init_gates)
-            gates_needed = len(init_gates)
+            # Figure out which instructions are needed to initialise in the
+            # given state
+            init_instructions = [
+                Instruction([qubit], name)
+                for name in self.state_init_instructions[qubit.initial_state]]
+            circuit.initialise(tick, init_instructions)
+            instructions_needed = len(init_instructions)
             # Add noise, if needed.
             if noise is not None:
-                for i in range(len(init_gates)):
-                    noise_tick = tick + (2 * gates_needed - 1)
-                    circuit.add_noise(noise_tick, noise.gate([qubit]))
+                for i in range(len(init_instructions)):
+                    noise_tick = tick + (2 * instructions_needed - 1)
+                    circuit.add_instruction(
+                        noise_tick, noise.instruction([qubit]))
 
-            ticks_needed = max(ticks_needed, 2 * gates_needed)
+            ticks_needed = max(ticks_needed, 2 * instructions_needed)
 
         return tick + ticks_needed

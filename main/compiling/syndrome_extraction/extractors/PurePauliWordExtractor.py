@@ -3,7 +3,7 @@ from main.building_blocks.Pauli import Pauli
 from main.building_blocks.PauliLetter import PauliZ, PauliX, PauliY
 from main.building_blocks.Qubit import Qubit
 from main.compiling.Circuit import Circuit
-from main.compiling.Gate import Gate
+from main.compiling.Instruction import Instruction
 from main.compiling.noise.models.NoiseModel import NoiseModel
 from main.compiling.syndrome_extraction.controlled_gate_orderers.ControlledGateOrderer import ControlledGateOrderer
 from main.compiling.syndrome_extraction.extractors.SyndromeExtractor import SyndromeExtractor
@@ -42,7 +42,7 @@ class PurePauliWordExtractor(SyndromeExtractor):
         # Rotate so that this data qubit is effectively in Z basis
         pre_rotate = None
         post_rotate = None
-        controlled_gate = Gate([ancilla, pauli.qubit], 'CX')
+        controlled_gate = Instruction([ancilla, pauli.qubit], 'CX')
         return self.extract_pauli_letter(
             tick, pauli, circuit, noise_model, pre_rotate, controlled_gate,
             post_rotate)
@@ -53,7 +53,7 @@ class PurePauliWordExtractor(SyndromeExtractor):
         # Rotate so that this data qubit is effectively in Z basis
         pre_rotate = None
         post_rotate = None
-        controlled_gate = Gate([ancilla, pauli.qubit], 'CY')
+        controlled_gate = Instruction([ancilla, pauli.qubit], 'CY')
         return self.extract_pauli_letter(
             tick, pauli, circuit, noise_model, pre_rotate, controlled_gate,
             post_rotate)
@@ -63,7 +63,7 @@ class PurePauliWordExtractor(SyndromeExtractor):
             circuit: Circuit, noise_model: NoiseModel):
         pre_rotate = None
         post_rotate = None
-        controlled_gate = Gate([pauli.qubit, ancilla], 'CNOT')
+        controlled_gate = Instruction([pauli.qubit, ancilla], 'CNOT')
         return self.extract_pauli_letter(
             tick, pauli, circuit, noise_model, pre_rotate, controlled_gate,
             post_rotate)

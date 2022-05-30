@@ -1,9 +1,10 @@
 from __future__ import annotations
 
-from typing import Dict, Any, List, Set
+from typing import Dict, Any, List, Set, Tuple
 from typing import TYPE_CHECKING
 
 from main.building_blocks.Detector import Detector
+from main.building_blocks.Observable import Observable
 
 if TYPE_CHECKING:
     from main.QPUs.QPU import QPU
@@ -18,7 +19,8 @@ class Code:
     def __init__(
             self, data_qubits: Dict[Coordinates, Qubit] | List[Qubit],
             schedule: List[List[Check]] = None,
-            detectors: List[List[Detector]] = None):
+            detectors: List[List[Detector]] = None,
+            observables: List[Tuple[Observable, Observable]] = None):
         self.data_qubits = data_qubits
         # Declare attributes here but use separate method to set them.
         # Allows for a code to be partially instantiated but then for

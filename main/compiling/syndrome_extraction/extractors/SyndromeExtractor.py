@@ -11,7 +11,7 @@ from main.compiling.syndrome_extraction.controlled_gate_orderers.TrivialOrderer 
 
 if TYPE_CHECKING:
     from main.compiling.compilers.Compiler import Compiler
-from main.compiling.Gate import Gate
+from main.compiling.Instruction import Instruction
 from main.compiling.noise.models.NoiseModel import NoiseModel
 from main.compiling.syndrome_extraction.controlled_gate_orderers.ControlledGateOrderer import ControlledGateOrderer
 from main.enums import State
@@ -68,9 +68,9 @@ class SyndromeExtractor:
             self, tick: int, pauli: Pauli, ancilla: Qubit,
             circuit: Circuit, noise_model: NoiseModel):
         # Rotate so that this data qubit is effectively in Z basis
-        pre_rotate = Gate([pauli.qubit], 'H')
-        post_rotate = Gate([pauli.qubit], 'H')
-        controlled_gate = Gate([pauli.qubit, ancilla], 'CNOT')
+        pre_rotate = Instruction([pauli.qubit], 'H')
+        post_rotate = Instruction([pauli.qubit], 'H')
+        controlled_gate = Instruction([pauli.qubit, ancilla], 'CNOT')
         return self.extract_pauli_letter(
             tick, pauli, circuit, noise_model, pre_rotate, controlled_gate,
             post_rotate)
@@ -79,9 +79,9 @@ class SyndromeExtractor:
             self, tick: int, pauli: Pauli, ancilla: Qubit,
             circuit: Circuit, noise_model: NoiseModel):
         # Rotate so that this data qubit is effectively in Z basis
-        pre_rotate = Gate([pauli.qubit], 'SQRT_X')
-        post_rotate = Gate([pauli.qubit], 'SQRT_X_DAG')
-        controlled_gate = Gate([pauli.qubit, ancilla], 'CNOT')
+        pre_rotate = Instruction([pauli.qubit], 'SQRT_X')
+        post_rotate = Instruction([pauli.qubit], 'SQRT_X_DAG')
+        controlled_gate = Instruction([pauli.qubit, ancilla], 'CNOT')
         return self.extract_pauli_letter(
             tick, pauli, circuit, noise_model, pre_rotate, controlled_gate,
             post_rotate)
@@ -91,30 +91,30 @@ class SyndromeExtractor:
             circuit: Circuit, noise_model: NoiseModel):
         pre_rotate = None
         post_rotate = None
-        controlled_gate = Gate([pauli.qubit, ancilla], 'CNOT')
+        controlled_gate = Instruction([pauli.qubit, ancilla], 'CNOT')
         return self.extract_pauli_letter(
             tick, pauli, circuit, noise_model, pre_rotate, controlled_gate,
             post_rotate)
 
     def extract_pauli_letter(
             self, tick: int, pauli: Pauli, circuit: Circuit,
-            noise_model: NoiseModel, pre_rotate: Gate | None,
-            controlled_gate: Gate, post_rotate: Gate | None):
+            noise_model: NoiseModel, pre_rotate: Instruction | None,
+            controlled_gate: Instruction, post_rotate: Instruction | None):
         tick = self._rotate(tick, pauli, pre_rotate, circuit, noise_model)
-        circuit.add_gate(tick, controlled_gate)
+        circuit.add_instruction(tick, controlled_gate)
         noise = noise_model.two_qubit_gate
         if noise is not None:
-            circuit.add_noise(tick + 1, noise.gate(controlled_gate.qubits))
+            circuit.add_instruction(tick + 1, noise.instruction(controlled_gate.qubits))
         tick += 2
         tick = self._rotate(tick, pauli, post_rotate, circuit, noise_model)
         return tick
 
     def _rotate(
-            self, tick: int, pauli: Pauli, rotation_gate: Gate | None,
+            self, tick: int, pauli: Pauli, rotation_gate: Instruction | None,
             circuit: Circuit, noise_model: NoiseModel):
         if rotation_gate is not None:
-            circuit.add_gate(tick, rotation_gate)
+            circuit.add_instruction(tick, rotation_gate)
             noise = noise_model.one_qubit_gate
             if noise is not None:
-                circuit.add_noise(tick + 1, noise.gate([pauli.qubit]))
+                circuit.add_instruction(tick + 1, noise.instruction([pauli.qubit]))
         return tick + 2

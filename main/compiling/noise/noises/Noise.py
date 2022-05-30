@@ -2,7 +2,7 @@ from abc import abstractmethod, ABC
 from typing import Tuple, List
 
 from main.building_blocks.Qubit import Qubit
-from main.compiling.Gate import Gate
+from main.compiling.Instruction import Instruction
 
 
 class Noise(ABC):
@@ -24,9 +24,5 @@ class Noise(ABC):
     def params(self) -> Tuple[float, ...]:
         pass
 
-    @property
-    def instruction(self) -> Tuple[str, Tuple[float, ...]]:
-        return self.name, self.params
-
-    def gate(self, qubits: List[Qubit]):
-        return Gate(qubits, self.name, self.params, is_noise=True)
+    def instruction(self, qubits: List[Qubit]):
+        return Instruction(qubits, self.name, self.params, is_noise=True)

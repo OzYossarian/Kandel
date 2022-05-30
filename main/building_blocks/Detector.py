@@ -26,6 +26,16 @@ class Detector(DebugFriendly):
         # when they've all been measured, we can build the detector.
         self.triggers_measured = set()
 
+        def get_stabilizer(face: List[Tuple[int, Check]]):
+            face = sorted(face)
+            checks = [check for (_, check) in face]
+            paulis = [pauli for check in checks for pauli in check.paulis]
+
+        # TODO - redo how detectors are triggered. Turn them into circuit
+        #  instructions, and have the triggers set up between the detector
+        #  instruction and the dependent measurement instructions. Perhaps
+        #  create a dedicated Detectorist class to track it all (a bit like
+        #  Craig Gidney's MeasurementTracker class?)
         for (t, check) in self.lid:
             if t == 0:
                 self.triggers.add(check)
