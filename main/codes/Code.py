@@ -1,10 +1,11 @@
 from __future__ import annotations
 
-from typing import Dict, Any, List, Set, Tuple
+from collections import defaultdict
+from typing import Dict, Any, List, Set
 from typing import TYPE_CHECKING
 
 from main.building_blocks.Detector import Detector
-from main.building_blocks.Observable import Observable
+from main.building_blocks.logical.LogicalQubit import LogicalQubit
 
 if TYPE_CHECKING:
     from main.QPUs.QPU import QPU
@@ -19,9 +20,10 @@ class Code:
     def __init__(
             self, data_qubits: Dict[Coordinates, Qubit] | List[Qubit],
             schedule: List[List[Check]] = None,
-            detectors: List[List[Detector]] = None,
-            observables: List[Tuple[Observable, Observable]] = None):
+            logical_qubits: List[LogicalQubit] = None,
+            detectors: List[List[Detector]] = None):
         self.data_qubits = data_qubits
+        self.logical_qubits = logical_qubits
         # Declare attributes here but use separate method to set them.
         # Allows for a code to be partially instantiated but then for
         # schedule and detector to be set later.
@@ -57,6 +59,9 @@ class Code:
             # out.
             assert detectors is not None
             self.detectors = detectors
+
+    def update_logical_qubits(self, round: int):
+        return defaultdict(list)
 
     def transform_coords(self, qpu: QPU):
         # A pre-processing step before embedding a code into a particular QPU.

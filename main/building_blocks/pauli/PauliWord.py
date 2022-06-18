@@ -1,12 +1,12 @@
 from functools import reduce
-from typing import Iterable, List
+from typing import List
 
-from main.building_blocks.PauliLetter import PauliLetter
+from main.building_blocks.pauli.PauliLetter import PauliLetter
 from main.utils.DebugFriendly import DebugFriendly
 
 
 class PauliWord(DebugFriendly):
-    def __init__(self, word: str, sign: complex):
+    def __init__(self, word: str, sign: complex = 1):
         self.word = word
         self.sign = sign
         super().__init__(['word', 'sign'])

@@ -1,5 +1,5 @@
-from main.building_blocks.Pauli import Pauli
-from main.building_blocks.PauliLetter import PauliX, PauliZ
+from main.building_blocks.pauli.Pauli import Pauli
+from main.building_blocks.pauli.PauliLetter import PauliX, PauliZ
 from main.building_blocks.Check import Check
 from main.codes.hexagonal.ToricHexagonalCode import ToricHexagonalCode
 

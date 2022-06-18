@@ -3,8 +3,8 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 from main.building_blocks.Check import Check
-from main.building_blocks.Pauli import Pauli
-from main.building_blocks.PauliLetter import PauliZ, PauliX, PauliY
+from main.building_blocks.pauli.Pauli import Pauli
+from main.building_blocks.pauli.PauliLetter import PauliZ, PauliX, PauliY
 from main.building_blocks.Qubit import Qubit
 from main.compiling.Circuit import Circuit
 from main.compiling.syndrome_extraction.controlled_gate_orderers.TrivialOrderer import TrivialOrderer
@@ -32,7 +32,7 @@ class SyndromeExtractor:
 
     def extract_check(
             self, tick: int, check: Check, circuit: Circuit,
-            compiler: Compiler, round: int):
+            compiler: Compiler, round: int, relative_round: int):
 
         # First initialise the ancilla qubit.
         ancilla_init_state, measurement_basis = \
@@ -44,7 +44,13 @@ class SyndromeExtractor:
         # possibly with some rotation gates on data qubits too.
         ordered_paulis = self.controlled_gate_orderer.order(check)
         for pauli in ordered_paulis:
-            if pauli.letter == PauliX:
+            if pauli is None:
+                # Leave a gap here in the controlled-gate schedule.
+                # TODO - it shouldn't be hardcoded that 6 ticks are needed for
+                #  a pre-rotate, controlled gate, then post-rotate, e.g. if
+                #  user passes in own native gate set.
+                tick += 6
+            elif pauli.letter == PauliX:
                 tick = self.extract_pauli_X(
                     tick, pauli, check.ancilla, circuit, compiler.noise_model)
             elif pauli.letter == PauliY:
@@ -58,7 +64,7 @@ class SyndromeExtractor:
         # Now measure the ancilla to get the check measurement result.
         tick = compiler.measure_qubit(
             check.ancilla, tick, measurement_basis,
-            circuit, check, round)
+            circuit, check, round, relative_round)
         return tick
 
     def ancilla_init_and_measurement(self, check: Check):

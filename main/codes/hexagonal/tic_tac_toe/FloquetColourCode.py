@@ -1,5 +1,5 @@
 from main.Colour import Red, Green, Blue
-from main.building_blocks.PauliLetter import PauliX, PauliZ
+from main.building_blocks.pauli.PauliLetter import PauliX, PauliZ
 from main.codes.hexagonal.tic_tac_toe.TicTacToeCode import TicTacToeCode
 
 

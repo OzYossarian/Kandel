@@ -1,7 +1,7 @@
 import random
 
 from main.Colour import Red, Green, Blue
-from main.building_blocks.PauliLetter import PauliZ, PauliY, PauliX
+from main.building_blocks.pauli.PauliLetter import PauliZ, PauliY, PauliX
 from main.codes.hexagonal.tic_tac_toe.TicTacToeCode import TicTacToeCode
 
 colours = [Red, Green, Blue]

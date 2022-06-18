@@ -1,8 +1,6 @@
-from typing import Dict
-
 from main.building_blocks.Check import Check
-from main.building_blocks.Pauli import Pauli
-from main.building_blocks.PauliLetter import PauliZ
+from main.building_blocks.pauli.Pauli import Pauli
+from main.building_blocks.pauli.PauliLetter import PauliZ
 from main.building_blocks.Qubit import Qubit
 from main.codes.Code import Code
 from main.enums import State

@@ -13,7 +13,7 @@ class NoiseModel:
             data_qubit_start_round: OneQubitNoise | float = None,
             one_qubit_gate: OneQubitNoise | float = None,
             two_qubit_gate: TwoQubitNoise | float = None,
-            measurement: OneQubitNoise | float = None):
+            measurement: OneBitNoise | float = None):
 
         def default_to_uniform_noise(arg, noise: Type[Noise]):
             return arg if not isinstance(arg, float) else noise.uniform(arg)

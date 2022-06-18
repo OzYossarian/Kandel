@@ -4,8 +4,10 @@ from typing import List, Dict, Tuple
 import stim
 
 from main.building_blocks.Check import Check
+from main.building_blocks.logical.LogicalOperator import LogicalOperator
 from main.building_blocks.Qubit import Qubit
 from main.compiling.Instruction import Instruction
+from main.compiling.Measurer import Measurer
 from main.compiling.noise.models.NoiseModel import NoiseModel
 
 RepeatBlock = Tuple[int, int, int] | None
@@ -19,7 +21,7 @@ class Circuit:
         diagram - that is, a 2D lattice, with gates placed on vertices. Time
         flows left to right, so each horizontal line represents a qubit.
 
-        Gates, noise, detetcors, etc are all types of 'instrutions'. All
+        Gates, noise, detectors, etc are all types of 'instructions'. All
         noise EXCEPT idling noise is included in the circuit diagram: idling
         noise is added in right before the Circuit is compiled further to an
         actual Stim circuit.
@@ -31,7 +33,7 @@ class Circuit:
         """
         # The core of this class is a nested dictionary of instructions,
         # keyed first by tick, then by qubit. Values are then lists of
-        # instructions acting on that qubit and that tick.
+        # instructions acting on that qubit at that tick.
         self.instructions: Dict[int, Dict[Qubit, List[Instruction]]] = \
             defaultdict(lambda: defaultdict(list))
         # Maintain a set of all of the qubits we've come across - used when
@@ -46,7 +48,7 @@ class Circuit:
         # For each tick, note whether it's inside a repeat block.
         self.repeat_blocks: Dict[int, RepeatBlock] = defaultdict(lambda: None)
         # Track which measurements tell us the value of which checks
-        self.checks_measured = {}
+        self.measurer = Measurer()
 
     def stim_index(self, qubit: Qubit):
         # Get the stim index corresponding to this qubit, or create one if
@@ -84,7 +86,7 @@ class Circuit:
 
     def measure(
             self, tick: int, measurement: Instruction, check: Check,
-            round: int):
+            round: int, relative_round: int):
         # Measure a qubit (perhaps multiple)
         self.add_instruction(tick, measurement)
         # Record that these qubits have been measured.
@@ -93,7 +95,8 @@ class Circuit:
         # Note down that this gate corresponds to the measurement of a
         # particular check in a particular round. This info is used when
         # building detectors later.
-        self.checks_measured[measurement] = (check, round)
+        self.measurer.add_measurement(
+            measurement, check, round, relative_round)
 
     def add_instruction(self, tick: int, instruction: Instruction):
         # Even ticks are for gates, odd ticks are for noise.
@@ -129,7 +132,7 @@ class Circuit:
 
     def add_idle_noise(self, noise_model: NoiseModel):
         # Not a good idea to call this method before compression is done.
-        if noise_model.idling is not None and len(self.instructions) > 0:
+        if noise_model.idling is not None:
             instructions = sorted(self.instructions.items())
             for tick, qubit_instructions in instructions:
                 # Only interested in even ticks, where actual gates happen.
@@ -154,12 +157,6 @@ class Circuit:
         # Let 'circuit' denote the circuit we're currently compiling to - if
         # using repeat blocks, this need not always be the full circuit itself
         circuit = full_circuit
-        # Track how many measurements have been made in total - this lets us
-        # say how many measurements ago a specific measurement was, which is
-        # vital for compiling detectors.
-        # TODO - Craig Gidney has a dedicated MeasurementTracker class - watch
-        #  his videos and read his code! Maybe this is better.
-        measurements = 0
         last_tick = -1
 
         for tick, qubit_instructions in sorted(self.instructions.items()):
@@ -174,14 +171,20 @@ class Circuit:
                 circuit = stim.Circuit()
 
             # Now actually compile instructions at this tick
+            measurements = []
             for qubit, instructions in qubit_instructions.items():
                 for instruction in instructions:
                     if not compiled[instruction]:
-                        self.instruction_to_stim(
-                            instruction, circuit, measurements)
-                        measurements += (
-                            1 if instruction.is_measurement else 0)
+                        self.instruction_to_stim(instruction, circuit)
+                        if instruction.is_measurement:
+                            measurements.append(instruction)
                         compiled[instruction] = True
+            # Let the measurer determine if these measurements trigger any
+            # detectors.
+            detectors = self.measurer.measurements_to_stim(measurements)
+            for detector in detectors:
+                circuit.append(detector)
+
             circuit.append('TICK')
             last_tick = tick
 
@@ -195,26 +198,9 @@ class Circuit:
         return full_circuit
 
     def instruction_to_stim(
-            self, instruction: Instruction, circuit: stim.Circuit,
-            measurements: int):
+            self, instruction: Instruction, circuit: stim.Circuit):
         indexes = [self.stim_index(qubit) for qubit in instruction.qubits]
         circuit.append(instruction.name, indexes, instruction.params)
-        if instruction.is_measurement:
-            # Check whether we need to build a detector as a result of this
-            # measurement
-            check, round = self.checks_measured[instruction]
-            # Note what number this measurement is assigned by stim.
-            check.measurements[round] = measurements
-            for detector in check.detectors_triggered:
-                # If this check (amongst others) triggers a detector,
-                # note this down
-                detector.triggers_measured.add(check)
-                if detector.triggers_measured == detector.triggers:
-                    # All triggers measured - can now compile this detector!
-                    # (Or at the very least, its lid)
-                    targets = detector.get_targets(round, measurements + 1)
-                    targets = [stim.target_rec(t) for t in targets]
-                    circuit.append('DETECTOR', targets)
 
     def entered_repeat_block(self, tick: int, last_tick: int):
         # Return whether we've entered a repeat block between these two ticks.

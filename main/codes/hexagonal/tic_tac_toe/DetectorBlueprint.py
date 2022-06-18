@@ -2,7 +2,7 @@ from collections import Counter
 from typing import List, Tuple
 
 from main.Colour import Colour
-from main.building_blocks.PauliLetter import PauliLetter
+from main.building_blocks.pauli.PauliLetter import PauliLetter
 from main.utils.DebugFriendly import DebugFriendly
 from main.utils.utils import modulo_duplicates
 

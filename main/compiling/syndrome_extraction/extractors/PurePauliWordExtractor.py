@@ -1,6 +1,6 @@
 from main.building_blocks.Check import Check
-from main.building_blocks.Pauli import Pauli
-from main.building_blocks.PauliLetter import PauliZ, PauliX, PauliY
+from main.building_blocks.pauli.Pauli import Pauli
+from main.building_blocks.pauli.PauliLetter import PauliZ, PauliX, PauliY
 from main.building_blocks.Qubit import Qubit
 from main.compiling.Circuit import Circuit
 from main.compiling.Instruction import Instruction
@@ -39,7 +39,6 @@ class PurePauliWordExtractor(SyndromeExtractor):
     def extract_pauli_X(
             self, tick: int, pauli: Pauli, ancilla: Qubit,
             circuit: Circuit, noise_model: NoiseModel):
-        # Rotate so that this data qubit is effectively in Z basis
         pre_rotate = None
         post_rotate = None
         controlled_gate = Instruction([ancilla, pauli.qubit], 'CX')
@@ -50,7 +49,6 @@ class PurePauliWordExtractor(SyndromeExtractor):
     def extract_pauli_Y(
             self, tick: int, pauli: Pauli, ancilla: Qubit,
             circuit: Circuit, noise_model: NoiseModel):
-        # Rotate so that this data qubit is effectively in Z basis
         pre_rotate = None
         post_rotate = None
         controlled_gate = Instruction([ancilla, pauli.qubit], 'CY')

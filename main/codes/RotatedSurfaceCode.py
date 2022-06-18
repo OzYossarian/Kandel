@@ -1,7 +1,7 @@
-from typing import Dict, List, Tuple
+from typing import Dict
 from main.building_blocks.Check import Check
-from main.building_blocks.Pauli import Pauli
-from main.building_blocks.PauliLetter import PauliZ, PauliX
+from main.building_blocks.pauli.Pauli import Pauli
+from main.building_blocks.pauli.PauliLetter import PauliZ, PauliX
 from main.building_blocks.Qubit import Qubit, Coordinates
 from main.codes.Code import Code
 from main.enums import State

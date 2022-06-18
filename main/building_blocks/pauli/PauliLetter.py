@@ -36,7 +36,9 @@ class PauliLetter(DebugFriendly):
         }
         super().__init__(['letter', 'sign'])
 
-    def times(self, other: PauliLetter):
+    # TODO - use stim.PauliString instead? Has these multiplication operations
+    # built-in.
+    def compose(self, other: PauliLetter):
         sign, letter = self.multiplication_table[(self.letter, other.letter)]
         sign *= self.sign * other.sign
         return PauliLetter(letter, sign)

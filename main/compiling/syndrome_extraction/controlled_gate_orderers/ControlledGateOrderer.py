@@ -2,7 +2,7 @@ from abc import ABC, abstractmethod
 from typing import List
 
 from main.building_blocks.Check import Check
-from main.building_blocks.Pauli import Pauli
+from main.building_blocks.pauli.Pauli import Pauli
 
 
 class ControlledGateOrderer(ABC):
