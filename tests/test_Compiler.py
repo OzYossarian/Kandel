@@ -4,6 +4,7 @@ from main.codes.RepetitionCode import RepetitionCode
 from main.codes.RotatedSurfaceCode import RotatedSurfaceCode
 from main.compiling.Circuit import Circuit
 from main.compiling.NoiseModel import CircuitLevelNoise
+from main.codes.hexagonal.tic_tac_toe.HoneycombCode import HoneycombCode
 
 
 def test_compile_code_circuit_level_noise():
@@ -137,6 +138,14 @@ def test_initialize_qubits():
     test_compiler.initialize_qubits(rep_code.data_qubits.values(), 0)
     assert test_compiler.gates_at_timesteps[0]['gates'] == {
         rep_code.data_qubits[0]: 'RZ', rep_code.data_qubits[2]: 'RZ'}
+
+    honeycomb_code = HoneycombCode(5)
+    print(honeycomb_code.data_qubits)
+    print(honeycomb_code.ancilla_qubits)
+#    print(honeycomb_code.)
+
+
+test_initialize_qubits()
 
 
 def test_compile_one_round():
