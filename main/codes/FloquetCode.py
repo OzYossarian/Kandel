@@ -7,5 +7,6 @@ from main.codes.Code import Code
 
 class FloquetCode(Code):
     def __init__(self, data_qubits: Dict[Coordinates, Qubit],
-                 schedule: List[List[Check]]):
-        super().__init__(data_qubits, schedule)
+                 check_schedule: List[List[Check]],
+                 distance: int = None):
+        super().__init__(data_qubits, check_schedule, distance=distance)

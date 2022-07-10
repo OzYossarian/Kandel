@@ -15,7 +15,7 @@ class SquareLatticeQPU(QPU):
             positions = range(dims[0])
         else:
             positions = itertools.product(*(range(dim) for dim in dims))
-        qubits = {position: Qubit(position, State.Zero) for position in positions}
+        qubits = {position: Qubit(position) for position in positions}
         super().__init__(qubits)
 
     def embed(self, code: Code, start: Coordinates, hyperplane: Coordinates):

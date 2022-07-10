@@ -4,7 +4,6 @@ from typing import List, Dict, Tuple
 import stim
 
 from main.building_blocks.Check import Check
-from main.building_blocks.logical.LogicalOperator import LogicalOperator
 from main.building_blocks.Qubit import Qubit
 from main.compiling.Instruction import Instruction
 from main.compiling.Measurer import Measurer
@@ -85,8 +84,8 @@ class Circuit:
         self.init_ticks[qubit].append(initialised_tick)
 
     def measure(
-            self, tick: int, measurement: Instruction, check: Check,
-            round: int, relative_round: int):
+            self, measurement: Instruction, check: Check,
+            round: int, tick: int):
         # Measure a qubit (perhaps multiple)
         self.add_instruction(tick, measurement)
         # Record that these qubits have been measured.
@@ -95,8 +94,7 @@ class Circuit:
         # Note down that this gate corresponds to the measurement of a
         # particular check in a particular round. This info is used when
         # building detectors later.
-        self.measurer.add_measurement(
-            measurement, check, round, relative_round)
+        self.measurer.add_measurement(measurement, check, round)
 
     def add_instruction(self, tick: int, instruction: Instruction):
         # Even ticks are for gates, odd ticks are for noise.
@@ -157,17 +155,19 @@ class Circuit:
         # Let 'circuit' denote the circuit we're currently compiling to - if
         # using repeat blocks, this need not always be the full circuit itself
         circuit = full_circuit
-        last_tick = -1
+
+        most_recent_tick = -1
+        final_tick = max(self.instructions.keys())
 
         for tick, qubit_instructions in sorted(self.instructions.items()):
             # Check whether we need to close a repeat block
-            repeats = self.left_repeat_block(tick, last_tick)
+            repeats = self.left_repeat_block(tick, most_recent_tick)
             if repeats is not None:
                 repeat_circuit = stim.CircuitRepeatBlock(repeats, circuit)
                 full_circuit.append(repeat_circuit)
                 circuit = full_circuit
             # Then check whether we need to start a new repeat block
-            if self.entered_repeat_block(tick, last_tick):
+            if self.entered_repeat_block(tick, most_recent_tick):
                 circuit = stim.Circuit()
 
             # Now actually compile instructions at this tick
@@ -180,16 +180,19 @@ class Circuit:
                             measurements.append(instruction)
                         compiled[instruction] = True
             # Let the measurer determine if these measurements trigger any
-            # detectors.
-            detectors = self.measurer.measurements_to_stim(measurements)
-            for detector in detectors:
-                circuit.append(detector)
+            # further instructions - e.g. building detectors, adding checks
+            # into logical observables, etc.
+            further_instructions = \
+                self.measurer.measurements_to_stim(measurements)
+            for instruction in further_instructions:
+                circuit.append(instruction)
 
-            circuit.append('TICK')
-            last_tick = tick
+            if tick != final_tick:
+                circuit.append('TICK')
+            most_recent_tick = tick
 
         # If we've finished inside a repeat block, close it.
-        repeat_block = self.repeat_blocks[last_tick]
+        repeat_block = self.repeat_blocks[final_tick]
         if repeat_block is not None:
             start, end, repeats = repeat_block
             repeat_circuit = stim.CircuitRepeatBlock(repeats, circuit)

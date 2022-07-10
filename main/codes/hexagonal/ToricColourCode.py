@@ -29,4 +29,4 @@ class ToricColourCode(ToricHexagonalCode):
                 checks.append(x_check)
                 checks.append(z_check)
 
-        self.set_schedule_and_detectors([checks])
+        self.set_schedules([checks])

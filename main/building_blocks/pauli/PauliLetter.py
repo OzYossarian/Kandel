@@ -3,6 +3,9 @@ from main.Colour import Colour, Red, Blue, Green, Black
 from main.utils.DebugFriendly import DebugFriendly
 
 
+# TODO - use stim.PauliString stuff instead? Has many operations built-in.
+#  Could then maybe do away with all instances of using PauliX (say) as a
+#  key in a dictionary? (For 'could', maybe read 'should'?)
 class PauliLetter(DebugFriendly):
     def __init__(self, letter: str, sign: complex = 1):
         self.letter = letter
@@ -36,8 +39,6 @@ class PauliLetter(DebugFriendly):
         }
         super().__init__(['letter', 'sign'])
 
-    # TODO - use stim.PauliString instead? Has these multiplication operations
-    # built-in.
     def compose(self, other: PauliLetter):
         sign, letter = self.multiplication_table[(self.letter, other.letter)]
         sign *= self.sign * other.sign

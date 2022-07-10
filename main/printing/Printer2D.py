@@ -41,7 +41,7 @@ class Printer2D(Printer):
 
     def _print_code(self, code: Code, round: int, printout: Printout):
         # TODO - print code without embedding on a QPU.
-        checks = code.schedule[round % code.schedule_length]
+        checks = code.check_schedule[round % code.schedule_length]
         for check in checks:
             self._print_check(check, printout)
 

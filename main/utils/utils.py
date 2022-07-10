@@ -33,28 +33,3 @@ def modulo_duplicates(xs: List[Hashable], n: int):
         for k in keep:
             result[k] = xs[k]
     return [r for r in result if r is not None]
-
-
-def pauli_composition(paulis: Iterable[Pauli]):
-    # Order matters because Pauli multiplication is not commutative.
-    # We assume 'paulis' is ordered such that the rightmost element is the
-    # first to be applied, and the leftmost element is the last to be applied
-    # (i.e. the order in which we ordinarily write Paulis algebraically).
-    # If two Paulis act on different qubits, it doesn't matter which comes
-    # first in the ordering.
-
-    # Group by the qubit that the Paulis are applied to
-    grouped_paulis = defaultdict(list)
-    for pauli in paulis:
-        grouped_paulis[pauli.qubit].append(pauli.letter)
-    # Compose together the Paulis on each qubit.
-    composed = {
-        qubit: reduce(lambda x, y: x.compose(y), letters)
-        for qubit, letters in grouped_paulis.items()}
-    # Return these as Paulis again
-    result = [Pauli(qubit, letter) for qubit, letter in composed.items()]
-    return result
-
-
-
-

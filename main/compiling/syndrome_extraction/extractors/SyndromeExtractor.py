@@ -18,7 +18,15 @@ from main.enums import State
 
 
 # TODO - it might be that a better design just has all these methods within
-#  the compiler, and one should override these methods in a compiler subclass
+#  the compiler, and one should override these methods in a compiler subclass.
+#  I say this because we currently actually pass in the compiler object to
+#  the extract_check method. On the other hand, the argument in favour of this
+#  current design is that this extraction seems independent of the compiler -
+#  e.g. for the rotated surface code, we usually use an ancilla per plaquette,
+#  but if we were feeling funky we could just one ancilla for the whole code
+#  and extract syndromes sequentially. In both cases though, the extraction
+#  circuits themselves are 'the same' - the only difference is which qubit is
+#  the ancilla in each case.
 class SyndromeExtractor:
     def __init__(
             self, controlled_gate_orderer: ControlledGateOrderer = None,
@@ -31,14 +39,14 @@ class SyndromeExtractor:
         self.extract_checks_in_parallel = extract_checks_in_parallel
 
     def extract_check(
-            self, tick: int, check: Check, circuit: Circuit,
-            compiler: Compiler, round: int, relative_round: int):
+            self, check: Check, round: int, compiler: Compiler,
+            tick: int, circuit: Circuit):
 
         # First initialise the ancilla qubit.
         ancilla_init_state, measurement_basis = \
             self.ancilla_init_and_measurement(check)
-        check.ancilla.initial_state = ancilla_init_state
-        tick = compiler.initialize_qubits([check.ancilla], tick, circuit)
+        tick = compiler.initialize_qubits(
+            {check.ancilla: ancilla_init_state}, tick, circuit)
 
         # Now place controlled gates between data qubits and the ancilla,
         # possibly with some rotation gates on data qubits too.
@@ -63,8 +71,7 @@ class SyndromeExtractor:
 
         # Now measure the ancilla to get the check measurement result.
         tick = compiler.measure_qubit(
-            check.ancilla, tick, measurement_basis,
-            circuit, check, round, relative_round)
+            check.ancilla, measurement_basis, check, round, tick, circuit)
         return tick
 
     def ancilla_init_and_measurement(self, check: Check):
@@ -106,16 +113,16 @@ class SyndromeExtractor:
             self, tick: int, pauli: Pauli, circuit: Circuit,
             noise_model: NoiseModel, pre_rotate: Instruction | None,
             controlled_gate: Instruction, post_rotate: Instruction | None):
-        tick = self._rotate(tick, pauli, pre_rotate, circuit, noise_model)
+        tick = self.rotate(tick, pauli, pre_rotate, circuit, noise_model)
         circuit.add_instruction(tick, controlled_gate)
         noise = noise_model.two_qubit_gate
         if noise is not None:
             circuit.add_instruction(tick + 1, noise.instruction(controlled_gate.qubits))
         tick += 2
-        tick = self._rotate(tick, pauli, post_rotate, circuit, noise_model)
+        tick = self.rotate(tick, pauli, post_rotate, circuit, noise_model)
         return tick
 
-    def _rotate(
+    def rotate(
             self, tick: int, pauli: Pauli, rotation_gate: Instruction | None,
             circuit: Circuit, noise_model: NoiseModel):
         if rotation_gate is not None:
