@@ -6,3 +6,4 @@ class CodeCapacityBitFlipNoise(NoiseModel):
     def __init__(self, bit_flip_probability: float):
         bit_flip_noise = OneQubitNoise(px=bit_flip_probability)
         super().__init__(data_qubit_start_round=bit_flip_noise)
+

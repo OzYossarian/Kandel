@@ -1,3 +1,6 @@
+from py import code
+from main.building_blocks.pauli.Pauli import Pauli
+from main.building_blocks.pauli.PauliLetter import PauliZ
 from main.codes.RepetitionCode import RepetitionCode
 from main.codes.RotatedSurfaceCode import RotatedSurfaceCode
 from main.compiling.Circuit import Circuit
@@ -10,6 +13,8 @@ from main.compiling.syndrome_extraction.extractors.PurePauliWordExtractor import
 #from main.compiling.syndrome_extraction.extractors.CSSExtractor import PurePauliWordExtractor
 from main.decoding.PymatchingDecoder import PymatchingDecoder
 import numpy as np
+
+from main.enums import State
 
 
 class IdlingExperiment():
@@ -26,9 +31,16 @@ class IdlingExperiment():
     def initialize_circuit(self, noise_model, decoder='pymatching'):
         pure_trivial_extractor = PurePauliWordExtractor(TrivialOrderer())
         compiler = AncillaPerCheckCompiler(noise_model, pure_trivial_extractor)
+
+        code_qubits = list(self.code.data_qubits.values())
+    
+        code_initials = {qubit: State.Zero for qubit in code_qubits}
+        code_finals = [Pauli(qubit, PauliZ) for qubit in code_qubits]
+        code_logicals = [self.code.logical_qubits[0].z]
+
         if noise_model.measurement is None:
             circuit = compiler.compile_code(
-                self.code, layers=1)
+                self.code, 1, code_initials, code_finals, code_logicals)
  
         else:
             circuit = compiler.compile_code(
@@ -44,10 +56,6 @@ class IdlingExperiment():
         actual_observable_parts = shots[:, self.stim_circuit.num_detectors:]
         predicted_observable_parts = self.decoder.decode_samples(
             detector_parts)
-        print(self.stim_circuit)
-        print(shots)
-        print(detector_parts)
-        print(actual_observable_parts)
         num_errors = 0
         for actual, predicted in zip(actual_observable_parts, predicted_observable_parts):
             if not np.array_equal(actual, predicted):

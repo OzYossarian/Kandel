@@ -198,6 +198,8 @@ class Circuit:
             repeat_circuit = stim.CircuitRepeatBlock(repeats, circuit)
             full_circuit.append(repeat_circuit)
 
+        # compile logical here 
+
         return full_circuit
 
     def instruction_to_stim(
