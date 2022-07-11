@@ -1,8 +1,9 @@
 from abc import abstractmethod, ABC
-from typing import Iterable, List, Dict, Tuple
+from typing import List, Dict
 
 from main.building_blocks.Check import Check
 from main.building_blocks.Detector import Detector
+from main.building_blocks.Stabilizer import Stabilizer
 from main.building_blocks.logical.LogicalOperator import LogicalOperator
 from main.building_blocks.pauli.PauliProduct import PauliProduct
 from main.building_blocks.pauli.utils import stabilizers
@@ -151,7 +152,8 @@ class Compiler(ABC):
                     # This detector should become a 'lid-only' detector in
                     # the first round, unless it's non-deterministic.
                     if stabilizer_group.commutes(detector.stabilizer):
-                        initial_detector_schedule[round].append(detector)
+                        lid_only = Stabilizer(detector.lid, round)
+                        initial_detector_schedule[round].append(lid_only)
                 else:
                     # This detector is always going to be comparing a floor
                     # with a lid, so should always be deterministic.
@@ -304,10 +306,8 @@ class Compiler(ABC):
                 measurements = [
                     final_checks[data_qubit].paulis[0]
                     for data_qubit in detector_qubits]
-                # TODO - shouldn't need to sort. Should just compare products
-                #  themselves, not words.
                 measurement_product = PauliProduct(measurements)
-                if detector.stabilizer.word == measurement_product.word:
+                if detector.stabilizer == measurement_product:
                     # Can make a lid for this detector!
                     floor = [
                         (t + detector.lid_end, check)

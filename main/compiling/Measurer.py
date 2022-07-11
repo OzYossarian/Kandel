@@ -47,6 +47,9 @@ class Measurer:
         # Keys are (check, round) pairs, and values are lists whose elements
         # are detectors or observables.
         self.triggers = defaultdict(list)
+        # To prevent duplicate detectors being built, track those that we've
+        # already made.
+        self.detectors_built = defaultdict(bool)
 
     def add_measurement(
             self, measurement: Instruction, check: Check, round: int):
@@ -80,16 +83,10 @@ class Measurer:
                 if isinstance(trigger, Detector):
                     # This check (amongst others) triggers a detector.
                     detector = trigger
-                    # Only build this detector if all the checks in the final
-                    # slice have actually been measured.
-                    final_slice_measured = all([
-                        (check, round) in self.measurement_numbers
-                        for check in detector.final_slice])
-                    if final_slice_measured:
-                        # All checks measured - can now compile this detector!
-                        # But must wait til all measurement numbers have been
-                        # assigned before turning this detector into a Stim
-                        # instruction.
+                    if self.can_build_detector(detector, round):
+                        # Must wait til all measurement numbers have been
+                        # assigned (at the end of the outer for loop we're in)
+                        # before turning this detector into a Stim instruction
                         detectors.append((detector, round))
                 else:
                     # Must be an observable update.
@@ -99,7 +96,7 @@ class Measurer:
                     # assigned before turning this into a Stim instruction.
                     observable_updates[observable].append((check, round))
 
-        # Can now actually create corresponding Stim instructions
+        # Can now actually create corresponding Stim instructions.
         instructions = []
         for detector, round in detectors:
             targets = self.get_detector_targets(detector, round)
@@ -115,18 +112,36 @@ class Measurer:
         # Finally, return these instructions to the circuit to compile.
         return instructions
 
+    def can_build_detector(self, detector: Detector, round: int):
+        # Only build this detector if all the checks in the final slice have
+        # actually been measured, and if we haven't already built an
+        # equivalent detector (one that compares the exact same measurements).
+        final_slice_measured = all([
+            (check, round) in self.measurement_numbers
+            for check in detector.final_slice])
+        if final_slice_measured:
+            # First criteria met...
+            measurement_numbers = tuple(sorted([
+                self.measurement_numbers[(check, round + rounds_ago)]
+                for rounds_ago, check in detector.checks]))
+            already_built = self.detectors_built[measurement_numbers]
+            if not already_built:
+                # Second criteria met - can build this detector!
+                # Update the detectors_built dictionary while we have the
+                # measurement numbers to hand.
+                self.detectors_built[measurement_numbers] = True
+                return True
+        return False
+
     def get_detector_targets(self, detector: Detector, round: int):
-        targets = []
-        for face in [detector.lid, detector.floor]:
-            # Only build whole faces, but allow building of lid but not floor.
-            face_measured = all([
-                (check, round + rounds_ago) in self.measurement_numbers
-                for rounds_ago, check in face])
-            if face_measured:
-                face_targets = [
-                    self.measurement_target(check, round + rounds_ago)
-                    for rounds_ago, check in face]
-                targets.extend(face_targets)
+        # If we've reached this point it should be that every check in the
+        # detector has been measured already.
+        assert all([
+            (check, round + rounds_ago) in self.measurement_numbers
+            for rounds_ago, check in detector.checks])
+        targets = [
+            self.measurement_target(check, round + rounds_ago)
+            for rounds_ago, check in detector.checks]
         return targets
 
     def measurement_target(self, check: Check, round: int):
@@ -136,8 +151,8 @@ class Measurer:
         return stim.target_rec(measurements_ago)
 
     def observable_index(self, observable: LogicalOperator):
-        # Get the stim index corresponding to this qubit, or create one if
-        # it doesn't yet have one.
+        # Get the stim index corresponding to this observable, or create one
+        # if it doesn't yet have one.
         if observable in self.observable_indexes:
             index = self.observable_indexes[observable]
         else:

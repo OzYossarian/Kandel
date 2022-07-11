@@ -1,9 +1,11 @@
+from __future__ import annotations
 from typing import List, Tuple
 
 from main.building_blocks.Check import Check
 from main.building_blocks.pauli.PauliProduct import PauliProduct
 from main.building_blocks.pauli.utils import compose
 from main.utils.DebugFriendly import DebugFriendly
+from main.utils.utils import modulo_duplicates
 
 
 class Detector(DebugFriendly):
@@ -26,38 +28,40 @@ class Detector(DebugFriendly):
         self.final_slice = [check for t, check in self.lid if t == 0]
 
         # Note down when the first and last checks in the lid were measured
-        self.lid_end = end
         first_lid_rounds_ago = max(
             rounds_ago for rounds_ago, check in self.lid)
         self.lid_start = end + first_lid_rounds_ago
+        self.lid_end = end
 
         # Similarly, note down when the first and last checks in the floor
         # were measured.
-        last_floor_rounds_ago = max([
-            rounds_ago for rounds_ago, check in self.floor])
-        self.floor_end = end + last_floor_rounds_ago
-        first_floor_rounds_ago = min([
-            rounds_ago for rounds_ago, check in self.floor])
-        self.floor_start = end + first_floor_rounds_ago
+        self.floor_start, self.floor_end = self.floor_window(end)
+        self.stabilizer = self.get_stabilizer()
 
-        def get_stabilizer(face: List[Tuple[int, Check]]):
-            # Pauli multiplication is not commutative so order matters.
-            face = sorted(face, key=lambda check: -check[0])
-            checks = [check for (_, check) in face]
-            paulis = [pauli for check in checks for pauli in check.paulis]
-            stabilizer = PauliProduct(compose(paulis))
-            return stabilizer
-
-        floor_stabilizer = get_stabilizer(self.floor)
-        lid_stabilizer = get_stabilizer(self.lid)
-        # TODO - Allow sign difference? e.g. can we measure XXXX and -XXXX
-        #  and still build a detector from this? What about iXXXX?
-        assert floor_stabilizer == lid_stabilizer
-        self.stabilizer = floor_stabilizer
+        # # Including the same check twice in a detector does nothing - note
+        # # down the checks modulo pairs of duplicates.
+        self.checks = modulo_duplicates(self.lid + self.floor, 2)
 
         # TODO - make DebugFriendly class accept dot notation,
         #  e.g. should allow stabilizer.word to be passed in.
         super().__init__(['stabilizer', 'floor', 'lid'])
+
+    def get_stabilizer(self):
+        floor_product = self.face_product(self.floor)
+        lid_product = self.face_product(self.lid)
+        # TODO - Allow sign difference? e.g. can we measure XXXX and -XXXX
+        #  and still build a detector from this? What about iXXXX?
+        assert floor_product == lid_product
+        return lid_product
+
+    def floor_window(self, end):
+        first_floor_rounds_ago = min([
+            rounds_ago for rounds_ago, check in self.floor])
+        floor_start = end + first_floor_rounds_ago
+        last_floor_rounds_ago = max([
+            rounds_ago for rounds_ago, check in self.floor])
+        floor_end = end + last_floor_rounds_ago
+        return floor_start, floor_end
 
     def is_open(self, relative_round: int):
         # A detector is open if its floor has been fully measured but its lid
@@ -65,4 +69,10 @@ class Detector(DebugFriendly):
         # immediately after the given relative round.
         return self.floor_end <= relative_round < self.lid_end
 
-
+    def face_product(self, face: List[Tuple[int, Check]]):
+        # Pauli multiplication is not commutative so order matters.
+        face = sorted(face, key=lambda check: -check[0])
+        checks = [check for (_, check) in face]
+        paulis = [pauli for check in checks for pauli in check.paulis]
+        stabilizer = PauliProduct(compose(paulis))
+        return stabilizer
