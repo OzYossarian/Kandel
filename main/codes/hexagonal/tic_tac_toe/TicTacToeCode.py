@@ -453,44 +453,64 @@ class TicTacToeCode(ToricHexagonalCode, FloquetCode):
     def update_logical_qubits(self, round: int):
         # 'round' is the round we've just finished doing measurements for.
         relative_round = round % self.schedule_length
+        update_checks = defaultdict(list)
 
         # Mustn't use relative round in the following
         prev_x_type, prev_z_type = self.get_logical_qubit_types(round - 1)
         next_x_type, next_z_type = self.get_logical_qubit_types(round)
+
+        if next_x_type != prev_x_type:
+            # Need to update the logical X operators
+            logical = self.logical_qubits[0].x
+            update_checks[logical] = self.update_operator(
+                logical, relative_round, vertical=False)
+            logical = self.logical_qubits[1].x
+            update_checks[logical] = self.update_operator(
+                logical, relative_round, vertical=True)
+
+        if next_z_type != prev_z_type:
+            # Need to update the logical Z operators
+            logical = self.logical_qubits[0].z
+            update_checks[logical] = self.update_operator(
+                logical, relative_round, vertical=True)
+            logical = self.logical_qubits[1].z
+            update_checks[logical] = self.update_operator(
+                logical, relative_round, vertical=False)
+
+        # Return - for each operator - the checks that have been multiplied
+        # into this operator in order to update it.
+        return update_checks
+
+    def update_operator(
+            self, operator: LogicalOperator, relative_round: int,
+            vertical: bool = False):
+        # Slightly different depending on whether operator is vertical or
+        # horizontal - horizontal operators are multiplied by ALL
+        # intersecting checks, whereas vertical ones are only multiplied by
+        # those in their support (i.e. not horizontal ones).
 
         def intersect(check, operator):
             check_qubits = {pauli.qubit for pauli in check.paulis}
             operator_qubits = {pauli.qubit for pauli in operator.paulis}
             return len(check_qubits.intersection(operator_qubits)) > 0
 
-        def update_operator(operator):
-            check_type = self.tic_tac_toe_route[relative_round]
-            checks = self.checks_by_type[check_type]
+        def is_horizontal(check):
+            y_coords = [pauli.qubit.coords[1] for pauli in check.paulis]
+            return len(set(y_coords)) == 1
+
+        check_type = self.tic_tac_toe_route[relative_round]
+        checks = self.checks_by_type[check_type]
+        intersecting_checks = [
+            check for check in checks
+            if intersect(check, operator)]
+        if vertical:
             intersecting_checks = [
-                check for check in checks
-                if intersect(check, operator)]
-            intersecting_paulis = [
-                pauli
-                for check in intersecting_checks
-                for pauli in check.paulis]
+                check for check in intersecting_checks
+                if not is_horizontal(check)]
+        intersecting_paulis = [
+            pauli
+            for check in intersecting_checks
+            for pauli in check.paulis]
 
-            operator.update(intersecting_paulis)
-            return intersecting_checks
-
-        update_checks = defaultdict(list)
-
-        if next_x_type != prev_x_type:
-            # Need to update the logical X operators
-            operators = [self.logical_qubits[0].x, self.logical_qubits[1].x]
-            for operator in operators:
-                update_checks[operator] = update_operator(operator)
-
-        if next_z_type != prev_z_type:
-            # Need to update the logical Z operators
-            operators = [self.logical_qubits[0].z, self.logical_qubits[1].z]
-            for operator in operators:
-                update_checks[operator] = update_operator(operator)
-
-        # Return - for each operator - the checks that have been multiplied
-        # into this operator in order to update it.
-        return update_checks
+        operator.update(intersecting_paulis)
+        return intersecting_checks
