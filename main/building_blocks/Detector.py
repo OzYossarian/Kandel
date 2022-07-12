@@ -28,7 +28,7 @@ class Detector(DebugFriendly):
         self.final_slice = [check for t, check in self.lid if t == 0]
 
         # Note down when the first and last checks in the lid were measured
-        first_lid_rounds_ago = max(
+        first_lid_rounds_ago = min(
             rounds_ago for rounds_ago, check in self.lid)
         self.lid_start = end + first_lid_rounds_ago
         self.lid_end = end
@@ -63,11 +63,28 @@ class Detector(DebugFriendly):
         floor_end = end + last_floor_rounds_ago
         return floor_start, floor_end
 
-    def is_open(self, relative_round: int):
-        # A detector is open if its floor has been fully measured but its lid
-        # has not. This returns whether the detector is open at the point
-        # immediately after the given relative round.
+    def has_open_top(self, relative_round: int):
+        # TODO - not convinced this isn't buggy.
+        # TODO - this method is for use in 'finishing off' detectors with
+        #  final data qubit measurements. But currently only lets you
+        #  build the whole lid from these measurements. Better would be to
+        #  let you also build 'the remainder' - e.g. in the honeycomb code there
+        #  are detectors whose floor and lid are both XX and ZZ checks, giving
+        #  a -YYYYYY stabilizer. Would be good to allow this to be finished
+        #  off after measuring just the XX checks of the lid - (if final data
+        #  qubit measurements are all in Z basis).
+        # A detector has an open top if its floor has been fully measured but
+        # its lid has not. This returns whether the detector is open at the
+        # point immediately AFTER the given relative round.
         return self.floor_end <= relative_round < self.lid_end
+
+    def has_open_bottom(self, round: int, shift: int):
+        # Let 'round' be the round of checks just measured. A detector has an
+        # open bottom if its entire lid lies on or above this round, but not
+        # all of its floor does. 'shift' is the number of rounds already
+        # measured - since lid_start, floor_start etc are modulo the schedule
+        # length, this lets us use absolute values for 'round'.
+        return self.floor_start + shift < round <= self.lid_start + shift
 
     def face_product(self, face: List[Tuple[int, Check]]):
         # Pauli multiplication is not commutative so order matters.

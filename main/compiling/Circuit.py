@@ -35,11 +35,11 @@ class Circuit:
         # instructions acting on that qubit at that tick.
         self.instructions: Dict[int, Dict[Qubit, List[Instruction]]] = \
             defaultdict(lambda: defaultdict(list))
-        # Maintain a set of all of the qubits we've come across - used when
+        # Maintain a set of all the qubits we've come across - used when
         # adding idle noise later.
         self.qubits = set()
         # Each qubit will ultimately be assigned an integer index in stim.
-        self.stim_indexes = {}
+        self.qubit_indexes = {}
         # Track at which ticks qubits were initialised and measured, so we
         # say whether a qubit is currently initialised or not.
         self.init_ticks = defaultdict(list)
@@ -49,14 +49,14 @@ class Circuit:
         # Track which measurements tell us the value of which checks
         self.measurer = Measurer()
 
-    def stim_index(self, qubit: Qubit):
+    def qubit_index(self, qubit: Qubit):
         # Get the stim index corresponding to this qubit, or create one if
         # it doesn't yet have one.
-        if qubit in self.stim_indexes:
-            index = self.stim_indexes[qubit]
+        if qubit in self.qubit_indexes:
+            index = self.qubit_indexes[qubit]
         else:
-            index = len(self.stim_indexes)
-            self.stim_indexes[qubit] = index
+            index = len(self.qubit_indexes)
+            self.qubit_indexes[qubit] = index
         return index
 
     def is_initialised(self, tick: int, qubit: Qubit):
@@ -104,9 +104,13 @@ class Circuit:
             instructions.append(instruction)
             if len(instructions) > 1:
                 # Only time a qubit can have multiple gates at the same tick
-                # is when they're all noise gates.
-                assert all(
+                # is when they're all noise gates or all Pauli product
+                # measurements.
+                all_noise = all(
                     [instruction.is_noise for instruction in instructions])
+                all_product_measurements = all(
+                    [instruction.name == 'MPP' for instruction in instructions])
+                assert all_noise or all_product_measurements
             # Add this to the set of qubits we've come across in the circuit.
             self.qubits.add(qubit)
 
@@ -198,14 +202,15 @@ class Circuit:
             repeat_circuit = stim.CircuitRepeatBlock(repeats, circuit)
             full_circuit.append(repeat_circuit)
 
-        # compile logical here 
-
         return full_circuit
 
     def instruction_to_stim(
             self, instruction: Instruction, circuit: stim.Circuit):
-        indexes = [self.stim_index(qubit) for qubit in instruction.qubits]
-        circuit.append(instruction.name, indexes, instruction.params)
+        if instruction.targets is not None:
+            targets = instruction.targets
+        else:
+            targets = [self.qubit_index(qubit) for qubit in instruction.qubits]
+        circuit.append(instruction.name, targets, instruction.params)
 
     def entered_repeat_block(self, tick: int, last_tick: int):
         # Return whether we've entered a repeat block between these two ticks.
@@ -223,10 +228,3 @@ class Circuit:
             return repeats
         else:
             return None
-
-
-
-
-
-
-

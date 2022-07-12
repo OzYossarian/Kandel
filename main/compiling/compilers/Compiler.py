@@ -3,10 +3,8 @@ from typing import List, Dict
 
 from main.building_blocks.Check import Check
 from main.building_blocks.Detector import Detector
-from main.building_blocks.Stabilizer import Stabilizer
 from main.building_blocks.logical.LogicalOperator import LogicalOperator
 from main.building_blocks.pauli.PauliProduct import PauliProduct
-from main.building_blocks.pauli.utils import stabilizers
 from main.compiling.Instruction import Instruction
 from main.QPUs.QPU import QPU
 from main.codes.Code import Code
@@ -14,11 +12,11 @@ from main.building_blocks.pauli.PauliLetter import PauliX, PauliZ, PauliY, Pauli
 from main.building_blocks.Qubit import Qubit
 from main.building_blocks.pauli.Pauli import Pauli
 from main.compiling.Circuit import Circuit
+from main.compiling.compilers.Determiner import Determiner
 from main.compiling.noise.models.NoNoise import NoNoise
 from main.compiling.noise.models.NoiseModel import NoiseModel
 from main.compiling.syndrome_extraction.extractors.SyndromeExtractor import SyndromeExtractor
 from main.enums import State
-from main.stabilizer_formalism.StabilizerGroup import StabilizerGroup
 
 
 class Compiler(ABC):
@@ -71,21 +69,32 @@ class Compiler(ABC):
         #  or something??)
         #    For now, make simplifying assumption that all final measurements
         #  are single qubit data measurements.
-        assert layers > 0
-        initial_detector_schedule, tick, circuit = self.compile_initialisation(
-            code, initial_states)
-        tick = self.compile_layer(
-            0, initial_detector_schedule, logical_observables,
-            tick, circuit, code)
+        initial_detector_schedules, tick, circuit = \
+            self.compile_initialisation(code, initial_states)
+        initial_layers = len(initial_detector_schedules)
+        # initial_layers is the number of layers in which 'lid-only' detectors
+        # could possibly exist. Put differently, it's one less than the max
+        # number of layers spanned by any detector.
+        if initial_layers > layers:
+            raise ValueError(
+                f'Requested that {layers} layer(s) are compiled, but code seems '
+                f'to take {initial_layers} layer(s) to set up! Please increase '
+                f'number of layers to compile')
 
-        # Can compile the remaining layers using a repeat block.
-        # TODO - No we can't! For codes whose logical observables are static,
-        #  or at least repeat periodically, we can. But this isn't generally
-        #  true for a floquet/dynamic code. So can we find a nice way of
-        #  detecting whether or not we can add a repeat block? Or rather,
-        #  a way of making the final Stim circuit more human readable - e.g.
-        #  by implementing a way of adding comments to the circuit?
-        layer = 1
+        # Compile these initial layers.
+        for layer, detector_schedule in enumerate(initial_detector_schedules):
+            tick = self.compile_layer(
+                layer, detector_schedule, logical_observables,
+                tick, circuit, code)
+
+        # TODO - No guarantees that everything now repeats every r rounds, for
+        #  any r - e.g. for a Floquet/dynamic code, the logical observable can
+        #  move around indefinitely without repeating. So can't use a repeat
+        #  block. So we'd really like a way of making the final Stim circuit
+        #  more human readable - e.g. by implementing a way of adding comments
+        #  to the circuit.
+        # Compile the remaining layers.
+        layer = initial_layers
         while layer < layers:
             tick = self.compile_layer(
                 layer, code.detector_schedule, logical_observables,
@@ -128,42 +137,13 @@ class Compiler(ABC):
         # we're on after all data qubits have been initialised.
         tick = self.initialize_qubits(initial_states, tick, circuit)
 
-        # In the first ever round, must remove non-deterministic detectors
-        initial_detector_schedule = self.deterministic_initial_detectors(
-            initial_states, code)
+        # In the first few rounds (or even layers), there might be some
+        # non-deterministic detectors that need removing.
+        determiner = Determiner()
+        layers, layer_detector_schedules = determiner.get_initial_detectors(
+                initial_states, self.state_init_instructions, code)
 
-        return initial_detector_schedule, tick, circuit
-
-    def deterministic_initial_detectors(
-            self, initial_states: Dict[Qubit, State], code: Code):
-        # Initialise the stabilizer group to be tracked. We will be checking
-        # whether the Pauli product learned by each detector commutes with
-        # everything in the stabilizer group.
-        generators = [
-            PauliProduct([Pauli(qubit, stabilizers[state])])
-            for qubit, state in initial_states.items()]
-        stabilizer_group = StabilizerGroup(generators)
-
-        initial_detector_schedule = [[] for _ in range(code.schedule_length)]
-        for round in range(code.schedule_length):
-            for detector in code.detector_schedule[round]:
-                assert detector.lid_end == round
-                if detector.floor_start < round <= detector.lid_start:
-                    # This detector should become a 'lid-only' detector in
-                    # the first round, unless it's non-deterministic.
-                    if stabilizer_group.commutes(detector.stabilizer):
-                        lid_only = Stabilizer(detector.lid, round)
-                        initial_detector_schedule[round].append(lid_only)
-                else:
-                    # This detector is always going to be comparing a floor
-                    # with a lid, so should always be deterministic.
-                    initial_detector_schedule[round].append(detector)
-            # Now add the checks from this round into the stabilizer group and
-            # repeat the process.
-            stabilizer_group.measure([
-                PauliProduct(check.paulis)
-                for check in code.check_schedule[round]])
-        return initial_detector_schedule
+        return layer_detector_schedules, tick, circuit
 
     @abstractmethod
     def add_ancilla_qubits(self, code):
@@ -268,10 +248,6 @@ class Compiler(ABC):
             self, final_measurements: List[Pauli],
             logical_observables: List[LogicalOperator], layer: int, tick: int,
             circuit: Circuit, code: Code):
-        # We consider this the start of a new round, so add corresponding
-        # noise if needed.
-        self.add_start_of_round_noise(tick - 1, circuit, code)
-
         # A single qubit measurement is just a weight-1 check, and writing
         # them as checks rather than Paulis fits them into the same framework
         # as other measurements.
@@ -298,7 +274,8 @@ class Compiler(ABC):
             circuit: Circuit, code: Code):
         final_detectors = []
         for detector in code.detectors:
-            if detector.is_open(relative_round=-1):
+            # TODO - this method doesn't capture all open detectors
+            if detector.has_open_top(relative_round=-1):
                 # This detector can potentially be 'finished off', if our
                 # final data qubit measurements are in the right bases.
                 detector_qubits = {

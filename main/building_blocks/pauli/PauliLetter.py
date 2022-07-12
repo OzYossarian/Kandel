@@ -54,6 +54,7 @@ class PauliLetter(DebugFriendly):
         return hash((self.letter, self.sign))
 
 
+PauliI = PauliLetter('I')
 PauliX = PauliLetter('X')
 PauliY = PauliLetter('Y')
 PauliZ = PauliLetter('Z')

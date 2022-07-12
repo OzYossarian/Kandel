@@ -23,7 +23,7 @@ class Stabilizer(Detector):
     def get_stabilizer(self):
         return self.face_product(self.lid)
 
-    def is_open(self, relative_round: int):
+    def has_open_top(self, relative_round: int):
         return False
 
     def floor_window(self, end):

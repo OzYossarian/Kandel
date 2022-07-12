@@ -99,7 +99,9 @@ class Measurer:
         # Can now actually create corresponding Stim instructions.
         instructions = []
         for detector, round in detectors:
-            targets = self.get_detector_targets(detector, round)
+            targets = [
+                self.measurement_target(check, round + rounds_ago)
+                for rounds_ago, check in detector.checks]
             instructions.append(stim.CircuitInstruction('DETECTOR', targets))
         for observable, checks in observable_updates.items():
             targets = [
@@ -159,3 +161,13 @@ class Measurer:
             index = len(self.observable_indexes)
             self.observable_indexes[observable] = index
         return index
+
+    def reset_triggers(self):
+        # Leave alone information about which measurement instructions
+        # correspond to which checks in which rounds, but remove all info
+        # about what these measurements trigger.
+        self.triggers = defaultdict(list)
+        self.measurement_numbers = {}
+        self.triggers = defaultdict(list)
+        self.detectors_built = defaultdict(bool)
+        self.total_measurements = 0

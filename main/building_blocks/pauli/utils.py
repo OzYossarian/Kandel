@@ -3,7 +3,7 @@ from functools import reduce
 from typing import Iterable
 
 from main.building_blocks.pauli.Pauli import Pauli
-from main.building_blocks.pauli.PauliLetter import PauliZ, PauliLetter, PauliX, PauliY
+from main.building_blocks.pauli.PauliLetter import PauliZ, PauliLetter, PauliX, PauliY, PauliI
 from main.building_blocks.pauli.PauliProduct import PauliProduct
 from main.enums import State
 
@@ -24,8 +24,10 @@ def compose(paulis: Iterable[Pauli]):
     composed = {
         qubit: reduce(lambda x, y: x.compose(y), letters)
         for qubit, letters in grouped_paulis.items()}
-    # Return these as Paulis again
-    result = [Pauli(qubit, letter) for qubit, letter in composed.items()]
+    # Return these as Paulis again, omitting identities.
+    result = [
+        Pauli(qubit, letter) for qubit, letter in composed.items()
+        if letter != PauliI]
     return result
 
 
