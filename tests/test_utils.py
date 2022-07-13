@@ -1,11 +1,11 @@
 import random
 from collections import Counter
 
-from main.utils.DebugFriendly import DebugFriendly
+from main.utils.NiceRepr import NiceRepr
 from main.utils.utils import modulo_duplicates
 
 
-class TestDebugFriendly(DebugFriendly):
+class TestDebugFriendly(NiceRepr):
     def __init__(self, something):
         self.something = something
         super().__init__(['something'])

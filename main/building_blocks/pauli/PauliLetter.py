@@ -1,12 +1,12 @@
 from __future__ import annotations
 from main.Colour import Colour, Red, Blue, Green, Black
-from main.utils.DebugFriendly import DebugFriendly
+from main.utils.NiceRepr import NiceRepr
 
 
 # TODO - use stim.PauliString stuff instead? Has many operations built-in.
 #  Could then maybe do away with all instances of using PauliX (say) as a
 #  key in a dictionary? (For 'could', maybe read 'should'?)
-class PauliLetter(DebugFriendly):
+class PauliLetter(NiceRepr):
     def __init__(self, letter: str, sign: complex = 1):
         self.letter = letter
         self.sign = sign

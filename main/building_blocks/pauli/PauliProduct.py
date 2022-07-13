@@ -2,10 +2,10 @@ from typing import List
 
 from main.building_blocks.pauli.Pauli import Pauli
 from main.building_blocks.pauli.PauliWord import PauliWord
-from main.utils.DebugFriendly import DebugFriendly
+from main.utils.NiceRepr import NiceRepr
 
 
-class PauliProduct(DebugFriendly):
+class PauliProduct(NiceRepr):
     def __init__(self, paulis: List[Pauli]):
         """ Class representing a tensor product of Paulis.
         """

@@ -3,10 +3,10 @@ from typing import List, Tuple
 import stim
 
 from main.building_blocks.Qubit import Qubit
-from main.utils.DebugFriendly import DebugFriendly
+from main.utils.NiceRepr import NiceRepr
 
 
-class Instruction(DebugFriendly):
+class Instruction(NiceRepr):
     def __init__(
             self, qubits: List[Qubit], name: str,
             params: Tuple[float, ...] = (), is_measurement: bool = False,

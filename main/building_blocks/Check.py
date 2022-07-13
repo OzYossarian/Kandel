@@ -3,10 +3,10 @@ from typing import List
 from main.Colour import Colour
 from main.building_blocks.pauli.Pauli import Pauli
 from main.building_blocks.Qubit import Coordinates
-from main.utils.DebugFriendly import DebugFriendly
+from main.utils.NiceRepr import NiceRepr
 
 
-class Check(DebugFriendly):
+class Check(NiceRepr):
     def __init__(
             self, paulis: List[Pauli], anchor: Coordinates = None,
             colour: Colour = None):

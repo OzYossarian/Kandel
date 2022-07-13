@@ -2,10 +2,10 @@ from functools import reduce
 from typing import List
 
 from main.building_blocks.pauli.PauliLetter import PauliLetter
-from main.utils.DebugFriendly import DebugFriendly
+from main.utils.NiceRepr import NiceRepr
 
 
-class PauliWord(DebugFriendly):
+class PauliWord(NiceRepr):
     def __init__(self, word: str, sign: complex = 1):
         """ PauliWord is more abstract than a PauliProduct, in that it doesn't
         need to specify any actual qubits that it applies to. The relationship

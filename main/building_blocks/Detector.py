@@ -4,11 +4,11 @@ from typing import List, Tuple
 from main.building_blocks.Check import Check
 from main.building_blocks.pauli.PauliProduct import PauliProduct
 from main.building_blocks.pauli.utils import compose
-from main.utils.DebugFriendly import DebugFriendly
+from main.utils.NiceRepr import NiceRepr
 from main.utils.utils import modulo_duplicates
 
 
-class Detector(DebugFriendly):
+class Detector(NiceRepr):
     def __init__(
             self, floor: List[Tuple[int, Check]],
             lid: List[Tuple[int, Check]], end: int):
@@ -44,7 +44,7 @@ class Detector(DebugFriendly):
 
         # TODO - make DebugFriendly class accept dot notation,
         #  e.g. should allow stabilizer.word to be passed in.
-        super().__init__(['stabilizer', 'floor', 'lid'])
+        super().__init__(['stabilizer.word', 'floor', 'lid'])
 
     def get_stabilizer(self):
         floor_product = self.face_product(self.floor)
