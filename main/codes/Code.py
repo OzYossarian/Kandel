@@ -4,7 +4,7 @@ from collections import defaultdict
 from typing import Dict, Any, List, Set
 from typing import TYPE_CHECKING
 
-from main.building_blocks.Detector import Detector
+from main.building_blocks.detectors.Drum import Drum
 from main.building_blocks.logical.LogicalQubit import LogicalQubit
 
 if TYPE_CHECKING:
@@ -20,7 +20,7 @@ class Code:
     def __init__(
             self, data_qubits: Dict[Coordinates, Qubit] | List[Qubit],
             check_schedule: List[List[Check]] = None,
-            detector_schedule: List[List[Detector]] = None,
+            detector_schedule: List[List[Drum]] = None,
             logical_qubits: List[LogicalQubit] = None,
             distance: int = None):
         self.data_qubits = data_qubits
@@ -36,17 +36,17 @@ class Code:
         # Allows for a code to be partially instantiated but then for
         # schedule and detector to be set later.
         self.check_schedule: List[List[Check]] | None = None
-        self.detector_schedule: List[List[Detector]] | None = None
+        self.detector_schedule: List[List[Drum]] | None = None
         self.schedule_length: int | None = None
         self.checks: Set[Check] | None = None
-        self.detectors: Set[Detector] | None = None
+        self.detectors: Set[Drum] | None = None
 
         if check_schedule:
             self.set_schedules(check_schedule, detector_schedule)
 
     def set_schedules(
             self, check_schedule: List[List[Check]],
-            detector_schedule: List[List[Detector]] = None):
+            detector_schedule: List[List[Drum]] = None):
         self.check_schedule = check_schedule
         self.schedule_length = len(check_schedule)
         self.checks = set(
@@ -56,7 +56,7 @@ class Code:
             # Default case: each detector is made of one check measured
             # twice in consecutive rounds.
             self.detector_schedule = [[
-                Detector([(-1, check)], [(0, check)], 0)
+                Drum([(-1, check)], [(0, check)], 0)
                 for check in self.check_schedule[0]]]
         else:
             # If the length of the schedule is more than 1, force the user to

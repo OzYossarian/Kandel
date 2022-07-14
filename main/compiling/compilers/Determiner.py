@@ -4,7 +4,7 @@ import stim
 
 from main.building_blocks.Check import Check
 from main.building_blocks.Qubit import Qubit
-from main.building_blocks.Stabilizer import Stabilizer
+from main.building_blocks.detectors.Stabilizer import Stabilizer
 from main.building_blocks.pauli.PauliProduct import PauliProduct
 from main.codes.Code import Code
 from main.compiling.Circuit import Circuit
@@ -59,7 +59,7 @@ class Determiner:
                 # in the actual main circuit we're compiling. If not, can't.
                 for detector in code.detector_schedule[relative_round]:
                     assert detector.lid_end == relative_round
-                    if detector.has_open_bottom(0, shift):
+                    if detector.has_open_floor(0, layer, code.schedule_length):
                         # This detector should become a 'lid-only' detector in
                         # this layer, unless it's non-deterministic.
                         lid_only = Stabilizer(detector.lid, relative_round)
@@ -74,8 +74,7 @@ class Determiner:
 
                     # Remove this detector from the little test circuit so that in
                     # the next run of this for loop Stim is only considering the
-                    # next detector. Easiest way to do this is just reset the whole
-                    # measurer.
+                    # next detector.
                     circuit.measurer.reset_triggers()
 
                 # Increase the tick before the next round

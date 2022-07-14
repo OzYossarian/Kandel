@@ -2,7 +2,8 @@ from abc import abstractmethod, ABC
 from typing import List, Dict
 
 from main.building_blocks.Check import Check
-from main.building_blocks.Detector import Detector
+from main.building_blocks.detectors.Detector import Detector
+from main.building_blocks.detectors.Drum import Drum
 from main.building_blocks.logical.LogicalOperator import LogicalOperator
 from main.building_blocks.pauli.PauliProduct import PauliProduct
 from main.compiling.Instruction import Instruction
@@ -112,17 +113,6 @@ class Compiler(ABC):
         # TODO - no idea yet how to glue together detectors of different codes
         #  - e.g. in a lattice surgery protocol, when we have separate codes,
         #  then a merged code, then separate codes again.
-        # TODO - this method should take in an 'initial_logical_states'
-        #  parameter, which is a dictionary whose keys are logical qubits and
-        #  values are states. This should then be used to determine which
-        #  states to initialise the *individual* data qubits to. (Currently
-        #  the initial data qubit states are defined when the code is defined,
-        #  but this seems logically wrong).
-        # TODO - definition of code can perhaps flag in some way which checks
-        #  will be deterministic in the first round when initialised in a
-        #  particular logical state. Then we have a way of building only
-        #  deterministic detectors in round one (in later rounds they should
-        #  all be deterministic).
 
         # For now, always start a new circuit from scratch. Later, allow
         # compilation onto an existing circuit (e.g. in a lattice surgery or
@@ -263,28 +253,28 @@ class Compiler(ABC):
 
         # Now try to use these as lids for any detectors that at this point
         # have a floor but no lid.
-        self.compile_final_detectors(final_checks, round, circuit, code)
+        self.compile_final_detectors(final_checks, layer, circuit, code)
 
         # Finally, define the logical observables we want to measure
         self.compile_initial_logical_observables(
             logical_observables, final_checks, round, circuit)
 
     def compile_final_detectors(
-            self, final_checks: Dict[Qubit, Check], round: int,
+            self, final_checks: Dict[Qubit, Check], layer: int,
             circuit: Circuit, code: Code):
         final_detectors = []
+        round = layer * code.schedule_length
         for detector in code.detectors:
-            # TODO - this method doesn't capture all open detectors
-            if detector.has_open_top(relative_round=-1):
+            if detector.has_open_lid(round, layer, code.schedule_length):
                 # This detector can potentially be 'finished off', if our
                 # final data qubit measurements are in the right bases.
                 detector_qubits = {
-                    pauli.qubit for pauli in detector.stabilizer.paulis}
+                    pauli.qubit for pauli in detector.floor_product.paulis}
                 measurements = [
                     final_checks[data_qubit].paulis[0]
                     for data_qubit in detector_qubits]
                 measurement_product = PauliProduct(measurements)
-                if detector.stabilizer == measurement_product:
+                if detector.floor_product.equal_up_to_sign(measurement_product):
                     # Can make a lid for this detector!
                     floor = [
                         (t + detector.lid_end, check)
@@ -292,7 +282,7 @@ class Compiler(ABC):
                     lid = [
                         (0, final_checks[qubit])
                         for qubit in detector_qubits]
-                    final_detectors.append(Detector(floor, lid, 0))
+                    final_detectors.append(Drum(floor, lid, 0))
 
         # Finally, compile these detectors to the circuit.
         circuit.measurer.add_detectors(final_detectors, round)

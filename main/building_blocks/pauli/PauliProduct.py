@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from typing import List
 
 from main.building_blocks.pauli.Pauli import Pauli
@@ -15,12 +17,17 @@ class PauliProduct(NiceRepr):
 
         # Define the following extra properties for use in comparisons.
         sorted_paulis = sorted(paulis, key=lambda pauli: pauli.qubit.coords)
-        self.qubits = tuple(set(pauli.qubit for pauli in sorted_paulis))
+        self.qubits = tuple(pauli.qubit for pauli in sorted_paulis)
         sorted_letters = [pauli.letter for pauli in sorted_paulis]
         self.sorted_word = PauliWord.from_letters(sorted_letters)
 
         repr_keys = ['word', 'paulis']
         super().__init__(repr_keys)
+
+    def equal_up_to_sign(self, other: PauliProduct):
+        return \
+            self.qubits == other.qubits and \
+            self.sorted_word.word == other.sorted_word.word
 
     def __eq__(self, other):
         return \

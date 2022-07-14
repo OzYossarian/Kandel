@@ -4,7 +4,7 @@ from typing import List, Iterable
 import stim
 
 from main.building_blocks.Check import Check
-from main.building_blocks.Detector import Detector
+from main.building_blocks.detectors.Detector import Detector
 from main.building_blocks.logical.LogicalOperator import LogicalOperator
 from main.compiling.Instruction import Instruction
 
@@ -102,6 +102,10 @@ class Measurer:
             targets = [
                 self.measurement_target(check, round + rounds_ago)
                 for rounds_ago, check in detector.checks]
+            if detector.negate:
+                # TODO! Need to flip whatever the detector result is.
+                #  Can't see how to do this in Stim!
+                pass
             instructions.append(stim.CircuitInstruction('DETECTOR', targets))
         for observable, checks in observable_updates.items():
             targets = [
@@ -110,7 +114,6 @@ class Measurer:
             index = self.observable_index(observable)
             instructions.append(stim.CircuitInstruction(
                 'OBSERVABLE_INCLUDE', targets, [index]))
-
         # Finally, return these instructions to the circuit to compile.
         return instructions
 
@@ -134,17 +137,6 @@ class Measurer:
                 self.detectors_built[measurement_numbers] = True
                 return True
         return False
-
-    def get_detector_targets(self, detector: Detector, round: int):
-        # If we've reached this point it should be that every check in the
-        # detector has been measured already.
-        assert all([
-            (check, round + rounds_ago) in self.measurement_numbers
-            for rounds_ago, check in detector.checks])
-        targets = [
-            self.measurement_target(check, round + rounds_ago)
-            for rounds_ago, check in detector.checks]
-        return targets
 
     def measurement_target(self, check: Check, round: int):
         measurements_ago = \

@@ -1,7 +1,7 @@
 from typing import List, Tuple
 
 from main.building_blocks.Check import Check
-from main.building_blocks.Detector import Detector
+from main.building_blocks.detectors.Detector import Detector
 
 
 # TODO - could rename Detector to Drum, and make a new abstract base class
@@ -19,12 +19,4 @@ class Stabilizer(Detector):
           This class represents this sort of detector - ones that are in fact
         just measuring an existing known stabilizer."""
         super().__init__([], lid, end)
-
-    def get_stabilizer(self):
-        return self.face_product(self.lid)
-
-    def has_open_top(self, relative_round: int):
-        return False
-
-    def floor_window(self, end):
-        return None, None
+        self.negate = False

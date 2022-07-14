@@ -3,7 +3,7 @@ from typing import List, Tuple
 
 from main.Colour import Colour, Red, Blue, Green
 from main.building_blocks.Check import Check
-from main.building_blocks.Detector import Detector
+from main.building_blocks.detectors.Drum import Drum
 from main.building_blocks.logical.LogicalOperator import LogicalOperator
 from main.building_blocks.logical.LogicalQubit import LogicalQubit
 from main.building_blocks.pauli.Pauli import Pauli
@@ -255,18 +255,7 @@ class TicTacToeCode(ToricHexagonalCode, FloquetCode):
             for letter in self.letters:
                 blueprints = self.plan_detectors_of_type(
                     colour, letter, stabilizers, relearned)
-                for blueprint in blueprints:
-                    # For a given colour, it's possible that different
-                    # detectors in fact just compare the same set of checks,
-                    # so we only want to take 'unique' ones.
-                    # TODO - do we!?!?! What happens if we duplicate them!?
-                    #  Would be lovely if Stim already handles it...
-                    # unique = not any(
-                    #     x.equivalent_to(blueprint)
-                    #     for x in detector_blueprints[colour])
-                    # if unique:
-                    #     detector_blueprints[colour].append(blueprint)
-                    detector_blueprints[colour].append(blueprint)
+                detector_blueprints[colour].extend(blueprints)
 
         return detector_blueprints
 
@@ -338,7 +327,7 @@ class TicTacToeCode(ToricHexagonalCode, FloquetCode):
         return detector_blueprints
 
     def create_detectors(self, detector_blueprints, borders):
-        detectors: List[List[Detector]] = [[] for _ in self.tic_tac_toe_route]
+        detectors: List[List[Drum]] = [[] for _ in self.tic_tac_toe_route]
         # Loop through all red plaquettes, then green, then blue.
         for colour in self.colours:
             anchors = self.colourful_plaquette_anchors[colour]
@@ -352,7 +341,7 @@ class TicTacToeCode(ToricHexagonalCode, FloquetCode):
                     for (t, edge_colour, edge_letter) in blueprint.lid:
                         checks = borders[anchor][(edge_colour, edge_letter)]
                         lid.extend((t, check) for check in checks)
-                    detector = Detector(floor, lid, blueprint.learned)
+                    detector = Drum(floor, lid, blueprint.learned)
                     detectors[blueprint.learned].append(detector)
 
         return detectors
