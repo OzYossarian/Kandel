@@ -1,9 +1,10 @@
 from collections import defaultdict
-from typing import List, Iterable
+from typing import List, Iterable, Tuple
 
 import stim
 
 from main.building_blocks.Check import Check
+from main.building_blocks.Qubit import Coordinates
 from main.building_blocks.detectors.Detector import Detector
 from main.building_blocks.logical.LogicalOperator import LogicalOperator
 from main.compiling.Instruction import Instruction
@@ -66,11 +67,14 @@ class Measurer:
         for check in checks:
             self.triggers[(check, round)].append(observable)
 
-    def measurements_to_stim(self, measurements: List[Instruction]):
+    def measurements_to_stim(
+            self, measurements: List[Instruction],
+            shift_coords: Tuple[Coordinates] | None):
         # Measurements can potentially trigger detectors being built or
         # observables being updated.
         detectors = []
         observable_updates = defaultdict(list)
+        track_coords = shift_coords is not None
 
         for measurement in measurements:
             # First record the measurement numbers
@@ -99,14 +103,8 @@ class Measurer:
         # Can now actually create corresponding Stim instructions.
         instructions = []
         for detector, round in detectors:
-            targets = [
-                self.measurement_target(check, round + rounds_ago)
-                for rounds_ago, check in detector.checks]
-            if detector.negate:
-                # TODO! Need to flip whatever the detector result is.
-                #  Can't see how to do this in Stim!
-                pass
-            instructions.append(stim.CircuitInstruction('DETECTOR', targets))
+            instructions.append(
+                self.detector_to_stim(detector, round, track_coords))
         for observable, checks in observable_updates.items():
             targets = [
                 self.measurement_target(check, round)
@@ -115,7 +113,33 @@ class Measurer:
             instructions.append(stim.CircuitInstruction(
                 'OBSERVABLE_INCLUDE', targets, [index]))
         # Finally, return these instructions to the circuit to compile.
+        if len(instructions) > 0 and shift_coords is not None:
+            # TODO - this is a temporary workaround - I initially wanted to
+            #  avoid the Circuit and Measurer having any concept of 'rounds',
+            #  but now we have an end of round instruction SHIFT_COORDS that
+            #  needs compiling. Need to decide how this will interact with
+            #  the de-idler in particular.
+            instructions.append(stim.CircuitInstruction(
+                'SHIFT_COORDS', (), shift_coords))
         return instructions
+
+    def detector_to_stim(
+            self, detector: Detector, round: int, track_coords: bool):
+        targets = [
+            self.measurement_target(check, round + rounds_ago)
+            for rounds_ago, check in detector.checks]
+        if detector.negate:
+            # TODO! Need to flip whatever the detector result is.
+            #  Can't see how to do this in Stim!
+            pass
+        # Anchor needs to now be a tuple for Stim to accept it.
+        if track_coords and isinstance(detector.anchor, tuple):
+            anchor = detector.anchor
+        elif track_coords:
+            anchor = (detector.anchor,)
+        else:
+            anchor = ()
+        return stim.CircuitInstruction('DETECTOR', targets, anchor)
 
     def can_build_detector(self, detector: Detector, round: int):
         # Only build this detector if all the checks in the final slice have

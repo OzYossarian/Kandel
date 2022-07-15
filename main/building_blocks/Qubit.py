@@ -1,7 +1,7 @@
 from typing import Tuple
 from main.utils.NiceRepr import NiceRepr
 
-Coordinates = Tuple[int, ...] | int
+Coordinates = Tuple[int | float, ...] | int | float
 
 
 class Qubit(NiceRepr):

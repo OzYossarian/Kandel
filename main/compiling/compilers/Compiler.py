@@ -242,7 +242,8 @@ class Compiler(ABC):
         # them as checks rather than Paulis fits them into the same framework
         # as other measurements.
         final_checks = {
-            pauli.qubit: Check([pauli]) for pauli in final_measurements}
+            pauli.qubit: Check([pauli], pauli.qubit.coords)
+            for pauli in final_measurements}
 
         # First, compile instructions for actually measuring the qubits.
         round = layer * code.schedule_length

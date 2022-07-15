@@ -59,6 +59,9 @@ class Determiner:
                 # in the actual main circuit we're compiling. If not, can't.
                 for detector in code.detector_schedule[relative_round]:
                     assert detector.lid_end == relative_round
+                    # TODO - this is missing some possible detectors!
+                    #  Specifically, cases where the qubit initialisation
+                    #  serves as the base of the whole detector.
                     if detector.has_open_floor(0, layer, code.schedule_length):
                         # This detector should become a 'lid-only' detector in
                         # this layer, unless it's non-deterministic.
@@ -122,7 +125,7 @@ class Determiner:
     def is_deterministic(
             self, stabilizer: Stabilizer, circuit: Circuit, round: int):
         circuit.measurer.add_detectors([stabilizer], round)
-        stim_circuit = circuit.to_stim(NoNoise())
+        stim_circuit = circuit.to_stim(NoNoise(), track_coords=False)
         try:
             stim_circuit.detector_error_model(
                 approximate_disjoint_errors=True)

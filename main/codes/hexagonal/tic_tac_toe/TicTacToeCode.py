@@ -124,7 +124,7 @@ class TicTacToeCode(ToricHexagonalCode, FloquetCode):
         corners = self.get_neighbours(anchor)
         for j in range(3):
             u, v = corners[2 * j], corners[2 * j + 1]
-            midpoint = mid(u, v)
+            midpoint = mid([u, v])
             # The edge (u, v) is a colours[i+1]-check, shared
             # between this plaquette of colour colours[i] and a
             # neighbouring one of colour colours[i+2]. The

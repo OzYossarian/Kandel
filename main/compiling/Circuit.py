@@ -150,8 +150,19 @@ class Circuit:
                         noise = noise_model.idling.instruction([qubit])
                         self.add_instruction(tick + 1, noise)
 
-    def to_stim(self, noise_model: NoiseModel):
-        # First, go through the circuit and add idling noise.
+    def to_stim(self, noise_model: NoiseModel, track_coords: bool = True):
+        # Figure out which temporal dimension to shift if tracking coords.
+        if track_coords:
+            qubit_dimensions = {
+                len(qubit.coords) if isinstance(qubit.coords, tuple) else 1
+                for qubit in self.qubits}
+            assert len(qubit_dimensions) == 1
+            dimension = qubit_dimensions.pop()
+            shift_coords = tuple([0 for _ in range(dimension)] + [1])
+        else:
+            shift_coords = None
+
+        # Go through the circuit and add idling noise.
         self.add_idle_noise(noise_model)
         # Track which instructions have been compiled to stim.
         compiled = defaultdict(bool)
@@ -162,6 +173,11 @@ class Circuit:
 
         most_recent_tick = -1
         final_tick = max(self.instructions.keys())
+
+        if track_coords:
+            for qubit in sorted(self.qubits, key=lambda qubit: qubit.coords):
+                index = self.qubit_index(qubit)
+                circuit.append('QUBIT_COORDS', [index], qubit.coords)
 
         for tick, qubit_instructions in sorted(self.instructions.items()):
             # Check whether we need to close a repeat block
@@ -187,7 +203,7 @@ class Circuit:
             # further instructions - e.g. building detectors, adding checks
             # into logical observables, etc.
             further_instructions = \
-                self.measurer.measurements_to_stim(measurements)
+                self.measurer.measurements_to_stim(measurements, shift_coords)
             for instruction in further_instructions:
                 circuit.append(instruction)
 

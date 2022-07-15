@@ -4,6 +4,7 @@ from statistics import mean
 from typing import List, Tuple, Hashable, Iterable
 from pathlib import Path
 
+from main.building_blocks.Qubit import Coordinates
 from main.building_blocks.pauli.Pauli import Pauli
 
 
@@ -13,8 +14,11 @@ def output_path() -> Path:
     return output
 
 
-def mid(a: Tuple[int, ...], b: Tuple[int, ...]) -> Tuple[int | float, ...]:
-    return tuple(map(mean, zip(a, b)))
+def mid(coords: Iterable[Coordinates]) -> Coordinates:
+    if all(isinstance(coord, tuple) for coord in coords):
+        return tuple(map(mean, zip(*coords)))
+    else:
+        return mean(coords)
 
 
 def xor(a: bool, b: bool) -> bool:

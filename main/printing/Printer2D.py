@@ -61,7 +61,7 @@ class Printer2D(Printer):
 
     def _print_weight_2_check(self, check: Check, printout: Printout):
         paulis = check.paulis  # Quick shorthand
-        midpoint = mid(paulis[0].qubit.coords, paulis[1].qubit.coords)
+        midpoint = mid([paulis[0].qubit.coords, paulis[1].qubit.coords])
         midpoint = self.scale(midpoint, printout.offset)
         anchor = self.scale(check.anchor, printout.offset)
 
@@ -85,11 +85,12 @@ class Printer2D(Printer):
 
     def _print_higher_weight_check(self, check: Check, printout: Printout, weight: int):
         paulis = check.paulis  # Quick shorthand
-        mid_next = mid(paulis[0].qubit.coords, paulis[-1].qubit.coords)
+        mid_next = mid([paulis[0].qubit.coords, paulis[-1].qubit.coords])
         for i in range(weight):
             mid_last = mid_next
-            mid_next = mid(paulis[i].qubit.coords,
-                           paulis[(i + 1) % weight].qubit.coords)
+            mid_next = mid([
+                paulis[i].qubit.coords,
+                paulis[(i + 1) % weight].qubit.coords])
             polygon = (check.anchor, mid_last, paulis[i].qubit.coords, mid_next)
             polygon = tuple(
                 self.scale(coords, printout.offset)
