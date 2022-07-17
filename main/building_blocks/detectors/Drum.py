@@ -40,32 +40,37 @@ class Drum(Detector):
         self.repr_keys.extend(['floor_product.word', 'floor'])
 
     def has_open_lid(self, round: int, layer: int, schedule_length: int):
-        # TODO - this method is used to finish logical computations fault
-        #  tolerantly, by reconstructing stabilizers from destructive final
-        #  measurements. Currently only lets one build the whole lid from
-        #  these measurements. But we should also allow these measurements
-        #  to be used only as the final layer of a lid.
         # A detector has an open lid if its floor has been fully measured but
         # its lid has not. This returns whether this detector, placed in the
         # given layer, has an open lid at the point immediately AFTER the
-        # given round.
+        # given round. If the lid is open, we also return the checks that have
+        # been measured so far in this detector.
         shift = layer * schedule_length
         lid_end = self.lid_end + shift
         if lid_end <= round:
             shift += schedule_length
-
-        lid_end = self.lid_end + shift
+            lid_end = self.lid_end + shift
         floor_end = self.floor_end + shift
-        return floor_end <= round < lid_end
 
-    def has_open_floor(self, round: int, layer: int, schedule_length: int):
-        # A detector placed in the given layer has an open floor if its entire
-        # lid lies on or above this round, but not all of its floor does.
+        open_lid = floor_end <= round < lid_end
+        if open_lid:
+            checks = [
+                (t, check) for t, check in self.floor + self.lid
+                if t + lid_end <= round]
+        else:
+            checks = None
+        return open_lid, checks
+
+    def checks_at_or_after(
+            self, round: int, layer: int, schedule_length: int):
+
         shift = layer * schedule_length
         lid_end = self.lid_end + shift
         if lid_end < round:
             shift += schedule_length
+            lid_end = self.lid_end + shift
 
-        floor_start = self.floor_start + shift
-        lid_start = self.lid_start + shift
-        return floor_start < round <= lid_start
+        checks = [
+            (t, check) for t, check in self.floor + self.lid
+            if t + lid_end >= round]
+        return checks

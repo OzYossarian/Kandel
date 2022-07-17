@@ -1,6 +1,6 @@
 from main.QPUs.SquareLatticeQPU import SquareLatticeQPU
 from main.building_blocks.pauli.Pauli import Pauli
-from main.building_blocks.pauli.PauliLetter import PauliZ
+from main.building_blocks.pauli.PauliLetter import PauliZ, PauliX
 from main.codes.RepetitionCode import RepetitionCode
 from main.codes.RotatedSurfaceCode import RotatedSurfaceCode
 from main.codes.hexagonal.TriangularColourCode import TriangularColourCode
@@ -56,39 +56,43 @@ capacity_pure_rsc_compiler = AncillaPerCheckCompiler(code_capacity_noise, pure_r
 # noiseless_pure_fcc_circuit = noiseless_pure_trivial_compiler.compile_code(fcc, 2)
 
 fcc_qubits = list(fcc.data_qubits.values())
-fcc_initials = {qubit: State.Zero for qubit in fcc_qubits}
-fcc_finals = [Pauli(qubit, PauliZ) for qubit in fcc_qubits]
-fcc_logicals = [fcc.logical_qubits[0].z]
+fcc_initials = {qubit: State.Plus for qubit in fcc_qubits}
+fcc_finals = [Pauli(qubit, PauliX) for qubit in fcc_qubits]
+fcc_logicals = [fcc.logical_qubits[1].x]
 phenom_fcc_circuit = phenom_pure_trivial_compiler.compile_code(
     fcc, 2, fcc_initials, fcc_finals, fcc_logicals)
 
-# hcc_qubits = list(hcc.data_qubits.values())
-# hcc_initials = {qubit: State.Zero for qubit in hcc_qubits}
-# hcc_finals = [Pauli(qubit, PauliZ) for qubit in hcc_qubits]
-# hcc_logicals = [hcc.logical_qubits[0].z]
-# phenom_hcc_circuit = phenom_pure_trivial_compiler.compile_code(
-#     hcc, 4, hcc_initials, hcc_finals, hcc_logicals)
+hcc_qubits = list(hcc.data_qubits.values())
+hcc_initials = {qubit: State.Plus for qubit in hcc_qubits}
+hcc_finals = [Pauli(qubit, PauliX) for qubit in hcc_qubits]
+hcc_logicals = [hcc.logical_qubits[0].x]
+phenom_hcc_circuit = phenom_pure_trivial_compiler.compile_code(
+    hcc, 4, hcc_initials, hcc_finals, hcc_logicals)
 #
-# rsc_qubits = list(rsc.data_qubits.values())
-# rsc_initials = {qubit: State.Zero for qubit in rsc_qubits}
-# rsc_finals = [Pauli(qubit, PauliZ) for qubit in rsc_qubits]
-# rsc_logicals = [rsc.logical_qubits[0].z]
-# phenom_rsc_circuit = phenom_pure_rsc_compiler.compile_code(
-#     rsc, 2, rsc_initials, rsc_finals, rsc_logicals)
-#
-# rep_qubits = list(rep_code.data_qubits.values())
-# rep_initials = {qubit: State.Zero for qubit in rep_qubits}
-# rep_finals = [Pauli(qubit, PauliZ) for qubit in rep_qubits]
-# rep_logicals = [rep_code.logical_qubits[0].z]
-# phenom_rep_circuit = phenom_pure_trivial_compiler.compile_code(
-#     rep_code, 2, rep_initials, rep_finals, rep_logicals)
+rsc_qubits = list(rsc.data_qubits.values())
+rsc_initials = {qubit: State.Zero for qubit in rsc_qubits}
+rsc_finals = [Pauli(qubit, PauliZ) for qubit in rsc_qubits]
+rsc_logicals = [rsc.logical_qubits[0].z]
+phenom_rsc_circuit = phenom_pure_rsc_compiler.compile_code(
+    rsc, 2, rsc_initials, rsc_finals, rsc_logicals)
+
+rep_qubits = list(rep_code.data_qubits.values())
+rep_initials = {qubit: State.Zero for qubit in rep_qubits}
+rep_finals = [Pauli(qubit, PauliZ) for qubit in rep_qubits]
+rep_logicals = [rep_code.logical_qubits[0].z]
+phenom_rep_circuit = phenom_pure_trivial_compiler.compile_code(
+    rep_code, 2, rep_initials, rep_finals, rep_logicals)
 
 # Printing
-# print(phenom_rep_circuit)
-# print(phenom_rsc_circuit)
+print(phenom_rep_circuit)
+print()
+print(phenom_rsc_circuit)
+# print()
 # print(capacity_rsc_circuit)
-# print(phenom_fcc_circuit)
-# print(phenom_hcc_circuit)
+print()
+print(phenom_fcc_circuit)
+print()
+print(phenom_hcc_circuit)
 
 # Raw sampling
 # raw_sampler = noiseless_pure_fcc_circuit.compile_sampler()
@@ -99,6 +103,8 @@ phenom_fcc_circuit = phenom_pure_trivial_compiler.compile_code(
 # print(fcc_detector_sampler.sample(shots=1))
 
 # # Detector error models
-# model = phenom_rsc_circuit.detector_error_model(
+# model = phenom_fcc_circuit.detector_error_model(
 #     approximate_disjoint_errors=True)
-# print(repr(model))
+# model = phenom_hcc_circuit.detector_error_model(
+#     approximate_disjoint_errors=True)
+# print(model)

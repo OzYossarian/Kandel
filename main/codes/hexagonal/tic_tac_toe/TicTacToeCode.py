@@ -479,9 +479,14 @@ class TicTacToeCode(ToricHexagonalCode, FloquetCode):
         # those in their support (i.e. not horizontal ones).
 
         def intersect(check, operator):
+            # It's possible for the Paulis that make up the operator to
+            # contain an identity Pauli with some sign - only consider checks
+            # that touch the operator at a non-identity Pauli to be
+            # intersecting.
             check_qubits = {pauli.qubit for pauli in check.paulis}
-            operator_qubits = {pauli.qubit for pauli in operator.paulis}
-            return len(check_qubits.intersection(operator_qubits)) > 0
+            return any(
+                pauli.letter.letter != 'I' and pauli.qubit in check_qubits
+                for pauli in operator.paulis)
 
         def is_horizontal(check):
             y_coords = [pauli.qubit.coords[1] for pauli in check.paulis]

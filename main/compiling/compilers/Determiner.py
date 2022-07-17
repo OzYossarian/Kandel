@@ -59,19 +59,18 @@ class Determiner:
                 # in the actual main circuit we're compiling. If not, can't.
                 for detector in code.detector_schedule[relative_round]:
                     assert detector.lid_end == relative_round
-                    # TODO - this is missing some possible detectors!
-                    #  Specifically, cases where the qubit initialisation
-                    #  serves as the base of the whole detector.
-                    if detector.has_open_floor(0, layer, code.schedule_length):
-                        # This detector should become a 'lid-only' detector in
-                        # this layer, unless it's non-deterministic.
-                        lid_only = Stabilizer(detector.lid, relative_round)
-                        if self.is_deterministic(lid_only, circuit, round):
-                            layer_detector_schedule[relative_round].append(lid_only)
-                    elif detector.floor_start + shift >= 0:
+                    if detector.floor_start + shift >= 0:
                         # This detector is always going to be comparing a floor
                         # with a lid, so should always be deterministic.
                         layer_detector_schedule[relative_round].append(detector)
+                    else:
+                        checks = detector.checks_at_or_after(
+                            0, layer, code.schedule_length)
+                        # This detector should become a 'lid-only' detector in
+                        # this layer, unless it's non-deterministic.
+                        lid_only = Stabilizer(checks, relative_round)
+                        if self.is_deterministic(lid_only, circuit, round):
+                            layer_detector_schedule[relative_round].append(lid_only)
                     # In all other cases, build this detector for the first
                     # time in the next layer.
 

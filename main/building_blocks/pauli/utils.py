@@ -1,10 +1,15 @@
+from __future__ import annotations
+
+import operator
 from collections import defaultdict
 from functools import reduce
 from typing import Iterable
 
 from main.building_blocks.pauli.Pauli import Pauli
 from main.building_blocks.pauli.PauliLetter import PauliZ, PauliLetter, PauliX, PauliY, PauliI
-from main.building_blocks.pauli.PauliProduct import PauliProduct
+from typing import TYPE_CHECKING
+if TYPE_CHECKING:
+    from main.building_blocks.pauli.PauliProduct import PauliProduct
 from main.enums import State
 
 
@@ -21,21 +26,27 @@ def compose(paulis: Iterable[Pauli]):
     for pauli in paulis:
         grouped_paulis[pauli.qubit].append(pauli.letter)
     # Compose together the Paulis on each qubit.
-    composed = {
-        qubit: reduce(lambda x, y: x.compose(y), letters)
-        for qubit, letters in grouped_paulis.items()}
-    # Return these as Paulis again, omitting identities.
-    result = [
-        Pauli(qubit, letter) for qubit, letter in composed.items()
-        if letter != PauliI]
-    return result
+    composed = [
+        Pauli(qubit, reduce(lambda x, y: x.compose(y), letters))
+        for qubit, letters in grouped_paulis.items()]
+    # Omit the identity Paulis, if possible.
+    identities = [
+        pauli for pauli in composed if pauli.letter.letter == 'I']
+    identity_sign = reduce(
+        operator.mul, [identity.letter.sign for identity in identities], 1)
+    if identity_sign == 1:
+        non_identities = [
+            pauli for pauli in composed if pauli.letter.letter != 'I']
+        return non_identities
+    else:
+        return composed
 
 
 def get_commutator(a: PauliProduct, b: PauliProduct):
     # Given pauli products a and b, the commutator is aba^(-1)b^(-1). But
     # since all Paulis are self-inverse, this simplifies to abab.
-    commutator = compose(a.paulis + b.paulis + a.paulis + b.paulis)
-    commutator = PauliProduct(commutator)
+    commutator_paulis = a.paulis + b.paulis + a.paulis + b.paulis
+    commutator = PauliProduct(commutator_paulis)
     assert all(letter == 'I' for letter in commutator.word.word)
     assert commutator.word.sign in [1, -1]
     return commutator

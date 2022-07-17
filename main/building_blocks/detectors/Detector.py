@@ -37,7 +37,8 @@ class Detector(NiceRepr):
     def face_product(self, face: List[Tuple[int, Check]]):
         # Pauli multiplication is not commutative so order matters.
         face = sorted(face, key=lambda check: -check[0])
-        checks = [check for (_, check) in face]
-        paulis = [pauli for check in checks for pauli in check.paulis]
-        stabilizer = PauliProduct(compose(paulis))
+        paulis = [
+            pauli for (_, check) in face
+            for pauli in check.paulis]
+        stabilizer = PauliProduct(paulis)
         return stabilizer

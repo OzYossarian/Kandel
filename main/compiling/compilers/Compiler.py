@@ -266,20 +266,27 @@ class Compiler(ABC):
         final_detectors = []
         round = layer * code.schedule_length
         for detector in code.detectors:
-            if detector.has_open_lid(round, layer, code.schedule_length):
+            open_lid, checks_measured = detector.has_open_lid(
+                round - 1, layer - 1, code.schedule_length)
+            if open_lid:
                 # This detector can potentially be 'finished off', if our
                 # final data qubit measurements are in the right bases.
+                detector_checks = sorted(
+                    checks_measured, key=lambda check: -check[0])
+                detector_product = PauliProduct([
+                    pauli for _, check in detector_checks
+                    for pauli in check.paulis])
                 detector_qubits = {
-                    pauli.qubit for pauli in detector.floor_product.paulis}
+                    pauli.qubit for pauli in detector_product.paulis}
                 measurements = [
                     final_checks[data_qubit].paulis[0]
                     for data_qubit in detector_qubits]
                 measurement_product = PauliProduct(measurements)
-                if detector.floor_product.equal_up_to_sign(measurement_product):
+                if detector_product.equal_up_to_sign(measurement_product):
                     # Can make a lid for this detector!
                     floor = [
                         (t + detector.lid_end, check)
-                        for t, check in detector.floor]
+                        for t, check in detector_checks]
                     lid = [
                         (0, final_checks[qubit])
                         for qubit in detector_qubits]
