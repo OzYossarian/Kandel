@@ -1,5 +1,5 @@
-from main.building_blocks.Pauli import Pauli
-from main.building_blocks.PauliLetter import PauliZ
+from main.building_blocks.pauli.Pauli import Pauli
+from main.building_blocks.pauli.PauliLetter import PauliZ
 from main.codes.RepetitionCode import RepetitionCode
 from main.enums import State
 
@@ -24,3 +24,4 @@ def test_init_checks():
     assert check_qubits == expected_qubits
     check_paulis = [pauli.letter for pauli in last_check.paulis]
     assert check_paulis == [PauliZ, PauliZ]
+

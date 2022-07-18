@@ -2,17 +2,19 @@ from typing import Dict, List, Tuple
 
 from main.Colour import Red, Green, Blue
 from main.building_blocks.Check import Check
-from main.building_blocks.PauliLetter import PauliZ, PauliY, PauliX
+from main.building_blocks.pauli.PauliLetter import PauliZ, PauliY, PauliX
 from main.building_blocks.Qubit import Coordinates, Qubit
 from main.codes.Code import Code
 
 
 class HexagonalCode(Code):
-    def __init__(self, data_qubits: Dict[Coordinates, Qubit],
-                 schedule: List[List[Check]]):
+    def __init__(
+            self, data_qubits: Dict[Coordinates, Qubit],
+            check_schedule: List[List[Check]],
+            distance: int = None):
         self.colours = [Red, Green, Blue]
         self.letters = [PauliX, PauliY, PauliZ]
-        super().__init__(data_qubits, schedule)
+        super().__init__(data_qubits, check_schedule, distance=distance)
 
     @staticmethod
     def get_neighbours(coords: Tuple[int, int]) -> List[Tuple[int, int]]:

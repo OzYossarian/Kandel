@@ -1,9 +1,11 @@
 from __future__ import annotations
 
-from typing import Dict, Any, List
+from collections import defaultdict
+from typing import Dict, Any, List, Set
 from typing import TYPE_CHECKING
 
-from main.building_blocks.Detector import Detector
+from main.building_blocks.detectors.Drum import Drum
+from main.building_blocks.logical.LogicalQubit import LogicalQubit
 
 if TYPE_CHECKING:
     from main.QPUs.QPU import QPU
@@ -17,45 +19,60 @@ CodeId = Any
 class Code:
     def __init__(
             self, data_qubits: Dict[Coordinates, Qubit] | List[Qubit],
-            schedule: List[List[Check]] = None,
-            detectors: List[List[Detector]] = None,
-            ancilla_qubits: Dict[Coordinates, Qubit] | List[Qubit] = None):
+            check_schedule: List[List[Check]] = None,
+            detector_schedule: List[List[Drum]] = None,
+            logical_qubits: List[LogicalQubit] = None,
+            distance: int = None):
         self.data_qubits = data_qubits
+        self.distance = distance
+        if logical_qubits is None:
+            logical_qubits = []
+        self.logical_qubits = logical_qubits
+
+        # Compiler will set up ancilla qubits later if needed
+        self.ancilla_qubits = {}
+
         # Declare attributes here but use separate method to set them.
         # Allows for a code to be partially instantiated but then for
         # schedule and detector to be set later.
-        self.schedule = None
-        self.checks = None
-        self.detectors = None
-        if schedule:
-            self.set_schedule_and_detectors(schedule, detectors)
+        self.check_schedule: List[List[Check]] | None = None
+        self.detector_schedule: List[List[Drum]] | None = None
+        self.schedule_length: int | None = None
+        self.checks: Set[Check] | None = None
+        self.detectors: Set[Drum] | None = None
 
-        # TODO - ideally, code shouldn't care about ancillas - these have no
-        #  place in the mathematical definition of a code, so are just
-        #  implementation details. Compiler should handle, perhaps.
-        self.ancilla_qubits = ancilla_qubits
-        # TODO - add [n,k,d] parameters?
+        if check_schedule:
+            self.set_schedules(check_schedule, detector_schedule)
 
-    def set_schedule_and_detectors(
-            self, schedule: List[List[Check]],
-            detectors: List[List[Detector]] = None):
-        """Made this method separate so that it can be called after a call to
-        super().__init__ in subclasses. See subclasses for why it's useful.
-        """
-        self.schedule = schedule
-        self.checks = set(check for round in schedule for check in round)
-        if len(self.schedule) == 1 and detectors is None:
+    def set_schedules(
+            self, check_schedule: List[List[Check]],
+            detector_schedule: List[List[Drum]] = None):
+        self.check_schedule = check_schedule
+        self.schedule_length = len(check_schedule)
+        self.checks = set(
+            check for round in check_schedule for check in round)
+
+        if len(self.check_schedule) == 1 and detector_schedule is None:
             # Default case: each detector is made of one check measured
             # twice in consecutive rounds.
-            self.detectors = [
-                Detector([(-1, check)], [(0, check)])
-                for check in self.schedule[0]]
+            self.detector_schedule = [[
+                Drum([(-1, check)], [(0, check)], 0)
+                for check in self.check_schedule[0]]]
         else:
             # If the length of the schedule is more than 1, force the user to
             # pass in the detectors - can't (yet?) automatically figure this
             # out.
-            assert detectors is not None
-            self.detectors = detectors
+            assert detector_schedule is not None
+            assert self.schedule_length == len(detector_schedule)
+            self.detector_schedule = detector_schedule
+
+        self.detectors = set(
+            detector
+            for round in self.detector_schedule
+            for detector in round)
+
+    def update_logical_qubits(self, round: int):
+        return defaultdict(list)
 
     def transform_coords(self, qpu: QPU):
         # A pre-processing step before embedding a code into a particular QPU.

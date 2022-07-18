@@ -1,11 +1,13 @@
 from collections import defaultdict
 from typing import List, Tuple
 
-from main.Colour import Colour
+from main.Colour import Colour, Red, Blue, Green
 from main.building_blocks.Check import Check
-from main.building_blocks.Detector import Detector
-from main.building_blocks.Pauli import Pauli
-from main.building_blocks.PauliLetter import PauliLetter
+from main.building_blocks.detectors.Drum import Drum
+from main.building_blocks.logical.LogicalOperator import LogicalOperator
+from main.building_blocks.logical.LogicalQubit import LogicalQubit
+from main.building_blocks.pauli.Pauli import Pauli
+from main.building_blocks.pauli.PauliLetter import PauliLetter
 from main.codes.FloquetCode import FloquetCode
 from main.codes.hexagonal.ToricHexagonalCode import ToricHexagonalCode
 from main.codes.hexagonal.tic_tac_toe.DetectorBlueprint import DetectorBlueprint
@@ -16,25 +18,29 @@ TicTacToeRoute = List[Tuple[Colour, PauliLetter]]
 
 class TicTacToeCode(ToricHexagonalCode, FloquetCode):
     def __init__(self, distance: int, tic_tac_toe_route: TicTacToeRoute):
+        # Initialise parent class immediately so that we have data qubits
+        # etc available for use in the rest of this init.
         super().__init__(distance)
+
         assert self.follows_tic_tac_toe_rules(tic_tac_toe_route)
         assert self.is_good_code(tic_tac_toe_route)
         self.tic_tac_toe_route = tic_tac_toe_route
 
         checks, borders = self.create_checks()
+        self.checks_by_type = checks
         stabilizers, relearned = self.find_stabilized_plaquettes()
         detector_blueprints = self.plan_detectors(stabilizers, relearned)
-        detectors = self.create_detectors(detector_blueprints, borders)
+        detector_schedule = self.create_detectors(detector_blueprints, borders)
 
-        schedule = [
+        check_schedule = [
             checks[(colour, pauli_letter)]
             for colour, pauli_letter in tic_tac_toe_route]
 
-        self.set_schedule_and_detectors(schedule, detectors)
+        self.set_schedules(check_schedule, detector_schedule)
+        self.logical_qubits = self.get_init_logical_qubits()
 
         # Save some of the variables used above so that we can reference
-        # them in tests.
-        self.checks_by_type = checks
+        # them in tests. TODO - yuck!
         self.borders = borders
         self.stabilizers = stabilizers
         self.relearned = relearned
@@ -118,7 +124,7 @@ class TicTacToeCode(ToricHexagonalCode, FloquetCode):
         corners = self.get_neighbours(anchor)
         for j in range(3):
             u, v = corners[2 * j], corners[2 * j + 1]
-            midpoint = mid(u, v)
+            midpoint = mid([u, v])
             # The edge (u, v) is a colours[i+1]-check, shared
             # between this plaquette of colour colours[i] and a
             # neighbouring one of colour colours[i+2]. The
@@ -228,19 +234,14 @@ class TicTacToeCode(ToricHexagonalCode, FloquetCode):
                 stabilized[t - 1][(colour, letter)]
 
     def remove_plaquettes(self, t, stabilized, edge_colour, edge_letter):
-        anti_commuting_plaquettes = [
-            (edge_colour, letter)
-            for letter in self.letters
-            if letter != edge_letter]
+        anti_commuting_plaquettes = \
+            self.rest_of_column(edge_colour, edge_letter)
         for colour, letter in anti_commuting_plaquettes:
             stabilized[t][(colour, letter)] = []
         return anti_commuting_plaquettes
 
     def relearn_plaquettes(self, t, stabilized, relearned, edge_colour, edge_letter):
-        relearned_plaquettes = [
-            (colour, edge_letter)
-            for colour in self.colours
-            if colour != edge_colour]
+        relearned_plaquettes = self.rest_of_row(edge_colour, edge_letter)
         for colour, letter in relearned_plaquettes:
             edge_type = (t, edge_colour, edge_letter)
             stabilized[t][(colour, letter)] = [edge_type]
@@ -254,15 +255,7 @@ class TicTacToeCode(ToricHexagonalCode, FloquetCode):
             for letter in self.letters:
                 blueprints = self.plan_detectors_of_type(
                     colour, letter, stabilizers, relearned)
-                for blueprint in blueprints:
-                    # For a given colour, it's possible that different
-                    # detectors in fact just compare the same set of checks,
-                    # so we only want to take 'unique' ones.
-                    unique = not any(
-                        x.equivalent_to(blueprint)
-                        for x in detector_blueprints[colour])
-                    if unique:
-                        detector_blueprints[colour].append(blueprint)
+                detector_blueprints[colour].extend(blueprints)
 
         return detector_blueprints
 
@@ -334,7 +327,7 @@ class TicTacToeCode(ToricHexagonalCode, FloquetCode):
         return detector_blueprints
 
     def create_detectors(self, detector_blueprints, borders):
-        detectors: List[List[Detector]] = [[] for _ in self.tic_tac_toe_route]
+        detectors: List[List[Drum]] = [[] for _ in self.tic_tac_toe_route]
         # Loop through all red plaquettes, then green, then blue.
         for colour in self.colours:
             anchors = self.colourful_plaquette_anchors[colour]
@@ -348,7 +341,170 @@ class TicTacToeCode(ToricHexagonalCode, FloquetCode):
                     for (t, edge_colour, edge_letter) in blueprint.lid:
                         checks = borders[anchor][(edge_colour, edge_letter)]
                         lid.extend((t, check) for check in checks)
-                    detector = Detector(floor, lid)
+                    detector = Drum(floor, lid, blueprint.learned)
                     detectors[blueprint.learned].append(detector)
 
         return detectors
+
+    def get_logical_qubit_types(self, round: int):
+        # 'round' is the round we've just finished doing measurements for.
+        # The types returned will be the types of the operators immediately
+        # after round 'round' up until right before round 'round + 1'.
+        relative_round = round % len(self.tic_tac_toe_route)
+        (prev_colour, prev_letter) = self.tic_tac_toe_route[relative_round]
+        prev_row = self.rest_of_row(prev_colour, prev_letter)
+        prev_column = self.rest_of_column(prev_colour, prev_letter)
+
+        next_round = (relative_round + 1) % len(self.tic_tac_toe_route)
+        (next_colour, next_letter) = self.tic_tac_toe_route[next_round]
+        next_row = self.rest_of_row(next_colour, next_letter)
+        next_column = self.rest_of_column(next_colour, next_letter)
+
+        row_column_intersection = \
+            set(prev_row).intersection(next_column).pop()
+        column_row_intersection = \
+            set(prev_column).intersection(next_row).pop()
+
+        if round % 2 == 0:
+            x_type = row_column_intersection
+            z_type = column_row_intersection
+        else:
+            x_type = column_row_intersection
+            z_type = row_column_intersection
+
+        # Both X operators have the same type, likewise both Z operators.
+        return x_type, z_type
+
+    def get_init_logical_qubits(self):
+        x_type, z_type = self.get_logical_qubit_types(-1)
+
+        # Choose convention that the X operator is horizontal on qubit 0 but
+        # vertical on qubit 1, and vice verse for Z operator.
+        logical_0 = LogicalQubit(
+            self.get_initial_horizontal_operator(x_type),
+            self.get_initial_vertical_operator(z_type))
+        logical_1 = LogicalQubit(
+            self.get_initial_vertical_operator(x_type),
+            self.get_initial_horizontal_operator(z_type))
+
+        return [logical_0, logical_1]
+
+    def get_initial_horizontal_operator(self, tic_tac_toe_square):
+        # Logical 0's X operator and logical 1's Z operator are horizontal.
+        colour, letter = tic_tac_toe_square
+        starts = {
+            Red: (8, 2),
+            Blue: (2, 4),
+            Green: (8, 6)}
+        start = starts[colour]
+        paulis = []
+        for i in range(self.distance // 2):
+            u = (start[0] + 12*i, start[1])
+            v = (u[0] + 4, u[1])
+            qubit_u = self.data_qubits[self.wrap_coords(u)]
+            qubit_v = self.data_qubits[self.wrap_coords(v)]
+            pauli_u = Pauli(qubit_u, letter)
+            pauli_v = Pauli(qubit_v, letter)
+            paulis.extend([pauli_u, pauli_v])
+        return LogicalOperator(paulis)
+
+    def get_initial_vertical_operator(self, tic_tac_toe_square):
+        # Logical 0's Z operator and logical 1's X operator are vertical.
+        colour, letter = tic_tac_toe_square
+        starts = {
+            Red: (6, 4),
+            Blue: (6, 0),
+            Green: (6, 8)}
+        start = starts[colour]
+        paulis = []
+        for i in range(self.distance // 2):
+            u = (start[0] + (i % 2) * 2, start[1] + 6 * i)
+            v = (start[0] + 2 - (i % 2) * 2, start[1] + 2 + 6 * i)
+            qubit_u = self.data_qubits[self.wrap_coords(u)]
+            qubit_v = self.data_qubits[self.wrap_coords(v)]
+            pauli_u = Pauli(qubit_u, letter)
+            pauli_v = Pauli(qubit_v, letter)
+            paulis.extend([pauli_u, pauli_v])
+        return LogicalOperator(paulis)
+
+    def rest_of_row(self, colour: Colour, letter: PauliLetter):
+        return [
+            (c, letter)
+            for c in self.colours
+            if c != colour]
+
+    def rest_of_column(self, colour: Colour, letter: PauliLetter):
+        return [
+            (colour, l)
+            for l in self.letters
+            if l != letter]
+
+    def update_logical_qubits(self, round: int):
+        # 'round' is the round we've just finished doing measurements for.
+        relative_round = round % self.schedule_length
+        update_checks = defaultdict(list)
+
+        # Mustn't use relative round in the following
+        prev_x_type, prev_z_type = self.get_logical_qubit_types(round - 1)
+        next_x_type, next_z_type = self.get_logical_qubit_types(round)
+
+        if next_x_type != prev_x_type:
+            # Need to update the logical X operators
+            logical = self.logical_qubits[0].x
+            update_checks[logical] = self.update_operator(
+                logical, relative_round, vertical=False)
+            logical = self.logical_qubits[1].x
+            update_checks[logical] = self.update_operator(
+                logical, relative_round, vertical=True)
+
+        if next_z_type != prev_z_type:
+            # Need to update the logical Z operators
+            logical = self.logical_qubits[0].z
+            update_checks[logical] = self.update_operator(
+                logical, relative_round, vertical=True)
+            logical = self.logical_qubits[1].z
+            update_checks[logical] = self.update_operator(
+                logical, relative_round, vertical=False)
+
+        # Return - for each operator - the checks that have been multiplied
+        # into this operator in order to update it.
+        return update_checks
+
+    def update_operator(
+            self, operator: LogicalOperator, relative_round: int,
+            vertical: bool = False):
+        # Slightly different depending on whether operator is vertical or
+        # horizontal - horizontal operators are multiplied by ALL
+        # intersecting checks, whereas vertical ones are only multiplied by
+        # those in their support (i.e. not horizontal ones).
+
+        def intersect(check, operator):
+            # It's possible for the Paulis that make up the operator to
+            # contain an identity Pauli with some sign - only consider checks
+            # that touch the operator at a non-identity Pauli to be
+            # intersecting.
+            check_qubits = {pauli.qubit for pauli in check.paulis}
+            return any(
+                pauli.letter.letter != 'I' and pauli.qubit in check_qubits
+                for pauli in operator.paulis)
+
+        def is_horizontal(check):
+            y_coords = [pauli.qubit.coords[1] for pauli in check.paulis]
+            return len(set(y_coords)) == 1
+
+        check_type = self.tic_tac_toe_route[relative_round]
+        checks = self.checks_by_type[check_type]
+        intersecting_checks = [
+            check for check in checks
+            if intersect(check, operator)]
+        if vertical:
+            intersecting_checks = [
+                check for check in intersecting_checks
+                if not is_horizontal(check)]
+        intersecting_paulis = [
+            pauli
+            for check in intersecting_checks
+            for pauli in check.paulis]
+
+        operator.update(intersecting_paulis)
+        return intersecting_checks

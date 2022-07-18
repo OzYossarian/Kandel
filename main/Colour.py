@@ -1,9 +1,9 @@
 from typing import Tuple
 
-from main.utils.DebugFriendly import DebugFriendly
+from main.utils.NiceRepr import NiceRepr
 
 
-class Colour(DebugFriendly):
+class Colour(NiceRepr):
     def __init__(self, name: str, rgb: Tuple[int, int, int]):
         self.name = name
         self.rgb = rgb
