@@ -17,7 +17,7 @@ def test_init():
 
 def test_init_checks():
     expected_anchor = 3
-    last_check = d3_rep_code.schedule[0][-1]
+    last_check = d3_rep_code.check_schedule[0][-1]
     assert last_check.anchor == expected_anchor
     check_qubits = {pauli.qubit for pauli in last_check.paulis}
     expected_qubits = {d3_rep_code.data_qubits[2], d3_rep_code.data_qubits[4]}
