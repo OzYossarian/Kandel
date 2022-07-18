@@ -1,8 +1,8 @@
 from typing import List
 
 
-class DebugFriendly:
-    def __init__(self, repr_keys: List):
+class NiceRepr:
+    def __init__(self, repr_keys: List[str]):
         """Small base class to make it easy to set up nice string
         representations of classes.
 
@@ -17,4 +17,11 @@ class DebugFriendly:
         return str(self.relevant())
 
     def relevant(self):
-        return {key: vars(self)[key] for key in self.repr_keys}
+        result = {}
+        for key in self.repr_keys:
+            parts = key.split('.')
+            item = vars(self)[parts[0]]
+            for part in parts[1:]:
+                item = vars(item)[part]
+            result[key] = item
+        return result

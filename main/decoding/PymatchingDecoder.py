@@ -15,9 +15,7 @@ class PymatchingDecoder():
 
         self.detector_error_model = detector_error_model
         matching_graph = self.detector_error_model_to_nx_graph()
-#        print(matching_graph, 'm graph')
         self.matcher = self.nx_graph_to_pymatching_graph(matching_graph)
-#        print(self.matcher, 'matcher')
 
     def eval_model(
             self,
@@ -86,7 +84,6 @@ class PymatchingDecoder():
             if p == 0:
                 return
             if len(dets) == 0:
-                print('here?')
                 # No symptoms for this error.
                 # Code probably has distance 1.
                 # Accept it and keep going, though of course decoding will
@@ -130,7 +127,6 @@ class PymatchingDecoder():
             graph.add_edge(k, num_detectors + 1, weight=9999999999)
         graph.add_edge(num_detectors, num_detectors + 1, weight=9999999999,
                        qubit_id=list(range(num_observables)))
-        print(graph.edges(data=True))
         return pymatching.Matching(graph)
 
     def decode_samples(self, samples):

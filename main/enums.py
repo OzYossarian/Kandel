@@ -6,3 +6,5 @@ class State(Enum):
     One = 1
     Plus = 2
     Minus = 3
+    I = 4
+    MinusI = 5
