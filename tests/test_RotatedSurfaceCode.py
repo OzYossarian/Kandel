@@ -1,6 +1,6 @@
 from main.Colour import Green, Red
-from main.building_blocks.pauli.Pauli import Pauli
-from main.building_blocks.pauli.PauliLetter import PauliX, PauliZ
+from main.building_blocks.Pauli import Pauli
+from main.building_blocks.PauliLetter import PauliX, PauliZ
 from main.codes.RotatedSurfaceCode import RotatedSurfaceCode
 import pytest
 
@@ -13,8 +13,8 @@ def test_init():
     assert list(d3_sc.ancilla_qubits.keys()) == [
         (1, 2), (2, 1), (2, 3), (3, 2), (1, 0), (3, 4), (0, 3), (4, 1)]
     assert len(list(d5_sc.ancilla_qubits)) == 24
-    assert len(d3_sc.check_schedule[0]) == 8
-    assert len(d5_sc.check_schedule[0]) == 24
+    assert len(d3_sc.schedule[0]) == 8
+    assert len(d5_sc.schedule[0]) == 24
 
 
 def test_data_qubits():

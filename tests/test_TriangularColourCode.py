@@ -3,7 +3,7 @@ from main.codes.hexagonal.TriangularColourCode import TriangularColourCode
 
 def test_distance_3_triangular_colour_code():
     colour_code = TriangularColourCode(3)
-    assert len(colour_code.check_schedule) == 1
+    assert len(colour_code.schedule) == 1
     assert len(colour_code.checks) == 2 * 3
 
     plaquette_anchors = {check.anchor for check in colour_code.checks}
@@ -26,7 +26,7 @@ def test_distance_3_triangular_colour_code():
 def test_distance_5_triangular_colour_code():
     colour_code = TriangularColourCode(5)
     assert len(colour_code.data_qubits) == 19
-    assert len(colour_code.check_schedule) == 1
+    assert len(colour_code.schedule) == 1
     assert len(colour_code.checks) == 2*9
     plaquette_anchors = {check.anchor for check in colour_code.checks}
     assert len(plaquette_anchors) == 9

@@ -1,9 +1,9 @@
-from main.compiling.compilers.Compiler import Compiler
+from main.compiling.Compiler import Compiler
 from main.QPUs.SquareLatticeQPU import SquareLatticeQPU
 from main.codes.RepetitionCode import RepetitionCode
 from main.codes.RotatedSurfaceCode import RotatedSurfaceCode
 from main.compiling.Circuit import Circuit
-from main.compiling.noise.models.CircuitLevelNoise import CircuitLevelNoise
+from main.compiling.NoiseModel import CircuitLevelNoise
 from main.codes.hexagonal.tic_tac_toe.HoneycombCode import HoneycombCode
 
 
@@ -13,7 +13,7 @@ def test_compile_code_circuit_level_noise():
     test_qpu.embed(rep_code, (0, 0), 0)
     noise_model = CircuitLevelNoise(0.1, 0.15, 0.05, 0.03)
     test_compiler = Compiler(noise_model)
-    test_compiler.compile_code(rep_code, layers=1)
+    test_compiler.compile_code(rep_code, repeat_block=False, final_block=False)
     d_0 = rep_code.data_qubits[0]
     d_1 = rep_code.data_qubits[2]
     anc = rep_code.ancilla_qubits[1]
@@ -154,8 +154,8 @@ def test_compile_one_round():
 
     test_qpu.embed(rep_code, (0, 0), 0)
     test_compiler = Compiler()
-    test_compiler.compile_round(
-        test_qpu.codes[1].check_schedule[0], 0)
+    test_compiler.compile_one_round(
+        test_qpu.codes[1].schedule[0], 0)
     gate_dict = {}
     for qubit in rep_code.data_qubits.values():
         gate_dict[qubit] = 'RZ'
@@ -171,8 +171,8 @@ def test_compile_one_round():
     test_compiler = Compiler()
     test_circuit = Circuit()
     test_compiler.initialize_qubits(rep_code.data_qubits.values(), 0)
-    test_compiler.compile_round(
-        test_qpu.codes[1].check_schedule[0], 0)
+    test_compiler.compile_one_round(
+        test_qpu.codes[1].schedule[0], 0)
 
     gate_dict = {}
     for qubit in rep_code.data_qubits.values():
@@ -211,7 +211,7 @@ def test_compile_rotated_surface_code_three_rounds():
     gate_dict_1 = {}
     for data_q in sc.data_qubits.values():
         gate_dict_0[data_q] = 'RZ'
-    for check in sc.check_schedule[0]:
+    for check in sc.schedule[0]:
         if check.initialization_timestep == 0:
             gate_dict_0[check.ancilla] = 'RZ'
             gate_dict_1[check.ancilla] = 'H'
@@ -238,14 +238,14 @@ def test_compile_rotated_surface_code_one_round():
     test_qpu.embed(sc, (0, 0), (0, 1))
     test_compiler = Compiler()
     test_compiler.initialize_qubits(sc.data_qubits.values(), 0)
-    test_compiler.compile_round(
-        test_qpu.codes[1].check_schedule[0], 0)
+    test_compiler.compile_one_round(
+        test_qpu.codes[1].schedule[0], 0)
 
     gate_dict_0 = {}
     gate_dict_1 = {}
     for data_q in sc.data_qubits.values():
         gate_dict_0[data_q] = 'RZ'
-    for check in sc.check_schedule[0]:
+    for check in sc.schedule[0]:
         if check.initialization_timestep == 0:
             gate_dict_0[check.ancilla] = 'RZ'
             gate_dict_1[check.ancilla] = 'H'

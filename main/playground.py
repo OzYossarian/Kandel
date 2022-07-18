@@ -17,7 +17,6 @@ from main.compiling.syndrome_extraction.extractors.PurePauliWordExtractor import
 from main.compiling.syndrome_extraction.extractors.SyndromeExtractor import SyndromeExtractor
 from main.enums import State
 from main.printing.Printer2D import Printer2D
-import sinter
 
 
 # Codes
@@ -85,15 +84,15 @@ phenom_rep_circuit = phenom_pure_trivial_compiler.compile_code(
     rep_code, 2, rep_initials, rep_finals, rep_logicals)
 
 # Printing
-# print(phenom_rep_circuit)
-# print()
-# print(phenom_rsc_circuit)
+print(phenom_rep_circuit)
+print()
+print(phenom_rsc_circuit)
 # print()
 # print(capacity_rsc_circuit)
-# print()
+print()
 print(phenom_fcc_circuit)
-# print()
-# print(phenom_hcc_circuit)
+print()
+print(phenom_hcc_circuit)
 
 # Raw sampling
 # raw_sampler = noiseless_pure_fcc_circuit.compile_sampler()
@@ -104,10 +103,8 @@ print(phenom_fcc_circuit)
 # print(fcc_detector_sampler.sample(shots=1))
 
 # # Detector error models
-model = phenom_hcc_circuit.detector_error_model(
-    approximate_disjoint_errors=True,
-    decompose_errors=True)
+# model = phenom_fcc_circuit.detector_error_model(
+#     approximate_disjoint_errors=True)
 # model = phenom_hcc_circuit.detector_error_model(
 #     approximate_disjoint_errors=True)
 # print(model)
-
