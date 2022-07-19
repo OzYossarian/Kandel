@@ -6,6 +6,8 @@ from main.building_blocks.pauli.utils import compose
 
 class LogicalOperator:
     def __init__(self, paulis: List[Pauli]):
+        # the logical operator may move around, so we save both initial paulis
+        # and a mutable copy
         self.initial_paulis = paulis
         self.paulis = paulis.copy()
 
