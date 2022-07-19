@@ -1,3 +1,6 @@
+![Tests](https://github.com/OzYossarian/Kandel/actions/workflows/tests.yml/badge.svg)
+
+
 # FaultTolerantQPU
 
 PJ's take:
