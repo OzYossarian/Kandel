@@ -23,9 +23,9 @@ from main.printing.Printer2D import Printer2D
 
 # Codes
 # rep_code = RepetitionCode(3)
-rsc = RotatedSurfaceCode(15)
+rsc = RotatedSurfaceCode(5)
 # fcc = FloquetColourCode(4)
-hcc = HoneycombCode(16)
+# hcc = HoneycombCode(16)
 
 # Orderers
 trivial_orderer = TrivialOrderer()

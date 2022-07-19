@@ -1,7 +1,8 @@
 from collections import defaultdict
-from typing import List, Dict, Tuple
+from typing import List, Dict, Tuple, Any
 
 import stim
+from alive_progress import alive_bar
 
 from main.building_blocks.Check import Check
 from main.building_blocks.Qubit import Qubit
@@ -150,7 +151,16 @@ class Circuit:
                         noise = noise_model.idling.instruction([qubit])
                         self.add_instruction(tick + 1, noise)
 
-    def to_stim(self, noise_model: NoiseModel, track_coords: bool = True):
+    def to_stim(
+            self, noise_model: NoiseModel, track_coords: bool = True,
+            track_progress: bool = True):
+        if track_progress:
+            with alive_bar(len(self.instructions), force_tty=True) as bar:
+                return self._to_stim(noise_model, track_coords, bar)
+        else:
+            return self._to_stim(noise_model, track_coords, None)
+
+    def _to_stim(self, noise_model: NoiseModel, track_coords: bool, progress_bar: Any):
         # Figure out which temporal dimension to shift if tracking coords.
         if track_coords:
             qubit_dimensions = {
@@ -164,11 +174,13 @@ class Circuit:
 
         # Go through the circuit and add idling noise.
         self.add_idle_noise(noise_model)
+
         # Track which instructions have been compiled to stim.
         compiled = defaultdict(bool)
-        full_circuit = stim.Circuit()
+
         # Let 'circuit' denote the circuit we're currently compiling to - if
         # using repeat blocks, this need not always be the full circuit itself
+        full_circuit = stim.Circuit()
         circuit = full_circuit
 
         most_recent_tick = -1
@@ -199,6 +211,7 @@ class Circuit:
                         if instruction.is_measurement:
                             measurements.append(instruction)
                         compiled[instruction] = True
+
             # Let the measurer determine if these measurements trigger any
             # further instructions - e.g. building detectors, adding checks
             # into logical observables, etc.
@@ -210,6 +223,8 @@ class Circuit:
             if tick != final_tick:
                 circuit.append('TICK')
             most_recent_tick = tick
+            if progress_bar is not None:
+                progress_bar()
 
         # If we've finished inside a repeat block, close it.
         repeat_block = self.repeat_blocks[final_tick]
@@ -217,7 +232,6 @@ class Circuit:
             start, end, repeats = repeat_block
             repeat_circuit = stim.CircuitRepeatBlock(repeats, circuit)
             full_circuit.append(repeat_circuit)
-
         return full_circuit
 
     def instruction_to_stim(
