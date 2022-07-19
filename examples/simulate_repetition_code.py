@@ -1,4 +1,4 @@
-g# ---
+# ---
 # jupyter:
 #   jupytext:
 #     formats: ipynb,py
@@ -17,16 +17,21 @@ from main.compiling.Circuit import Circuit
 from main.codes.RepetitionCode import RepetitionCode
 from main.QPUs.SquareLatticeQPU import SquareLatticeQPU
 from main.compiling.compilers.Compiler import Compiler
-from main.compiling.syndrome_extraction.controlled_gate_orderers.TrivialOrderer import TrivialOrderer
-from main.compiling.syndrome_extraction.extractors.SyndromeExtractor import SyndromeExtractor
+from main.compiling.syndrome_extraction.controlled_gate_orderers.TrivialOrderer import (
+    TrivialOrderer,
+)
+from main.compiling.syndrome_extraction.extractors.SyndromeExtractor import (
+    SyndromeExtractor,
+)
 from main.printing.Printer2D import Printer2D
 
 # ### Create a QPU
 
 from IPython.display import Image
+
 test_qpu = SquareLatticeQPU((6, 2))
 printer = Printer2D(scale_factor=50)
-printer.print_qpu(test_qpu, 'small_18_qpu')
+printer.print_qpu(test_qpu, "small_18_qpu")
 Image(url="../output/small_18_qpu_round_0.jpg")  # , width=400, height=400)
 
 
@@ -35,7 +40,7 @@ Image(url="../output/small_18_qpu_round_0.jpg")  # , width=400, height=400)
 rep_code = RepetitionCode(2)
 test_qpu.embed(rep_code, (0, 0), 0)
 printer = Printer2D(scale_factor=50)
-printer.print_qpu(test_qpu, 'small_18_rep_code_qpu')
+printer.print_qpu(test_qpu, "small_18_rep_code_qpu")
 # , width=400, height=400)
 Image(url="../output/small_18_rep_code_qpu_round_0.jpg")
 
@@ -44,11 +49,9 @@ Image(url="../output/small_18_rep_code_qpu_round_0.jpg")
 # +
 
 syndrome_extractor = SyndromeExtractor(TrivialOrderer())
-test_compiler = Compiler(
-    noise_model=None, syndrome_extractor=syndrome_extractor)
+test_compiler = Compiler(noise_model=None, syndrome_extractor=syndrome_extractor)
 
-stim_circuit = test_compiler.compile_code(
-    rep_code, layers=3, perfect_final_layer=True)
+stim_circuit = test_compiler.compile_code(rep_code, layers=3, perfect_final_layer=True)
 print(stim_circuit)
 
 # -
