@@ -12,7 +12,7 @@ from main.compiling.Instruction import Instruction
 
 class Measurer:
     def __init__(self):
-        """ A separate class for handling measurement logic in stim circuits.
+        """A separate class for handling measurement logic in stim circuits.
         Stim assigns numbers to each measurement, which are then used when
         building detectors and measuring logical operators. This class tracks
         all of this. A Measurer should be associated to a single circuit -
@@ -52,8 +52,7 @@ class Measurer:
         # already made.
         self.detectors_built = defaultdict(bool)
 
-    def add_measurement(
-            self, measurement: Instruction, check: Check, round: int):
+    def add_measurement(self, measurement: Instruction, check: Check, round: int):
         self.measurement_checks[measurement] = (check, round)
 
     def add_detectors(self, detectors: Iterable[Detector], round: int):
@@ -62,14 +61,14 @@ class Measurer:
                 self.triggers[(check, round)].append(detector)
 
     def add_to_logical_observable(
-            self, checks: Iterable[Check], observable: LogicalOperator,
-            round: int):
+        self, checks: Iterable[Check], observable: LogicalOperator, round: int
+    ):
         for check in checks:
             self.triggers[(check, round)].append(observable)
 
     def measurements_to_stim(
-            self, measurements: List[Instruction],
-            shift_coords: Tuple[Coordinates] | None):
+        self, measurements: List[Instruction], shift_coords: Tuple[Coordinates] | None
+    ):
         # Measurements can potentially trigger detectors being built or
         # observables being updated.
         detectors = []
@@ -103,29 +102,21 @@ class Measurer:
         # Can now actually create corresponding Stim instructions.
         instructions = []
         for detector, round in detectors:
-            instructions.append(
-                self.detector_to_stim(detector, round, track_coords))
+            instructions.append(self.detector_to_stim(detector, round, track_coords))
         for observable, checks in observable_updates.items():
-            targets = [
-                self.measurement_target(check, round)
-                for check, round in checks]
+            targets = [self.measurement_target(check, round) for check, round in checks]
             index = self.observable_index(observable)
-            instructions.append(stim.CircuitInstruction(
-                'OBSERVABLE_INCLUDE', targets, [index]))
-        # Finally, return these instructions to the circuit to compile.
-        if len(instructions) > 0 and shift_coords is not None:
-            # TODO - this is a temporary workaround - better plan is to have
-            #  an 'end of round' triggered by the set of all measurements
-            #  in the round.
-            instructions.append(stim.CircuitInstruction(
-                'SHIFT_COORDS', (), shift_coords))
+            instructions.append(
+                stim.CircuitInstruction("OBSERVABLE_INCLUDE", targets, [index])
+            )
+
         return instructions
 
-    def detector_to_stim(
-            self, detector: Detector, round: int, track_coords: bool):
+    def detector_to_stim(self, detector: Detector, round: int, track_coords: bool):
         targets = [
             self.measurement_target(check, round + rounds_ago)
-            for rounds_ago, check in detector.checks]
+            for rounds_ago, check in detector.checks
+        ]
         # Anchor needs to now be a tuple for Stim to accept it.
         if track_coords and isinstance(detector.anchor, tuple):
             anchor = detector.anchor
@@ -133,20 +124,28 @@ class Measurer:
             anchor = (detector.anchor,)
         else:
             anchor = ()
-        return stim.CircuitInstruction('DETECTOR', targets, anchor)
+        return stim.CircuitInstruction("DETECTOR", targets, anchor)
 
     def can_build_detector(self, detector: Detector, round: int):
         # Only build this detector if all the checks in the final slice have
         # actually been measured, and if we haven't already built an
         # equivalent detector (one that compares the exact same measurements).
-        final_slice_measured = all([
-            (check, round) in self.measurement_numbers
-            for check in detector.final_slice])
+        final_slice_measured = all(
+            [
+                (check, round) in self.measurement_numbers
+                for check in detector.final_slice
+            ]
+        )
         if final_slice_measured:
             # First criteria met...
-            measurement_numbers = tuple(sorted([
-                self.measurement_numbers[(check, round + rounds_ago)]
-                for rounds_ago, check in detector.checks]))
+            measurement_numbers = tuple(
+                sorted(
+                    [
+                        self.measurement_numbers[(check, round + rounds_ago)]
+                        for rounds_ago, check in detector.checks
+                    ]
+                )
+            )
             already_built = self.detectors_built[measurement_numbers]
             if not already_built:
                 # Second criteria met - can build this detector!
@@ -157,9 +156,9 @@ class Measurer:
         return False
 
     def measurement_target(self, check: Check, round: int):
-        measurements_ago = \
-            self.measurement_numbers[(check, round)] - \
-            self.total_measurements
+        measurements_ago = (
+            self.measurement_numbers[(check, round)] - self.total_measurements
+        )
         return stim.target_rec(measurements_ago)
 
     def observable_index(self, observable: LogicalOperator):
