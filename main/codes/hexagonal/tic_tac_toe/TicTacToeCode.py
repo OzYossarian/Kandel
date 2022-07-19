@@ -8,7 +8,6 @@ from main.building_blocks.logical.LogicalOperator import LogicalOperator
 from main.building_blocks.logical.LogicalQubit import LogicalQubit
 from main.building_blocks.pauli.Pauli import Pauli
 from main.building_blocks.pauli.PauliLetter import PauliLetter
-from main.codes.FloquetCode import FloquetCode
 from main.codes.hexagonal.ToricHexagonalCode import ToricHexagonalCode
 from main.codes.hexagonal.tic_tac_toe.DetectorBlueprint import DetectorBlueprint
 from main.utils.utils import mid, xor
@@ -16,7 +15,7 @@ from main.utils.utils import mid, xor
 TicTacToeRoute = List[Tuple[Colour, PauliLetter]]
 
 
-class TicTacToeCode(ToricHexagonalCode, FloquetCode):
+class TicTacToeCode(ToricHexagonalCode):
     def __init__(self, distance: int, tic_tac_toe_route: TicTacToeRoute):
         # Initialise parent class immediately so that we have data qubits
         # etc available for use in the rest of this init.
