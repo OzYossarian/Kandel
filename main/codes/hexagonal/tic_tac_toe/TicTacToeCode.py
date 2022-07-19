@@ -139,7 +139,7 @@ class TicTacToeCode(ToricHexagonalCode, FloquetCode):
             for letter in pauli_letters:
                 # Create the check object and note which plaquettes it borders
                 paulis = [Pauli(qubit_u, letter), Pauli(qubit_v, letter)]
-                check = Check(paulis, anchor=midpoint, colour=edge_colour)
+                check = Check(paulis, self.wrap_coords(midpoint), edge_colour)
                 checks[(edge_colour, letter)].append(check)
                 borders[anchor][(edge_colour, letter)].append(check)
                 borders[neighbour_anchor][(edge_colour, letter)].append(check)
@@ -341,7 +341,11 @@ class TicTacToeCode(ToricHexagonalCode, FloquetCode):
                     for (t, edge_colour, edge_letter) in blueprint.lid:
                         checks = borders[anchor][(edge_colour, edge_letter)]
                         lid.extend((t, check) for check in checks)
-                    detector = Drum(floor, lid, blueprint.learned)
+                    drum_anchor = min([
+                        pauli.qubit.coords
+                        for _, check in lid for pauli in check.paulis])
+                    drum_anchor = (drum_anchor[0] + 4, drum_anchor[1])
+                    detector = Drum(floor, lid, blueprint.learned, drum_anchor)
                     detectors[blueprint.learned].append(detector)
 
         return detectors

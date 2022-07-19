@@ -1,8 +1,8 @@
 from typing import Tuple, List
 
 from main.building_blocks.Check import Check
+from main.building_blocks.Qubit import Coordinates
 from main.building_blocks.pauli.PauliProduct import PauliProduct
-from main.building_blocks.pauli.utils import compose
 from main.utils.NiceRepr import NiceRepr
 from main.utils.utils import modulo_duplicates, mid
 
@@ -10,14 +10,18 @@ from main.utils.utils import modulo_duplicates, mid
 class Detector(NiceRepr):
     def __init__(
             self, floor: List[Tuple[int, Check]],
-            lid: List[Tuple[int, Check]], end: int):
+            lid: List[Tuple[int, Check]], end: int,
+            anchor: Coordinates = None):
         self.floor = floor
         self.lid = lid
         self.final_slice = [check for t, check in self.lid if t == 0]
         # Set negate to True if this compares two Pauli products that differ
-        # by a -1. Let subclasses set this themselves.
+        # by a -1. Let subclasses set this themselves. TODO - Remove this!
         self.negate = None
-        self.anchor = mid([check.anchor for _, check in self.lid])
+
+        if anchor is None:
+            anchor = mid([check.anchor for _, check in self.lid])
+        self.anchor = anchor
 
         # Including the same check twice in a detector does nothing - note
         # down the checks modulo pairs of duplicates.

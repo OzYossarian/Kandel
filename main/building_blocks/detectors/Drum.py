@@ -2,13 +2,15 @@ from __future__ import annotations
 from typing import List, Tuple
 
 from main.building_blocks.Check import Check
+from main.building_blocks.Qubit import Coordinates
 from main.building_blocks.detectors.Detector import Detector
 
 
 class Drum(Detector):
     def __init__(
             self, floor: List[Tuple[int, Check]],
-            lid: List[Tuple[int, Check]], end: int):
+            lid: List[Tuple[int, Check]], end: int,
+            anchor: Coordinates = None):
         """If we learn the value of the same stabilizer at two different
         timesteps, and the stabilizer remained stabilized in this interval,
         then we can multiply together the two values to detect whether an
@@ -20,7 +22,7 @@ class Drum(Detector):
           The 'end' denotes (modulo the schedule length) the first round by
         which every check in the detector is measured.
         """
-        super().__init__(floor, lid, end)
+        super().__init__(floor, lid, end, anchor)
 
         # Note down when the first and last checks in the floor
         # were measured.

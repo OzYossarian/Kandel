@@ -64,3 +64,11 @@ stabilizers = {
     State.Minus: PauliLetter('X', -1),
     State.I: PauliY,
     State.MinusI: PauliLetter('Y', -1)}
+
+plus_one_eigenstates = {
+    PauliZ: State.Zero, 
+    PauliLetter('Z', -1): State.One,
+    PauliX: State.Plus,
+    PauliLetter('X', -1): State.Minus,
+    PauliY: State.I,
+    PauliLetter('Y', -1): State.MinusI}

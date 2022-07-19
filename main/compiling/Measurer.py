@@ -114,11 +114,9 @@ class Measurer:
                 'OBSERVABLE_INCLUDE', targets, [index]))
         # Finally, return these instructions to the circuit to compile.
         if len(instructions) > 0 and shift_coords is not None:
-            # TODO - this is a temporary workaround - I initially wanted to
-            #  avoid the Circuit and Measurer having any concept of 'rounds',
-            #  but now we have an end of round instruction SHIFT_COORDS that
-            #  needs compiling. Need to decide how this will interact with
-            #  the de-idler in particular.
+            # TODO - this is a temporary workaround - better plan is to have
+            #  an 'end of round' triggered by the set of all measurements
+            #  in the round.
             instructions.append(stim.CircuitInstruction(
                 'SHIFT_COORDS', (), shift_coords))
         return instructions
@@ -128,10 +126,6 @@ class Measurer:
         targets = [
             self.measurement_target(check, round + rounds_ago)
             for rounds_ago, check in detector.checks]
-        if detector.negate:
-            # TODO! Need to flip whatever the detector result is.
-            #  Can't see how to do this in Stim!
-            pass
         # Anchor needs to now be a tuple for Stim to accept it.
         if track_coords and isinstance(detector.anchor, tuple):
             anchor = detector.anchor

@@ -28,10 +28,10 @@ class Determiner:
         tick, circuit = self.initialise_circuit(
             initial_states, state_init_instructions)
 
-        # Proceed one layer at a time, until no more 'open-bottom' (or
+        # Proceed one round at a time, until no more 'open-bottom' (or
         # 'truncated') detectors can occur.
         layer = 0
-        layer_detector_schedules = []
+        initial_detector_schedules = []
         min_floor_start = min(
             detector.floor_start for detector in code.detectors)
         done = min_floor_start >= 0
@@ -40,7 +40,7 @@ class Determiner:
             # There's going to be some lid-only detectors in this layer. Need
             # to figure out if any are non-deterministic and remove them.
             layer_detector_schedule = [[] for _ in range(code.schedule_length)]
-            layer_detector_schedules.append(layer_detector_schedule)
+            initial_detector_schedules.append(layer_detector_schedule)
             shift = layer * code.schedule_length
 
             for relative_round in range(code.schedule_length):
@@ -68,7 +68,11 @@ class Determiner:
                             0, layer, code.schedule_length)
                         # This detector should become a 'lid-only' detector in
                         # this layer, unless it's non-deterministic.
-                        lid_only = Stabilizer(checks, relative_round)
+                        anchor = min([
+                            pauli.qubit.coords
+                            for _, check in checks for pauli in check.paulis])
+                        anchor = (anchor[0] + 4, anchor[1])
+                        lid_only = Stabilizer(checks, relative_round, anchor)
                         if self.is_deterministic(lid_only, circuit, round):
                             layer_detector_schedule[relative_round].append(lid_only)
                     # In all other cases, build this detector for the first
@@ -79,17 +83,25 @@ class Determiner:
                     # next detector.
                     circuit.measurer.reset_triggers()
 
-                # Increase the tick before the next round
+                # Increase the tick before the next round. If all floors start
+                # at a non-negative round, then we're done with this special
+                # initialisation logic.
                 tick += 2
+                min_floor_start += 1
+                done = min_floor_start >= 0
 
-            # Increase the layer and find the minmum floor start round in the
+            # Increase the layer and find the minimum floor start round in the
             # next layer. If all floors start at a non-negative round, then
             # we're done with this special initialisation logic.
             layer += 1
-            min_floor_start += code.schedule_length
-            done = min_floor_start >= 0
 
-        return layer, layer_detector_schedules
+        # Now 'pad out' the rest of the last initial layer with the usual
+        # detectors.
+        if len(initial_detector_schedules) > 0:
+            x = len(initial_detector_schedules[-1])
+            initial_detector_schedules[-1] += code.detector_schedule[x:]
+
+        return layer, initial_detector_schedules
 
     def product_measurement_targets(self, check: Check, circuit: Circuit):
         assert len(check.paulis) > 0

@@ -1,13 +1,14 @@
 from typing import List, Tuple
 
 from main.building_blocks.Check import Check
+from main.building_blocks.Qubit import Coordinates
 from main.building_blocks.detectors.Detector import Detector
 
 
-# TODO - could rename Detector to Drum, and make a new abstract base class
-#  called Detector, which Stabilizer and Drum both inherit from?
 class Stabilizer(Detector):
-    def __init__(self, lid: List[Tuple[int, Check]], end: int):
+    def __init__(
+            self, lid: List[Tuple[int, Check]], end: int,
+            anchor: Coordinates = None):
         """ Usually a detector measures the same Pauli product at two
         different times (floor and lid) and then compares the two.
         Occasionally a detector need not have a floor - i.e. if we've just
@@ -18,5 +19,6 @@ class Stabilizer(Detector):
         stabilizer at this point.
           This class represents this sort of detector - ones that are in fact
         just measuring an existing known stabilizer."""
-        super().__init__([], lid, end)
+        super().__init__([], lid, end, anchor)
+        # TODO - remove!
         self.negate = False

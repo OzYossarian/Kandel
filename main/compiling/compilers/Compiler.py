@@ -1,6 +1,5 @@
 from abc import abstractmethod, ABC
 from typing import List, Dict
-
 from main.building_blocks.Check import Check
 from main.building_blocks.detectors.Detector import Detector
 from main.building_blocks.detectors.Drum import Drum
@@ -50,26 +49,6 @@ class Compiler(ABC):
             initial_states: Dict[Qubit, State],
             final_measurements: List[Pauli],
             logical_observables: List[LogicalOperator]):
-        # TODO - yet to settle on a good way of designing how the user ends
-        #  a memory experiment. We need to accomplish two things:
-        #  1. Measure a logical observable (maybe multiple if we have
-        #     multiple qubits)
-        #  2. Add detectors capable of detecting errors that occur between
-        #     the final measurement round and the logical observable measurement.
-        #  Some thoughts:
-        #    Knowing what the logical observable is (i.e. as a Pauli product)
-        #  at any given time is part of the code definition - completely
-        #  compiler independent. But how to measure it can be compiler
-        #  specific - e.g. perhaps one compiler only has native two qubit
-        #  measurements, while another can only do single qubit measurements.
-        #  This differs from initialisation - there, regardless of compiler,
-        #  a particular initial logical state just corresponds to some
-        #  particular initial data qubit states (though perhaps this is
-        #  itself a simplifying assumption - maybe in reality there are
-        #  architectures that can only initialise immediately into bell pairs
-        #  or something??)
-        #    For now, make simplifying assumption that all final measurements
-        #  are single qubit data measurements.
         initial_detector_schedules, tick, circuit = \
             self.compile_initialisation(code, initial_states)
         initial_layers = len(initial_detector_schedules)
@@ -130,10 +109,10 @@ class Compiler(ABC):
         # In the first few rounds (or even layers), there might be some
         # non-deterministic detectors that need removing.
         determiner = Determiner()
-        layers, layer_detector_schedules = determiner.get_initial_detectors(
+        layers, initial_detector_schedules = determiner.get_initial_detectors(
                 initial_states, self.state_init_instructions, code)
 
-        return layer_detector_schedules, tick, circuit
+        return initial_detector_schedules, tick, circuit
 
     @abstractmethod
     def add_ancilla_qubits(self, code):
@@ -238,6 +217,8 @@ class Compiler(ABC):
             self, final_measurements: List[Pauli],
             logical_observables: List[LogicalOperator], layer: int, tick: int,
             circuit: Circuit, code: Code):
+        # TODO - allow measurements other than single data qubits
+        #  measurements at the end? e.g. Pauli product measurements.
         # A single qubit measurement is just a weight-1 check, and writing
         # them as checks rather than Paulis fits them into the same framework
         # as other measurements.
