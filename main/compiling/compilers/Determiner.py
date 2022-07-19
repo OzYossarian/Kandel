@@ -1,4 +1,4 @@
-from typing import List, Dict
+from typing import List, Dict, Tuple
 
 import stim
 
@@ -27,6 +27,7 @@ class Determiner:
         #  initial states. For now, workaround by doing it using a circuit.
         tick, circuit = self.initialise_circuit(
             initial_states, state_init_instructions)
+        no_noise = NoNoise()
 
         # Proceed one round at a time, until no more 'open-bottom' (or
         # 'truncated') detectors can occur.
@@ -37,7 +38,7 @@ class Determiner:
         done = min_floor_start >= 0
 
         while not done:
-            # There's going to be some lid-only detectors in this layer. Need
+            # There's going to be some lid-only detectors in this round. Need
             # to figure out if any are non-deterministic and remove them.
             layer_detector_schedule = [[] for _ in range(code.schedule_length)]
             initial_detector_schedules.append(layer_detector_schedule)
@@ -47,52 +48,22 @@ class Determiner:
                 round = relative_round + shift
                 # First step is to compile the checks we would be measuring in
                 # this round. Use product measurements for simplicity.
-                for check in code.check_schedule[relative_round]:
-                    qubits = [pauli.qubit for pauli in check.paulis]
-                    targets = self.product_measurement_targets(check, circuit)
-                    measurement = Instruction(
-                        qubits, 'MPP', targets=targets, is_measurement=True)
-                    circuit.measure(measurement, check, round, tick)
+                self.measure_checks(round, relative_round, tick, circuit, code)
 
                 # Now try to add each detector into the circuit. If Stim
                 # doesn't find non-determinism, then this detector can be used
                 # in the actual main circuit we're compiling. If not, can't.
-                for detector in code.detector_schedule[relative_round]:
-                    assert detector.lid_end == relative_round
-                    if detector.floor_start + shift >= 0:
-                        # This detector is always going to be comparing a floor
-                        # with a lid, so should always be deterministic.
-                        layer_detector_schedule[relative_round].append(detector)
-                    else:
-                        checks = detector.checks_at_or_after(
-                            0, layer, code.schedule_length)
-                        # This detector should become a 'lid-only' detector in
-                        # this layer, unless it's non-deterministic.
-                        anchor = min([
-                            pauli.qubit.coords
-                            for _, check in checks for pauli in check.paulis])
-                        anchor = (anchor[0] + 4, anchor[1])
-                        lid_only = Stabilizer(checks, relative_round, anchor)
-                        if self.is_deterministic(lid_only, circuit, round):
-                            layer_detector_schedule[relative_round].append(lid_only)
-                    # In all other cases, build this detector for the first
-                    # time in the next layer.
+                simulator = stim.TableauSimulator()
+                simulator.do(circuit.to_stim(no_noise, track_coords=False))
+                round_detector_schedule = self.get_deterministic_detectors(
+                    relative_round, shift, layer, circuit, code, simulator)
 
-                    # Remove this detector from the little test circuit so that in
-                    # the next run of this for loop Stim is only considering the
-                    # next detector.
-                    circuit.measurer.reset_triggers()
-
-                # Increase the tick before the next round. If all floors start
-                # at a non-negative round, then we're done with this special
-                # initialisation logic.
+                layer_detector_schedule[relative_round] = round_detector_schedule
                 tick += 2
+                # If all floors start at a non-negative round, then we're done
+                # with this special initialisation logic.
                 min_floor_start += 1
                 done = min_floor_start >= 0
-
-            # Increase the layer and find the minimum floor start round in the
-            # next layer. If all floors start at a non-negative round, then
-            # we're done with this special initialisation logic.
             layer += 1
 
         # Now 'pad out' the rest of the last initial layer with the usual
@@ -102,6 +73,38 @@ class Determiner:
             initial_detector_schedules[-1] += code.detector_schedule[x:]
 
         return layer, initial_detector_schedules
+
+    def get_deterministic_detectors(
+            self, relative_round, shift, layer, circuit, code, simulator):
+        round_detector_schedule = []
+        for detector in code.detector_schedule[relative_round]:
+            assert detector.lid_end == relative_round
+            if detector.floor_start + shift >= 0:
+                # This detector is always going to be comparing a floor
+                # with a lid, so should always be deterministic.
+                round_detector_schedule.append(detector)
+            else:
+                timed_checks = detector.checks_at_or_after(
+                    0, layer, code.schedule_length)
+                if self.is_deterministic(timed_checks, circuit, simulator):
+                    # This detector should become a 'lid-only' detector
+                    # in this layer.
+                    anchor = min([
+                        pauli.qubit.coords
+                        for _, check in timed_checks
+                        for pauli in check.paulis])
+                    anchor = (anchor[0] + 4, anchor[1])
+                    lid_only = Stabilizer(timed_checks, relative_round, anchor)
+                    round_detector_schedule.append(lid_only)
+        return round_detector_schedule
+
+    def measure_checks(self, round, relative_round, tick, circuit, code):
+        for check in code.check_schedule[relative_round]:
+            qubits = [pauli.qubit for pauli in check.paulis]
+            targets = self.product_measurement_targets(check, circuit)
+            measurement = Instruction(
+                qubits, 'MPP', targets=targets, is_measurement=True)
+            circuit.measure(measurement, check, round, tick)
 
     def product_measurement_targets(self, check: Check, circuit: Circuit):
         assert len(check.paulis) > 0
@@ -134,18 +137,21 @@ class Determiner:
         return next_tick, circuit
 
     def is_deterministic(
-            self, stabilizer: Stabilizer, circuit: Circuit, round: int):
-        circuit.measurer.add_detectors([stabilizer], round)
-        stim_circuit = circuit.to_stim(NoNoise(), track_coords=False)
-        try:
-            stim_circuit.detector_error_model(
-                approximate_disjoint_errors=True)
-            # TODO - assert there's only one detector in this circuit.
-            return True
-        except ValueError as error:
-            if 'circuit contains non-deterministic detectors' in str(error):
-                return False
-            else:
-                # Pass it on!
-                raise error
+            self, timed_checks: List[Tuple[int, Check]], circuit: Circuit,
+            simulator: stim.TableauSimulator):
+        timed_checks = sorted(
+            timed_checks, key=lambda timed_check: -timed_check[0])
+        product = PauliProduct([
+            pauli for _, check in timed_checks for pauli in check.paulis])
+        string = self.to_pauli_string(product, circuit)
+        expectation = simulator.peek_observable_expectation(string)
+        # TODO - what if expectation is -1? This is deterministic, but Stim
+        #  doesn't seem to be set up for making a stabilizer detector from it
+        return expectation == 1
 
+    def to_pauli_string(self, product: PauliProduct, circuit: Circuit):
+        string = ['_' for _ in range(len(circuit.qubits))]
+        for pauli in product.paulis:
+            string[circuit.qubit_index(pauli.qubit)] = pauli.letter.letter
+        string = product.word.sign * stim.PauliString(''.join(string))
+        return string

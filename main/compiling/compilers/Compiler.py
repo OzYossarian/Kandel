@@ -271,7 +271,8 @@ class Compiler(ABC):
                     lid = [
                         (0, final_checks[qubit])
                         for qubit in detector_qubits]
-                    final_detectors.append(Drum(floor, lid, 0))
+                    final_detectors.append(
+                        Drum(floor, lid, 0, detector.anchor))
 
         # Finally, compile these detectors to the circuit.
         circuit.measurer.add_detectors(final_detectors, round)
