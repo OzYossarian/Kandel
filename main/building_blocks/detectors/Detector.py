@@ -43,6 +43,6 @@ class Detector(NiceRepr):
         face = sorted(face, key=lambda check: -check[0])
         paulis = [
             pauli for (_, check) in face
-            for pauli in check.paulis]
+            for pauli in check.paulis.values()]
         stabilizer = PauliProduct(paulis)
         return stabilizer

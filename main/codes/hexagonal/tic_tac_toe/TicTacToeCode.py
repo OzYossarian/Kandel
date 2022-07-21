@@ -10,7 +10,7 @@ from main.building_blocks.pauli.Pauli import Pauli
 from main.building_blocks.pauli.PauliLetter import PauliLetter
 from main.codes.hexagonal.ToricHexagonalCode import ToricHexagonalCode
 from main.codes.hexagonal.tic_tac_toe.DetectorBlueprint import DetectorBlueprint
-from main.utils.utils import mid, xor
+from main.utils.utils import mid, xor, tuple_minus
 
 TicTacToeRoute = List[Tuple[Colour, PauliLetter]]
 
@@ -120,7 +120,7 @@ class TicTacToeCode(ToricHexagonalCode):
             self, anchor, edge_colour, pauli_letters, checks, borders):
         """Add checks of one colour around the border of a single plaquette.
         """
-        corners = self.get_neighbours(anchor)
+        corners = self.get_neighbour_coords(anchor)
         for j in range(3):
             u, v = corners[2 * j], corners[2 * j + 1]
             midpoint = mid([u, v])
@@ -137,7 +137,9 @@ class TicTacToeCode(ToricHexagonalCode):
 
             for letter in pauli_letters:
                 # Create the check object and note which plaquettes it borders
-                paulis = [Pauli(qubit_u, letter), Pauli(qubit_v, letter)]
+                paulis = {
+                    (tuple_minus(u, midpoint)): Pauli(qubit_u, letter),
+                    (tuple_minus(v, midpoint)): Pauli(qubit_v, letter)}
                 check = Check(paulis, self.wrap_coords(midpoint), edge_colour)
                 checks[(edge_colour, letter)].append(check)
                 borders[anchor][(edge_colour, letter)].append(check)
@@ -340,11 +342,7 @@ class TicTacToeCode(ToricHexagonalCode):
                     for (t, edge_colour, edge_letter) in blueprint.lid:
                         checks = borders[anchor][(edge_colour, edge_letter)]
                         lid.extend((t, check) for check in checks)
-                    drum_anchor = min([
-                        pauli.qubit.coords
-                        for _, check in lid for pauli in check.paulis])
-                    drum_anchor = (drum_anchor[0] + 4, drum_anchor[1])
-                    detector = Drum(floor, lid, blueprint.learned, drum_anchor)
+                    detector = Drum(floor, lid, blueprint.learned, anchor)
                     detectors[blueprint.learned].append(detector)
 
         return detectors
@@ -486,13 +484,13 @@ class TicTacToeCode(ToricHexagonalCode):
             # contain an identity Pauli with some sign - only consider checks
             # that touch the operator at a non-identity Pauli to be
             # intersecting.
-            check_qubits = {pauli.qubit for pauli in check.paulis}
+            check_qubits = {pauli.qubit for pauli in check.paulis.values()}
             return any(
                 pauli.letter.letter != 'I' and pauli.qubit in check_qubits
                 for pauli in operator.paulis)
 
         def is_horizontal(check):
-            y_coords = [pauli.qubit.coords[1] for pauli in check.paulis]
+            y_coords = [pauli.qubit.coords[1] for pauli in check.paulis.values()]
             return len(set(y_coords)) == 1
 
         check_type = self.tic_tac_toe_route[relative_round]
@@ -507,7 +505,7 @@ class TicTacToeCode(ToricHexagonalCode):
         intersecting_paulis = [
             pauli
             for check in intersecting_checks
-            for pauli in check.paulis]
+            for pauli in check.paulis.values()]
 
         operator.update(intersecting_paulis)
         return intersecting_checks

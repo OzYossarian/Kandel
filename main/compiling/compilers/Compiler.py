@@ -17,6 +17,7 @@ from main.compiling.noise.models.NoNoise import NoNoise
 from main.compiling.noise.models.NoiseModel import NoiseModel
 from main.compiling.syndrome_extraction.extractors.SyndromeExtractor import SyndromeExtractor
 from main.enums import State
+from main.utils.utils import xor
 
 
 class Compiler(ABC):
@@ -48,7 +49,20 @@ class Compiler(ABC):
             self, code: Code, layers: int,
             initial_states: Dict[Qubit, State],
             final_measurements: List[Pauli],
-            logical_observables: List[LogicalOperator]):
+            logical_observables: List[LogicalOperator] = None):
+
+        # # TODO - actually might make more sense to only allow
+        # #  initial_stabilizers and final_stabilizers?? Is more general! But no
+        # #  harm keeping both for now.
+        # if not xor(initial_states is None, initial_stabilizers is None):
+        #     raise ValueError(
+        #         'Exactly one of initial_states and initial_stabilizers '
+        #         'should be provided.')
+        # if not xor(final_measurements is None, final_stabilizers is None):
+        #     raise ValueError(
+        #         'Exactly one of final_measurements and final_stabilizers '
+        #         'should be provided.')
+
         initial_detector_schedules, tick, circuit = \
             self.compile_initialisation(code, initial_states)
         initial_layers = len(initial_detector_schedules)
@@ -98,9 +112,16 @@ class Compiler(ABC):
         # gauge fixing protocol),
         circuit = Circuit()
         tick = 0
-
-        # Add ancilla qubits (if needed)
         self.add_ancilla_qubits(code)
+
+        # Figure out states in which to initialise data qubits in order to
+        # satisfy desired initial stabilizers.
+        # initial_states = self.get_initial_states(initial_stabilizers)
+        # if len(initial_states) != len(code.data_qubits):
+        #     raise ValueError(
+        #         'Some data qubits\' initial states aren\'t determined by the '
+        #         'given initial stabilizers! Please give a complete set of '
+        #         'desired stabilizers for the first round of measurements.')
 
         # Initialise data qubits, and set the 'current' tick to be the tick
         # we're on after all data qubits have been initialised.
@@ -110,7 +131,7 @@ class Compiler(ABC):
         # non-deterministic detectors that need removing.
         determiner = Determiner()
         layers, initial_detector_schedules = determiner.get_initial_detectors(
-                initial_states, self.state_init_instructions, code)
+            initial_states, self.state_init_instructions, code)
 
         return initial_detector_schedules, tick, circuit
 
@@ -118,6 +139,32 @@ class Compiler(ABC):
     def add_ancilla_qubits(self, code):
         # Implementation specific!
         pass
+
+    # def get_initial_states(self, initial_stabilizers: List[Stabilizer]):
+    #     initial_states = {}
+    #     for stabilizer in initial_stabilizers:
+    #         # Stabilizers can either be a single check, or a tuple of
+    #         # multiple checks
+    #         if isinstance(stabilizer, tuple):
+    #             product = PauliProduct(
+    #                 pauli for check in stabilizer for pauli in check.paulis)
+    #         else:
+    #             product = PauliProduct(stabilizer.paulis)
+    #         # TODO - does any extra work need to be done if it's -1?
+    #         assert product.word.sign in [-1, 1]
+    #         for pauli in product.paulis:
+    #             # Can just use the plus one eigenstate of the Pauli, ignoring sign.
+    #             pauli.letter.sign = 1
+    #             initial_state = plus_one_eigenstates[pauli.letter]
+    #             existing = initial_states.get(pauli.qubit, None)
+    #             if existing is None:
+    #                 initial_states[pauli.qubit] = initial_state
+    #             elif existing != initial_state:
+    #                 raise ValueError(
+    #                     f'The desired initial stabilizers are inconsistent! '
+    #                     f'Qubit at {pauli.qubit.coords} would need to be in '
+    #                     f'state {existing} and {initial_state} at once.')
+    #     return initial_states
 
     def initialize_qubits(
             self, initial_states: Dict[Qubit, State],
@@ -222,9 +269,13 @@ class Compiler(ABC):
         # A single qubit measurement is just a weight-1 check, and writing
         # them as checks rather than Paulis fits them into the same framework
         # as other measurements.
-        final_checks = {
-            pauli.qubit: Check([pauli], pauli.qubit.coords)
-            for pauli in final_measurements}
+        final_checks = {}
+        for pauli in final_measurements:
+            zero = tuple([0 for _ in pauli.qubit.coords]) \
+                if isinstance(pauli.qubit.coords, tuple) \
+                else 0
+            check = Check({zero: pauli}, pauli.qubit.coords)
+            final_checks[pauli.qubit] = check
 
         # First, compile instructions for actually measuring the qubits.
         round = layer * code.schedule_length
@@ -256,11 +307,11 @@ class Compiler(ABC):
                     checks_measured, key=lambda check: -check[0])
                 detector_product = PauliProduct([
                     pauli for _, check in detector_checks
-                    for pauli in check.paulis])
+                    for pauli in check.paulis.values()])
                 detector_qubits = {
                     pauli.qubit for pauli in detector_product.paulis}
                 measurements = [
-                    final_checks[data_qubit].paulis[0]
+                    list(final_checks[data_qubit].paulis.values())[0]
                     for data_qubit in detector_qubits]
                 measurement_product = PauliProduct(measurements)
                 if detector_product.equal_up_to_sign(measurement_product):
@@ -289,7 +340,7 @@ class Compiler(ABC):
                 # Just double check that what we measured is actually what we
                 # want to use to form the logical observable.
                 check = final_checks[pauli.qubit]
-                assert check.paulis[0].letter == pauli.letter
+                assert list(check.paulis.values())[0].letter == pauli.letter
                 logical_checks.append(check)
             # Compile to the circuit.
             circuit.measurer.add_to_logical_observable(

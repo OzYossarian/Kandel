@@ -20,7 +20,7 @@ def test_distance_3_triangular_colour_code():
         (14, 0),
     }
 
-    plaquette_weights = {len(check.paulis) for check in colour_code.checks}
+    plaquette_weights = {check.weight for check in colour_code.checks}
     assert plaquette_weights == {4}
 
 
@@ -31,5 +31,5 @@ def test_distance_5_triangular_colour_code():
     assert len(colour_code.checks) == 2 * 9
     plaquette_anchors = {check.anchor for check in colour_code.checks}
     assert len(plaquette_anchors) == 9
-    plaquette_weights = {len(check.paulis) for check in colour_code.checks}
+    plaquette_weights = {check.weight for check in colour_code.checks}
     assert plaquette_weights == {4, 6}

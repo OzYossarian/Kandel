@@ -1,11 +1,9 @@
 from collections import defaultdict
-from functools import reduce
 from statistics import mean
 from typing import List, Tuple, Hashable, Iterable
 from pathlib import Path
 
 from main.building_blocks.Qubit import Coordinates
-from main.building_blocks.pauli.Pauli import Pauli
 
 
 def output_path() -> Path:
@@ -37,3 +35,11 @@ def modulo_duplicates(xs: List[Hashable], n: int):
         for k in keep:
             result[k] = xs[k]
     return [r for r in result if r is not None]
+
+
+def tuple_sum(*tuples: Tuple[int | float, ...]):
+    return tuple(map(sum, zip(*tuples)))
+
+
+def tuple_minus(xs: Tuple[int | float, ...], ys: Tuple[int | float, ...]) -> object:
+    return tuple(map(lambda pair: pair[0]-pair[1], zip(xs, ys)))

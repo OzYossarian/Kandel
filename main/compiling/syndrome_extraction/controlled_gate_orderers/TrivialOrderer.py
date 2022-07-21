@@ -10,5 +10,5 @@ class TrivialOrderer(ControlledGateOrderer):
         # This extractor should be used in cases where it is safe to place
         # CNOTs in the order that the Paulis are listed within the check, e.g.
         # in a tic-tac-toe code, or repetition code.
-        return check.paulis
+        return list(check.paulis.values())
 

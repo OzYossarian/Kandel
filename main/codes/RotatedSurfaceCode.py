@@ -1,4 +1,3 @@
-from turtle import color
 from typing import Dict
 from main.building_blocks.Check import Check
 from main.building_blocks.logical.LogicalOperator import LogicalOperator
@@ -7,8 +6,6 @@ from main.building_blocks.pauli.Pauli import Pauli
 from main.building_blocks.pauli.PauliLetter import PauliZ, PauliX
 from main.building_blocks.Qubit import Qubit, Coordinates
 from main.codes.Code import Code
-from main.enums import State
-from main.Colour import Green, Red
 
 
 class RotatedSurfaceCode(Code):
@@ -41,25 +38,20 @@ class RotatedSurfaceCode(Code):
         checks = []
         y_middle = distance - 1
         pauli_letters = [PauliX, PauliZ]
-        letter_to_colour = dict()
-        letter_to_colour[PauliX] = Red
-        letter_to_colour[PauliZ] = Green
         starting_x, starting_y = (1, y_middle)
 
         # Diagonal lines of faces
-        for i in range(distance - 1):
+        for _ in range(distance - 1):
             for j in range(distance - 1):
                 anchor = (starting_x + j, starting_y - j)
                 letter = pauli_letters[anchor[0] % 2]
 
-                paulis = [
-                    Pauli(data_qubits[anchor[0] + 1, anchor[1]], letter),
-                    Pauli(data_qubits[anchor[0], anchor[1] + 1], letter),
-                    Pauli(data_qubits[anchor[0] - 1, anchor[1]], letter),
-                    Pauli(data_qubits[anchor[0], anchor[1] - 1], letter),
-                ]
-                # test colour
-                check = Check(paulis, anchor, colour=letter_to_colour[letter])
+                paulis = {
+                    (1, 0): Pauli(data_qubits[anchor[0] + 1, anchor[1]], letter),
+                    (0, 1): Pauli(data_qubits[anchor[0], anchor[1] + 1], letter),
+                    (-1, 0): Pauli(data_qubits[anchor[0] - 1, anchor[1]], letter),
+                    (0, -1): Pauli(data_qubits[anchor[0], anchor[1] - 1], letter)}
+                check = Check(paulis, anchor)
                 checks.append(check)
 
             starting_x += 1
@@ -76,38 +68,34 @@ class RotatedSurfaceCode(Code):
         for i in range(0, distance // 2):
             # bottom left boundary
             anchor = (2 * i + 1, y_middle - 2 * (i + 1))
-            paulis = [
-                Pauli(data_qubits[anchor[0] + 1, anchor[1]], PauliZ),
-                Pauli(data_qubits[anchor[0], anchor[1] + 1], PauliZ),
-            ]
-            new_check = Check(paulis, anchor, Green)
+            paulis = {
+                (1, 0): Pauli(data_qubits[anchor[0] + 1, anchor[1]], PauliZ),
+                (0, 1): Pauli(data_qubits[anchor[0], anchor[1] + 1], PauliZ)}
+            new_check = Check(paulis, anchor)
             checks.append(new_check)
 
             # top right boundary
             anchor = (x_middle + 2 * i + 1, 2 * (distance - 1) - 2 * i)
-            paulis = [
-                Pauli(data_qubits[anchor[0], anchor[1] - 1], PauliZ),
-                Pauli(data_qubits[anchor[0] - 1, anchor[1]], PauliZ),
-            ]
-            new_check = Check(paulis, anchor, colour=Green)
+            paulis = {
+                (0, -1): Pauli(data_qubits[anchor[0], anchor[1] - 1], PauliZ),
+                (-1, 0): Pauli(data_qubits[anchor[0] - 1, anchor[1]], PauliZ)}
+            new_check = Check(paulis, anchor)
             checks.append(new_check)
 
             # top left boundary
             anchor = (2 * i, y_middle + 2 * i + 1)
-            paulis = [
-                Pauli(data_qubits[anchor[0] + 1, anchor[1]], PauliX),
-                Pauli(data_qubits[anchor[0], anchor[1] - 1], PauliX),
-            ]
-            new_check = Check(paulis, anchor, colour=Red)
+            paulis = {
+                (1, 0): Pauli(data_qubits[anchor[0] + 1, anchor[1]], PauliX),
+                (0, -1): Pauli(data_qubits[anchor[0], anchor[1] - 1], PauliX)}
+            new_check = Check(paulis, anchor)
             checks.append(new_check)
 
             # bottom right boundary
             anchor = (x_middle + 2 * (i + 1), 2 * i + 1)
-            paulis = [
-                Pauli(data_qubits[anchor[0], anchor[1] + 1], PauliX),
-                Pauli(data_qubits[anchor[0] - 1, anchor[1]], PauliX),
-            ]
-            new_check = Check(paulis, anchor, colour=Red)
+            paulis = {
+                (0, 1): Pauli(data_qubits[anchor[0], anchor[1] + 1], PauliX),
+                (-1, 0): Pauli(data_qubits[anchor[0] - 1, anchor[1]], PauliX)}
+            new_check = Check(paulis, anchor)
             checks.append(new_check)
         return checks
 
