@@ -1,5 +1,5 @@
 from abc import abstractmethod, ABC
-from typing import List, Dict
+from typing import List, Dict, Tuple
 from main.building_blocks.Check import Check
 from main.building_blocks.detectors.Detector import Detector
 from main.building_blocks.detectors.Drum import Drum
@@ -47,21 +47,23 @@ class Compiler(ABC):
 
     def compile_code(
             self, code: Code, layers: int,
-            initial_states: Dict[Qubit, State],
-            final_measurements: List[Pauli],
+            initial_states: Dict[Qubit, State] = None,
+            initial_stabilizers: List[Check | Tuple[Check, ...]] = None,
+            final_measurements: List[Pauli] = None,
+            final_stabilizers: List[Check | Tuple[Check, ...]] = None,
             logical_observables: List[LogicalOperator] = None):
 
-        # # TODO - actually might make more sense to only allow
-        # #  initial_stabilizers and final_stabilizers?? Is more general! But no
-        # #  harm keeping both for now.
-        # if not xor(initial_states is None, initial_stabilizers is None):
-        #     raise ValueError(
-        #         'Exactly one of initial_states and initial_stabilizers '
-        #         'should be provided.')
-        # if not xor(final_measurements is None, final_stabilizers is None):
-        #     raise ValueError(
-        #         'Exactly one of final_measurements and final_stabilizers '
-        #         'should be provided.')
+        # TODO - actually might make more sense to only allow
+        #  initial_stabilizers and final_stabilizers?? Is more general! But no
+        #  harm keeping both for now.
+        if not xor(initial_states is None, initial_stabilizers is None):
+            raise ValueError(
+                'Exactly one of initial_states and initial_stabilizers '
+                'should be provided.')
+        if not xor(final_measurements is None, final_stabilizers is None):
+            raise ValueError(
+                'Exactly one of final_measurements and final_stabilizers '
+                'should be provided.')
 
         initial_detector_schedules, tick, circuit = \
             self.compile_initialisation(code, initial_states)
@@ -336,7 +338,7 @@ class Compiler(ABC):
         # qubit measurements.
         for observable in logical_observables:
             logical_checks = []
-            for pauli in observable.initial_paulis:
+            for pauli in observable.at_round(-1):
                 # Just double check that what we measured is actually what we
                 # want to use to form the logical observable.
                 check = final_checks[pauli.qubit]

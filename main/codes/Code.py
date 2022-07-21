@@ -5,6 +5,7 @@ from typing import Dict, Any, List, Set
 from typing import TYPE_CHECKING
 
 from main.building_blocks.detectors.Drum import Drum
+from main.building_blocks.logical.LogicalOperator import LogicalOperator
 from main.building_blocks.logical.LogicalQubit import LogicalQubit
 
 if TYPE_CHECKING:
@@ -71,7 +72,11 @@ class Code:
             for round in self.detector_schedule
             for detector in round)
 
-    def update_logical_qubits(self, round: int):
+    def update_logical_qubits(
+            self, round: int) -> Dict[LogicalOperator, List[Check]]:
+        # Should update the operators of the logical qubits, and return all
+        # the checks that were multiplied into the operator to perform this
+        # update.
         return defaultdict(list)
 
     def transform_coords(self, qpu: QPU):

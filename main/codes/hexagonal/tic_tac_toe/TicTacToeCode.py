@@ -442,7 +442,6 @@ class TicTacToeCode(ToricHexagonalCode):
 
     def update_logical_qubits(self, round: int):
         # 'round' is the round we've just finished doing measurements for.
-        relative_round = round % self.schedule_length
         update_checks = defaultdict(list)
 
         # Mustn't use relative round in the following
@@ -453,33 +452,33 @@ class TicTacToeCode(ToricHexagonalCode):
             # Need to update the logical X operators
             logical = self.logical_qubits[0].x
             update_checks[logical] = self.update_operator(
-                logical, relative_round, vertical=False)
+                logical, round, vertical=False)
             logical = self.logical_qubits[1].x
             update_checks[logical] = self.update_operator(
-                logical, relative_round, vertical=True)
+                logical, round, vertical=True)
 
         if next_z_type != prev_z_type:
             # Need to update the logical Z operators
             logical = self.logical_qubits[0].z
             update_checks[logical] = self.update_operator(
-                logical, relative_round, vertical=True)
+                logical, round, vertical=True)
             logical = self.logical_qubits[1].z
             update_checks[logical] = self.update_operator(
-                logical, relative_round, vertical=False)
+                logical, round, vertical=False)
 
         # Return - for each operator - the checks that have been multiplied
         # into this operator in order to update it.
         return update_checks
 
     def update_operator(
-            self, operator: LogicalOperator, relative_round: int,
+            self, operator: LogicalOperator, round: int,
             vertical: bool = False):
         # Slightly different depending on whether operator is vertical or
         # horizontal - horizontal operators are multiplied by ALL
         # intersecting checks, whereas vertical ones are only multiplied by
         # those in their support (i.e. not horizontal ones).
 
-        def intersect(check, operator):
+        def intersect(check: Check, operator: LogicalOperator):
             # It's possible for the Paulis that make up the operator to
             # contain an identity Pauli with some sign - only consider checks
             # that touch the operator at a non-identity Pauli to be
@@ -487,12 +486,13 @@ class TicTacToeCode(ToricHexagonalCode):
             check_qubits = {pauli.qubit for pauli in check.paulis.values()}
             return any(
                 pauli.letter.letter != 'I' and pauli.qubit in check_qubits
-                for pauli in operator.paulis)
+                for pauli in operator.at_round(round - 1))
 
         def is_horizontal(check):
             y_coords = [pauli.qubit.coords[1] for pauli in check.paulis.values()]
             return len(set(y_coords)) == 1
 
+        relative_round = round % self.schedule_length
         check_type = self.tic_tac_toe_route[relative_round]
         checks = self.checks_by_type[check_type]
         intersecting_checks = [
@@ -507,5 +507,5 @@ class TicTacToeCode(ToricHexagonalCode):
             for check in intersecting_checks
             for pauli in check.paulis.values()]
 
-        operator.update(intersecting_paulis)
+        operator.update(round, intersecting_paulis)
         return intersecting_checks

@@ -28,6 +28,7 @@ fcc = FloquetColourCode(4)
 hcc = HoneycombCode(4)
 
 # Print codes
+printer = Printer2D()
 
 # Orderers
 trivial_orderer = TrivialOrderer()
@@ -64,14 +65,20 @@ fcc_initials = {qubit: State.Plus for qubit in fcc_qubits}
 fcc_finals = [Pauli(qubit, PauliX) for qubit in fcc_qubits]
 fcc_logicals = [fcc.logical_qubits[1].x]
 phenom_fcc_circuit = phenom_pure_trivial_compiler.compile_code(
-    fcc, 2, fcc_initials, fcc_finals, fcc_logicals)
+    fcc, 2,
+    initial_states=fcc_initials,
+    final_measurements=fcc_finals,
+    logical_observables=fcc_logicals)
 
 hcc_qubits = list(hcc.data_qubits.values())
 hcc_initials = {qubit: State.Plus for qubit in hcc_qubits}
 hcc_finals = [Pauli(qubit, PauliX) for qubit in hcc_qubits]
 hcc_logicals = [hcc.logical_qubits[0].x]
 phenom_hcc_circuit = phenom_pure_trivial_compiler.compile_code(
-    hcc, hcc.distance, hcc_initials, hcc_finals, hcc_logicals)
+    hcc, hcc.distance,
+    initial_states=hcc_initials,
+    final_measurements=hcc_finals,
+    logical_observables=hcc_logicals)
 
 # cProfile.run(
 #      'phenom_pure_trivial_compiler.compile_code('
@@ -83,7 +90,10 @@ rsc_initials = {qubit: State.Zero for qubit in rsc_qubits}
 rsc_finals = [Pauli(qubit, PauliZ) for qubit in rsc_qubits]
 rsc_logicals = [rsc.logical_qubits[0].z]
 phenom_rsc_circuit = phenom_pure_rsc_compiler.compile_code(
-     rsc, rsc.distance, rsc_initials, rsc_finals, rsc_logicals)
+    rsc, rsc.distance,
+    initial_states=rsc_initials,
+    final_measurements=rsc_finals,
+    logical_observables=rsc_logicals)
 
 # cProfile.run(
 #      'phenom_pure_rsc_compiler.compile_code(rsc, rsc.distance, rsc_initials, rsc_finals, rsc_logicals)',
@@ -94,7 +104,10 @@ rep_initials = {qubit: State.Zero for qubit in rep_qubits}
 rep_finals = [Pauli(qubit, PauliZ) for qubit in rep_qubits]
 rep_logicals = [rep_code.logical_qubits[0].z]
 phenom_rep_circuit = phenom_pure_trivial_compiler.compile_code(
-    rep_code, rep_code.distance, rep_initials, rep_finals, rep_logicals)
+    rep_code, rep_code.distance,
+    initial_states=rep_initials,
+    final_measurements=rep_finals,
+    logical_observables=rep_logicals)
 
 # Printing
 print(phenom_rep_circuit)
