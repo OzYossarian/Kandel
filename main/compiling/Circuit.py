@@ -155,8 +155,11 @@ class Circuit:
                         self.add_instruction(tick + 1, noise)
 
     def to_stim(
-            self, noise_model: NoiseModel, track_coords: bool = True,
-            track_progress: bool = True):
+        self,
+        noise_model: NoiseModel,
+        track_coords: bool = True,
+        track_progress: bool = True,
+    ):
         if track_progress:
             with alive_bar(len(self.instructions), force_tty=True) as bar:
                 return self._to_stim(noise_model, track_coords, bar)

@@ -23,7 +23,11 @@ from main.enums import State
 
 class Compiler(ABC):
     def __init__(
-        self, noise_model: NoiseModel | None, syndrome_extractor: SyndromeExtractor
+        self,
+        noise_model: NoiseModel | None,
+        syndrome_extractor: SyndromeExtractor,
+        gate_set=("CNOT", "RZ", "MZ", "RX", "MX", "RY", "MY"),
+
     ):
         if noise_model is None:
             noise_model = NoNoise()
@@ -38,6 +42,7 @@ class Compiler(ABC):
             State.MinusI: ["RY", "X"],
         }
         self.basis_measurements = {PauliX: "MX", PauliY: "MY", PauliZ: "MZ"}
+        self.gate_set = gate_set
 
     def compile_qpu(
         self, qpu: QPU, layers: int, tick: int = 0, circuit: Circuit = None
