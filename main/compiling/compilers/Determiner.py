@@ -1,9 +1,12 @@
+import math
+from collections import defaultdict
 from typing import List, Dict, Tuple
 
 import stim
 
 from main.building_blocks.Check import Check
 from main.building_blocks.Qubit import Qubit
+from main.building_blocks.detectors.Detector import Detector
 from main.building_blocks.detectors.Stabilizer import Stabilizer
 from main.building_blocks.pauli.PauliProduct import PauliProduct
 from main.codes.Code import Code
@@ -14,7 +17,11 @@ from main.enums import State
 
 
 class Determiner:
-    def __init__(self):
+    def __init__(
+            self, code: Code,
+            state_init_instructions: Dict[State, List[str]]):
+        self.code = code
+        self.state_init_instructions = state_init_instructions
         self.stim_pauli_targeters = {
             'X': stim.target_x,
             'Y': stim.target_y,
@@ -22,83 +29,127 @@ class Determiner:
 
     def get_initial_detectors(
             self, initial_states: Dict[Qubit, State],
-            state_init_instructions: Dict[State, List[str]], code: Code):
-        # TODO - set up some Stim tableau stuff, using generators defined by
-        #  initial states. For now, workaround by doing it using a circuit.
-        tick, circuit = self.initialise_circuit(
-            initial_states, state_init_instructions)
-        no_noise = NoNoise()
+            initial_stabilizers: List[Stabilizer]):
+        # Create a circuit initialised in the given states
+        tick, circuit = self.initialise_circuit(initial_states)
 
-        # Proceed one round at a time, until no more 'open-bottom' (or
-        # 'truncated') detectors can occur.
-        layer = 0
-        initial_detector_schedules = []
+        # If we've been given initial stabilizers, read them into the
+        # initial schedule. Else, start with an empty schedule.
+        if initial_stabilizers is not None:
+            tick, initial_detector_schedule = self.process_stabilizers(
+                initial_stabilizers, tick, circuit)
+            round = len(initial_detector_schedule)
+        else:
+            initial_detector_schedule = defaultdict(list)
+            round = 0
+
+        # We're done when no more 'lid-only' detectors can occur
         min_floor_start = min(
-            detector.floor_start for detector in code.detectors)
+            detector.floor_start for detector in self.code.detectors)
         done = min_floor_start >= 0
 
+        no_noise = NoNoise()
         while not done:
-            # There's going to be some lid-only detectors in this round. Need
-            # to figure out if any are non-deterministic and remove them.
-            layer_detector_schedule = [[] for _ in range(code.schedule_length)]
-            initial_detector_schedules.append(layer_detector_schedule)
-            shift = layer * code.schedule_length
+            round_detectors = self.simulate_round(
+                round, tick, circuit, no_noise)
+            initial_detector_schedule[round].extend(round_detectors)
 
-            for relative_round in range(code.schedule_length):
-                round = relative_round + shift
+            # If all floors start at a non-negative round, then we're done
+            # with this special initialisation logic.
+            min_floor_start += 1
+            done = min_floor_start >= 0
+            round += 1
+            tick += 2
 
-                # First peek at the expectation of each potential lid-only
-                # detector and see which are deterministic.
-                stim_circuit = circuit.to_stim(
-                    no_noise, track_coords=False, track_progress=False)
-                simulator = stim.TableauSimulator()
-                simulator.do(stim_circuit)
-                round_detector_schedule = self.get_deterministic_detectors(
-                    relative_round, shift, layer, circuit, code, simulator)
-                layer_detector_schedule[relative_round] = round_detector_schedule
+        # Now split the schedule into chunks of the right size.
+        initial_detector_schedules = self.split_schedule(
+            initial_detector_schedule)
+        return initial_detector_schedules
 
-                # Now compile the checks we would be measuring in this round,
-                # in preparation for looking for deterministic detectors next
-                # round. Use product measurements for simplicity.
-                self.measure_checks(round, relative_round, tick, circuit, code)
+    def split_schedule(
+            self, initial_detector_schedule: Dict[int, List[Detector]]):
+        initial_rounds = len(initial_detector_schedule)
+        initial_layers = math.ceil(initial_rounds / self.code.schedule_length)
+        initial_detector_schedules = [[] for _ in range(initial_layers)]
 
-                tick += 2
-                # If all floors start at a non-negative round, then we're done
-                # with this special initialisation logic.
-                min_floor_start += 1
-                done = min_floor_start >= 0
-            layer += 1
+        # Chunk up the initial schedule into layers.
+        length = self.code.schedule_length  # Handy shorthand
+        schedule = sorted(initial_detector_schedule.items())
+        for round, round_detectors in schedule:
+            layer = round // length
+            initial_detector_schedules[layer].append(round_detectors)
 
-        # Now 'pad out' the rest of the last initial layer with the usual
-        # detectors.
-        if len(initial_detector_schedules) > 0:
-            x = len(initial_detector_schedules[-1])
-            initial_detector_schedules[-1] += code.detector_schedule[x:]
+        # Maybe pad out the final initial layer with the usual detectors.
+        truncation = len(initial_detector_schedules[-1])
+        if truncation < self.code.schedule_length:
+            initial_detector_schedules[-1] += \
+                self.code.detector_schedule[truncation:]
 
-        return layer, initial_detector_schedules
+        return initial_detector_schedules
 
-    def get_deterministic_detectors(
-            self, relative_round, shift, layer, circuit, code, simulator):
-        round_detector_schedule = []
-        for detector in code.detector_schedule[relative_round]:
+    def simulate_round(self, round, tick, circuit, no_noise):
+        # First peek at the expectation of each potential lid-only
+        # detector and see which are deterministic.
+        stim_circuit = circuit.to_stim(
+            no_noise, track_coords=False, track_progress=False)
+        simulator = stim.TableauSimulator()
+        simulator.do(stim_circuit)
+        round_detectors = self.get_round_detectors(
+            round, circuit, simulator)
+
+        # Now compile the checks we would be measuring in this round,
+        # in preparation for looking for deterministic detectors next
+        # round. Use product measurements for simplicity.
+        self.measure_checks(round, tick, circuit)
+
+        return round_detectors
+
+    def process_stabilizers(
+            self, initial_stabilizers: List[Stabilizer], tick: int,
+            circuit: Circuit):
+        # We assume that the given initial stabilizers replace any potential
+        # 'lid-only' detectors that might otherwise have appeared in these
+        # initial rounds. Then the first round we're actually interested in
+        # is the one after the last given stabilizer.
+
+        # Add the stabilizers into the initial schedule
+        initial_detector_schedule = defaultdict(list)
+        for stabilizer in initial_stabilizers:
+            initial_detector_schedule[stabilizer.end].append(stabilizer)
+
+        # Measure the checks for the rounds we're not so interested in
+        for round in range(len(initial_detector_schedule)):
+            self.measure_checks(round, tick, circuit)
+            tick += 2
+
+        return tick, initial_detector_schedule
+
+    def get_round_detectors(
+            self, round: int, circuit: Circuit, simulator:
+            stim.TableauSimulator):
+        layer, relative_round = divmod(round, self.code.schedule_length)
+        shift = layer * self.code.schedule_length
+        round_detectors = []
+        for detector in self.code.detector_schedule[relative_round]:
             assert detector.lid_end == relative_round
             if detector.floor_start + shift >= 0:
                 # This detector is always going to be comparing a floor
                 # with a lid, so should always be deterministic.
-                round_detector_schedule.append(detector)
+                round_detectors.append(detector)
             else:
                 timed_checks = detector.checks_at_or_after(
-                    0, layer, code.schedule_length)
+                    0, layer, self.code.schedule_length)
                 if self.is_deterministic(timed_checks, circuit, simulator):
                     # This detector should become a 'lid-only' detector
                     # in this layer.
                     lid_only = Stabilizer(
                         timed_checks, relative_round, detector.anchor)
-                    round_detector_schedule.append(lid_only)
-        return round_detector_schedule
+                    round_detectors.append(lid_only)
+        return round_detectors
 
-    def measure_checks(self, round, relative_round, tick, circuit, code):
-        for check in code.check_schedule[relative_round]:
+    def measure_checks(self, round: int, tick: int, circuit: Circuit):
+        relative_round = round % self.code.schedule_length
+        for check in self.code.check_schedule[relative_round]:
             qubits = [pauli.qubit for pauli in check.paulis.values()]
             targets = self.product_measurement_targets(check, circuit)
             measurement = Instruction(
@@ -123,7 +174,7 @@ class Determiner:
             targets.append(targeter(circuit.qubit_index(pauli.qubit)))
         return targets
 
-    def initialise_circuit(self, initial_states, state_init_instructions):
+    def initialise_circuit(self, initial_states: Dict[Qubit, State]):
         circuit = Circuit()
         # This method returns the tick to be used by whatever the next
         # instructions are.
@@ -131,7 +182,7 @@ class Determiner:
         for qubit, state in initial_states.items():
             instructions = [
                 Instruction([qubit], name)
-                for name in state_init_instructions[state]]
+                for name in self.state_init_instructions[state]]
             circuit.initialise(0, instructions)
             next_tick = max(next_tick, 2 * len(instructions))
         return next_tick, circuit

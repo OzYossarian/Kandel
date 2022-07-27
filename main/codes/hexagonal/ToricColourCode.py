@@ -7,7 +7,10 @@ from main.utils.utils import tuple_minus
 
 class ToricColourCode(ToricHexagonalCode):
     def __init__(self, distance: int):
-        super().__init__(distance)
+        assert distance % 4 == 0
+        rows = 3 * (distance // 4)
+        columns = 4 * (distance // 4)
+        super().__init__(rows, columns, distance)
 
         checks = []
         for colour in self.colours:

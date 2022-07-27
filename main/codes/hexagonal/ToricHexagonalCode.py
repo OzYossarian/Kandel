@@ -6,11 +6,15 @@ from main.building_blocks.Qubit import Qubit, Coordinates
 from main.codes.hexagonal.HexagonalCode import HexagonalCode
 
 
+# TODO - most of this should move to HexagonalCode class, with some extra
+#  logic (e.g removing some data qubits) for the toric version.
 class ToricHexagonalCode(HexagonalCode):
-    def __init__(self, distance: int):
-        assert distance % 4 == 0
-        self.width = 2 * (8 + 4) * (distance // 4)
-        self.height = 3 * 4 * (distance // 4)
+    def __init__(self, rows: int, columns: int, distance: int = None):
+        # Number of columns must be even in order for periodic boundaries
+        # to slot together
+        assert columns % 2 == 0
+        self.width = (columns // 2) * (8 + 4)
+        self.height = rows * 4
         self._colourful_plaquette_anchors = None
         self._plaquette_anchors = None
 

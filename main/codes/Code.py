@@ -7,6 +7,7 @@ from typing import TYPE_CHECKING
 from main.building_blocks.detectors.Drum import Drum
 from main.building_blocks.logical.LogicalOperator import LogicalOperator
 from main.building_blocks.logical.LogicalQubit import LogicalQubit
+from main.utils.utils import embed_coords
 
 if TYPE_CHECKING:
     from main.QPUs.QPU import QPU
@@ -56,9 +57,11 @@ class Code:
         if len(self.check_schedule) == 1 and detector_schedule is None:
             # Default case: each detector is made of one check measured
             # twice in consecutive rounds.
-            self.detector_schedule = [[
-                Drum([(-1, check)], [(0, check)], 0)
-                for check in self.check_schedule[0]]]
+            self.detector_schedule = [[]]
+            for check in self.check_schedule[0]:
+                anchor = embed_coords(check.anchor, len(check.anchor) + 1)
+                drum = Drum([(-1, check)], [(0, check)], 0, anchor)
+                self.detector_schedule[0].append(drum)
         else:
             # If the length of the schedule is more than 1, force the user to
             # pass in the detectors - can't (yet?) automatically figure this

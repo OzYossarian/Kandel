@@ -10,7 +10,7 @@ from main.building_blocks.pauli.Pauli import Pauli
 from main.building_blocks.pauli.PauliLetter import PauliLetter
 from main.codes.hexagonal.ToricHexagonalCode import ToricHexagonalCode
 from main.codes.hexagonal.tic_tac_toe.DetectorBlueprint import DetectorBlueprint
-from main.utils.utils import mid, xor, tuple_minus
+from main.utils.utils import mid, xor, tuple_minus, embed_coords
 
 TicTacToeRoute = List[Tuple[Colour, PauliLetter]]
 
@@ -19,7 +19,9 @@ class TicTacToeCode(ToricHexagonalCode):
     def __init__(self, distance: int, tic_tac_toe_route: TicTacToeRoute):
         # Initialise parent class immediately so that we have data qubits
         # etc available for use in the rest of this init.
-        super().__init__(distance)
+        rows = 3 * (distance // 4)
+        columns = 4 * (distance // 4)
+        super().__init__(rows, columns, distance)
 
         assert self.follows_tic_tac_toe_rules(tic_tac_toe_route)
         assert self.is_good_code(tic_tac_toe_route)
@@ -342,7 +344,8 @@ class TicTacToeCode(ToricHexagonalCode):
                     for (t, edge_colour, edge_letter) in blueprint.lid:
                         checks = borders[anchor][(edge_colour, edge_letter)]
                         lid.extend((t, check) for check in checks)
-                    detector = Drum(floor, lid, blueprint.learned, anchor)
+                    drum_anchor = embed_coords(anchor, 3)
+                    detector = Drum(floor, lid, blueprint.learned, drum_anchor)
                     detectors[blueprint.learned].append(detector)
 
         return detectors

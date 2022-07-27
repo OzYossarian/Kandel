@@ -2,9 +2,10 @@ from typing import List, Tuple
 
 from PIL import Image
 
-from main.Colour import Black, Colour, White
+from main.Colour import Black, Colour, White, Grey
 from main.building_blocks.Check import Check
 from main.building_blocks.logical.LogicalOperator import LogicalOperator
+from main.building_blocks.pauli.PauliLetter import PauliX, PauliY, PauliZ
 from main.codes.Code import Code
 from main.QPUs.QPU import QPU
 from main.building_blocks.Qubit import Qubit
@@ -16,6 +17,10 @@ from main.utils.utils import mid, tuple_sum
 class Printer2D(Printer):
     def __init__(self, scale_factor: int = 20):
         super().__init__(scale_factor)
+        self.operator_colours = {
+            PauliX: Colour('orange', (255, 155, 0)),
+            PauliY: Colour('teal', (0, 255, 185)),
+            PauliZ: Colour('purple', (145, 0, 255))}
 
     def print_qpu(self, qpu: QPU, filename: str):
         data_qubit_diameter = self.scale_factor/10
@@ -32,7 +37,10 @@ class Printer2D(Printer):
         return printouts
 
     def print_code(self, code: Code, filename: str):
-        coords = []
+        # Going to need to print all the data qubits
+        coords = list(code.data_qubits)
+        # But if code has periodic geometry, might need a slightly bigger
+        # printout to represent checks nicely.
         for check in code.checks:
             coords.append(check.anchor)
             for offset in check.paulis:
@@ -50,7 +58,11 @@ class Printer2D(Printer):
         for check in sorted(checks, key=lambda check: -check.weight):
             self._print_check(check, printout)
 
-        # Then print the logical operators on top.
+        # Then print the data qubits on top, in case we missed any.
+        for qubit in code.data_qubits.values():
+            self._print_qubit(qubit, printout, self.scale_factor/3, Grey)
+
+        # Finally, print the logical operators.
         code.update_logical_qubits(round)
         for logical_qubit in code.logical_qubits:
             for operator in [logical_qubit.x, logical_qubit.z]:
@@ -137,7 +149,7 @@ class Printer2D(Printer):
         if operator is not None:
             paulis = operator.at_round(round)
             for pauli in paulis:
-                colour = pauli.letter.colour
+                colour = self.operator_colours[pauli.letter]
                 diameter = self.scale_factor
                 self._print_qubit(pauli.qubit, printout, diameter, colour)
 
