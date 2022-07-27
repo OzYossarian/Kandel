@@ -15,7 +15,7 @@ RepeatBlock = Tuple[int, int, int] | None
 
 class Circuit:
     def __init__(self):
-        """ Intermediate representation of a quantum circuit. Rather than
+        """Intermediate representation of a quantum circuit. Rather than
         compile directly to a Stim circuit, which is somewhat inflexible, we
         first compile to our own Circuit class. One should picture a circuit
         diagram - that is, a 2D lattice, with gates placed on vertices. Time
@@ -34,8 +34,9 @@ class Circuit:
         # The core of this class is a nested dictionary of instructions,
         # keyed first by tick, then by qubit. Values are then lists of
         # instructions acting on that qubit at that tick.
-        self.instructions: Dict[int, Dict[Qubit, List[Instruction]]] = \
-            defaultdict(lambda: defaultdict(list))
+        self.instructions: Dict[int, Dict[Qubit, List[Instruction]]] = defaultdict(
+            lambda: defaultdict(list)
+        )
         # Maintain a set of all the qubits we've come across - used when
         # adding idle noise later.
         self.qubits = set()
@@ -45,6 +46,7 @@ class Circuit:
         # say whether a qubit is currently initialised or not.
         self.init_ticks = defaultdict(list)
         self.measure_ticks = defaultdict(list)
+        self.shift_ticks = []
         # For each tick, note whether it's inside a repeat block.
         self.repeat_blocks: Dict[int, RepeatBlock] = defaultdict(lambda: None)
         # Track which measurements tell us the value of which checks
@@ -78,15 +80,16 @@ class Circuit:
         # since this is when the qubit is considered 'initialised'
         initialised_tick = tick
         for i, gate in enumerate(gates):
-            gate_tick = tick + 2*i
+            gate_tick = tick + 2 * i
             self.add_instruction(gate_tick, gate)
             initialised_tick = gate_tick
         # Note down at which tick this qubit is considered initialised.
         self.init_ticks[qubit].append(initialised_tick)
 
-    def measure(
-            self, measurement: Instruction, check: Check,
-            round: int, tick: int):
+    def end_round(self, tick: int):
+        self.shift_ticks.append(tick)
+
+    def measure(self, measurement: Instruction, check: Check, round: int, tick: int):
         # Measure a qubit (perhaps multiple)
         self.add_instruction(tick, measurement)
         # Record that these qubits have been measured.
@@ -107,8 +110,7 @@ class Circuit:
                 # Only time a qubit can have multiple gates at the same tick
                 # is when they're all noise gates or all Pauli product
                 # measurements.
-                all_noise = all(
-                    [instruction.is_noise for instruction in instructions])
+                all_noise = all([instruction.is_noise for instruction in instructions])
                 all_product_measurements = all(
                     [instruction.name == 'MPP' for instruction in instructions])
                 if not (all_noise or all_product_measurements):
@@ -127,9 +129,7 @@ class Circuit:
         # overlap with other repeat blocks.
         assert start + 1 < end
         assert repeats >= 1
-        assert all([
-            self.repeat_blocks[i] is None
-            for i in range(start, end)])
+        assert all([self.repeat_blocks[i] is None for i in range(start, end)])
 
         for i in range(start, end):
             self.repeat_blocks[i] = (start, end, repeats)
@@ -149,8 +149,10 @@ class Circuit:
                     # Find out which qubits were idle at this tick. These are those
                     # that are initialised but not involved in any gate.
                     initialised_qubits = {
-                        qubit for qubit in self.qubits
-                        if self.is_initialised(tick, qubit)}
+                        qubit
+                        for qubit in self.qubits
+                        if self.is_initialised(tick, qubit)
+                    }
                     active_qubits = set(qubit_instructions.keys())
                     idle_qubits = initialised_qubits.difference(active_qubits)
                     for qubit in idle_qubits:
@@ -158,8 +160,11 @@ class Circuit:
                         self.add_instruction(tick + 1, noise)
 
     def to_stim(
-            self, noise_model: NoiseModel, track_coords: bool = True,
-            track_progress: bool = True):
+        self,
+        noise_model: NoiseModel,
+        track_coords: bool = True,
+        track_progress: bool = True,
+    ):
         if track_progress:
             with alive_bar(len(self.instructions), force_tty=True) as bar:
                 return self._to_stim(noise_model, track_coords, bar)
@@ -171,7 +176,8 @@ class Circuit:
         if track_coords:
             qubit_dimensions = {
                 len(qubit.coords) if isinstance(qubit.coords, tuple) else 1
-                for qubit in self.qubits}
+                for qubit in self.qubits
+            }
             assert len(qubit_dimensions) == 1
             dimension = qubit_dimensions.pop()
             shift_coords = tuple([0 for _ in range(dimension)] + [1])
@@ -195,10 +201,11 @@ class Circuit:
         if track_coords:
             for qubit in sorted(self.qubits, key=lambda qubit: qubit.coords):
                 index = self.qubit_index(qubit)
-                circuit.append('QUBIT_COORDS', [index], qubit.coords)
+                circuit.append("QUBIT_COORDS", [index], qubit.coords)
 
         for tick, qubit_instructions in sorted(self.instructions.items()):
             # Check whether we need to close a repeat block
+
             repeats = self.left_repeat_block(tick, most_recent_tick)
             if repeats is not None:
                 repeat_circuit = stim.CircuitRepeatBlock(repeats, circuit)
@@ -221,16 +228,23 @@ class Circuit:
             # Let the measurer determine if these measurements trigger any
             # further instructions - e.g. building detectors, adding checks
             # into logical observables, etc.
-            further_instructions = \
-                self.measurer.measurements_to_stim(measurements, shift_coords)
+            further_instructions = self.measurer.measurements_to_stim(
+                measurements, shift_coords
+            )
             for instruction in further_instructions:
                 circuit.append(instruction)
 
-            if tick != final_tick:
-                circuit.append('TICK')
             most_recent_tick = tick
             if progress_bar is not None:
                 progress_bar()
+
+            if most_recent_tick in self.shift_ticks:
+                circuit.append(
+                    stim.CircuitInstruction("SHIFT_COORDS", (), shift_coords)
+                )
+
+            if tick != final_tick:
+                circuit.append("TICK")
 
         # If we've finished inside a repeat block, close it.
         repeat_block = self.repeat_blocks[final_tick]
@@ -240,8 +254,7 @@ class Circuit:
             full_circuit.append(repeat_circuit)
         return full_circuit
 
-    def instruction_to_stim(
-            self, instruction: Instruction, circuit: stim.Circuit):
+    def instruction_to_stim(self, instruction: Instruction, circuit: stim.Circuit):
         if instruction.targets is not None:
             targets = instruction.targets
         else:

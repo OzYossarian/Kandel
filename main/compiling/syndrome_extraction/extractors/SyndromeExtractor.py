@@ -7,13 +7,17 @@ from main.building_blocks.pauli.Pauli import Pauli
 from main.building_blocks.pauli.PauliLetter import PauliZ, PauliX, PauliY
 from main.building_blocks.Qubit import Qubit
 from main.compiling.Circuit import Circuit
-from main.compiling.syndrome_extraction.controlled_gate_orderers.TrivialOrderer import TrivialOrderer
+from main.compiling.syndrome_extraction.controlled_gate_orderers.TrivialOrderer import (
+    TrivialOrderer,
+)
 
 if TYPE_CHECKING:
     from main.compiling.compilers.Compiler import Compiler
 from main.compiling.Instruction import Instruction
 from main.compiling.noise.models.NoiseModel import NoiseModel
-from main.compiling.syndrome_extraction.controlled_gate_orderers.ControlledGateOrderer import ControlledGateOrderer
+from main.compiling.syndrome_extraction.controlled_gate_orderers.ControlledGateOrderer import (
+    ControlledGateOrderer,
+)
 from main.enums import State
 
 
@@ -29,24 +33,28 @@ from main.enums import State
 #  the ancilla in each case.
 class SyndromeExtractor:
     def __init__(
-            self, controlled_gate_orderer: ControlledGateOrderer = None,
-            extract_checks_in_parallel: bool = True):
+        self,
+        controlled_gate_orderer: ControlledGateOrderer = None,
+        extract_checks_in_parallel: bool = True,
+    ):
         # This extractor will work for any pauli word stabilizer,
         # but won't necessarily give an optimal circuit.
+        quit
         if controlled_gate_orderer is None:
             controlled_gate_orderer = TrivialOrderer()
         self.controlled_gate_orderer = controlled_gate_orderer
         self.extract_checks_in_parallel = extract_checks_in_parallel
 
     def extract_check(
-            self, check: Check, round: int, compiler: Compiler,
-            tick: int, circuit: Circuit):
-
+        self, check: Check, round: int, compiler: Compiler, tick: int, circuit: Circuit
+    ):
         # First initialise the ancilla qubit.
-        ancilla_init_state, measurement_basis = \
-            self.ancilla_init_and_measurement(check)
+        ancilla_init_state, measurement_basis = self.ancilla_init_and_measurement(
+            check, compiler.gate_set
+        )
         tick = compiler.initialize_qubits(
-            {check.ancilla: ancilla_init_state}, tick, circuit)
+            {check.ancilla: ancilla_init_state}, tick, circuit
+        )
 
         # Now place controlled gates between data qubits and the ancilla,
         # possibly with some rotation gates on data qubits too.
@@ -60,59 +68,99 @@ class SyndromeExtractor:
                 tick += 6
             elif pauli.letter == PauliX:
                 tick = self.extract_pauli_X(
-                    tick, pauli, check.ancilla, circuit, compiler.noise_model)
+                    tick,
+                    pauli,
+                    check.ancilla,
+                    circuit,
+                    compiler.noise_model,
+                    compiler.gate_set,
+                )
             elif pauli.letter == PauliY:
                 tick = self.extract_pauli_Y(
-                    tick, pauli, check.ancilla, circuit, compiler.noise_model)
+                    tick,
+                    pauli,
+                    check.ancilla,
+                    circuit,
+                    compiler.noise_model,
+                    compiler.gate_set,
+                )
             else:
                 assert pauli.letter == PauliZ
                 tick = self.extract_pauli_Z(
-                    tick, pauli, check.ancilla, circuit, compiler.noise_model)
+                    tick,
+                    pauli,
+                    check.ancilla,
+                    circuit,
+                    compiler.noise_model,
+                    compiler.gate_set,
+                )
 
         # Now measure the ancilla to get the check measurement result.
         tick = compiler.measure_qubit(
-            check.ancilla, measurement_basis, check, round, tick, circuit)
+            check.ancilla, measurement_basis, check, round, tick, circuit
+        )
         return tick
 
     def ancilla_init_and_measurement(self, check: Check):
         return State.Zero, PauliZ
 
     def extract_pauli_X(
-            self, tick: int, pauli: Pauli, ancilla: Qubit,
-            circuit: Circuit, noise_model: NoiseModel):
+        self,
+        tick: int,
+        pauli: Pauli,
+        ancilla: Qubit,
+        circuit: Circuit,
+        noise_model: NoiseModel,
+    ):
         # Rotate so that this data qubit is effectively in Z basis
-        pre_rotate = Instruction([pauli.qubit], 'H')
-        post_rotate = Instruction([pauli.qubit], 'H')
-        controlled_gate = Instruction([pauli.qubit, ancilla], 'CNOT')
+        pre_rotate = Instruction([pauli.qubit], "H")
+        post_rotate = Instruction([pauli.qubit], "H")
+        controlled_gate = Instruction([pauli.qubit, ancilla], "CNOT")
         return self.extract_pauli_letter(
-            tick, pauli, circuit, noise_model, pre_rotate, controlled_gate,
-            post_rotate)
+            tick, pauli, circuit, noise_model, pre_rotate, controlled_gate, post_rotate
+        )
 
     def extract_pauli_Y(
-            self, tick: int, pauli: Pauli, ancilla: Qubit,
-            circuit: Circuit, noise_model: NoiseModel):
+        self,
+        tick: int,
+        pauli: Pauli,
+        ancilla: Qubit,
+        circuit: Circuit,
+        noise_model: NoiseModel,
+    ):
         # Rotate so that this data qubit is effectively in Z basis
-        pre_rotate = Instruction([pauli.qubit], 'SQRT_X')
-        post_rotate = Instruction([pauli.qubit], 'SQRT_X_DAG')
-        controlled_gate = Instruction([pauli.qubit, ancilla], 'CNOT')
+        pre_rotate = Instruction([pauli.qubit], "SQRT_X")
+        post_rotate = Instruction([pauli.qubit], "SQRT_X_DAG")
+        controlled_gate = Instruction([pauli.qubit, ancilla], "CNOT")
         return self.extract_pauli_letter(
-            tick, pauli, circuit, noise_model, pre_rotate, controlled_gate,
-            post_rotate)
+            tick, pauli, circuit, noise_model, pre_rotate, controlled_gate, post_rotate
+        )
 
     def extract_pauli_Z(
-            self, tick: int, pauli: Pauli, ancilla: Qubit,
-            circuit: Circuit, noise_model: NoiseModel):
+        self,
+        tick: int,
+        pauli: Pauli,
+        ancilla: Qubit,
+        circuit: Circuit,
+        noise_model: NoiseModel,
+    ):
         pre_rotate = None
         post_rotate = None
-        controlled_gate = Instruction([pauli.qubit, ancilla], 'CNOT')
+        controlled_gate = Instruction([pauli.qubit, ancilla], "CNOT")
         return self.extract_pauli_letter(
-            tick, pauli, circuit, noise_model, pre_rotate, controlled_gate,
-            post_rotate)
+            tick, pauli, circuit, noise_model, pre_rotate, controlled_gate, post_rotate
+        )
 
     def extract_pauli_letter(
-            self, tick: int, pauli: Pauli, circuit: Circuit,
-            noise_model: NoiseModel, pre_rotate: Instruction | None,
-            controlled_gate: Instruction, post_rotate: Instruction | None):
+        self,
+        tick: int,
+        pauli: Pauli,
+        circuit: Circuit,
+        noise_model: NoiseModel,
+        pre_rotate: Instruction | None,
+        controlled_gate: Instruction,
+        post_rotate: Instruction | None,
+    ):
         tick = self.rotate(tick, pauli, pre_rotate, circuit, noise_model)
         circuit.add_instruction(tick, controlled_gate)
         noise = noise_model.two_qubit_gate
@@ -123,8 +171,13 @@ class SyndromeExtractor:
         return tick
 
     def rotate(
-            self, tick: int, pauli: Pauli, rotation_gate: Instruction | None,
-            circuit: Circuit, noise_model: NoiseModel):
+        self,
+        tick: int,
+        pauli: Pauli,
+        rotation_gate: Instruction | None,
+        circuit: Circuit,
+        noise_model: NoiseModel,
+    ):
         if rotation_gate is not None:
             circuit.add_instruction(tick, rotation_gate)
             noise = noise_model.one_qubit_gate

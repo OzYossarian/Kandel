@@ -17,34 +17,39 @@ from main.compiling.Circuit import Circuit
 from main.compiling.compilers.Determiner import Determiner
 from main.compiling.noise.models.NoNoise import NoNoise
 from main.compiling.noise.models.NoiseModel import NoiseModel
-from main.compiling.syndrome_extraction.extractors.SyndromeExtractor import SyndromeExtractor
+from main.compiling.syndrome_extraction.extractors.SyndromeExtractor import (
+    SyndromeExtractor,
+)
 from main.enums import State
 from main.utils.utils import xor
 
 
 class Compiler(ABC):
     def __init__(
-            self, noise_model: NoiseModel | None,
-            syndrome_extractor: SyndromeExtractor):
+        self,
+        noise_model: NoiseModel | None,
+        syndrome_extractor: SyndromeExtractor,
+        gate_set=("CNOT", "RZ", "MZ", "RX", "MX", "RY", "MY"),
+
+    ):
         if noise_model is None:
             noise_model = NoNoise()
         self.noise_model = noise_model
         self.syndrome_extractor = syndrome_extractor
         self.state_init_instructions = {
-            State.Zero: ['RZ'],
-            State.One: ['RZ', 'X'],
-            State.Plus: ['RX'],
-            State.Minus: ['RX', 'Z'],
-            State.I: ['RY'],
-            State.MinusI: ['RY', 'X']}
-        self.basis_measurements = {
-            PauliX: 'MX',
-            PauliY: 'MY',
-            PauliZ: 'MZ'}
+            State.Zero: ["RZ"],
+            State.One: ["RZ", "X"],
+            State.Plus: ["RX"],
+            State.Minus: ["RX", "Z"],
+            State.I: ["RY"],
+            State.MinusI: ["RY", "X"],
+        }
+        self.basis_measurements = {PauliX: "MX", PauliY: "MY", PauliZ: "MZ"}
+        self.gate_set = gate_set
 
     def compile_qpu(
-            self, qpu: QPU, layers: int, tick: int = 0,
-            circuit: Circuit = None):
+        self, qpu: QPU, layers: int, tick: int = 0, circuit: Circuit = None
+    ):
         pass
 
     def compile_code(
@@ -69,28 +74,30 @@ class Compiler(ABC):
 
         initial_detector_schedules, tick, circuit = \
             self.compile_initialisation(code, initial_states, initial_stabilizers)
+
         initial_layers = len(initial_detector_schedules)
         # initial_layers is the number of layers in which 'lid-only' detectors
         # exist.
         if initial_layers > layers:
             # TODO - bug here! initial_layers can be too big.
             raise ValueError(
-                f'Requested that {layers} layer(s) are compiled, but code seems '
-                f'to take {initial_layers} layer(s) to set up! Please increase '
-                f'number of layers to compile')
+                f"Requested that {layers} layer(s) are compiled, but code seems "
+                f"to take {initial_layers} layer(s) to set up! Please increase "
+                f"number of layers to compile"
+            )
 
         # Compile these initial layers.
         for layer, detector_schedule in enumerate(initial_detector_schedules):
             tick = self.compile_layer(
-                layer, detector_schedule, logical_observables,
-                tick, circuit, code)
+                layer, detector_schedule, logical_observables, tick, circuit, code
+            )
 
         # Compile the remaining layers.
         layer = initial_layers
         while layer < layers:
             tick = self.compile_layer(
-                layer, code.detector_schedule, logical_observables,
-                tick, circuit, code)
+                layer, code.detector_schedule, logical_observables, tick, circuit, code
+            )
             layer += 1
 
         # Finish with data qubit measurements, and use these to reconstruct
@@ -129,6 +136,7 @@ class Compiler(ABC):
 
         # In the first few rounds (or even layers), there might be some
         # non-deterministic detectors that need removing.
+
         determiner = Determiner(code, self.state_init_instructions)
         initial_detector_schedules = determiner.get_initial_detectors(
             initial_states, initial_stabilizers)
@@ -173,8 +181,8 @@ class Compiler(ABC):
         return paulis
 
     def initialize_qubits(
-            self, initial_states: Dict[Qubit, State],
-            tick: int, circuit: Circuit):
+        self, initial_states: Dict[Qubit, State], tick: int, circuit: Circuit
+    ):
         # TODO - user passes in own native gate set.
         # Note down how many ticks were needed - we will return the tick
         # we're on after the initialisation is complete.
@@ -186,15 +194,15 @@ class Compiler(ABC):
             # given state
             init_instructions = [
                 Instruction([qubit], name)
-                for name in self.state_init_instructions[state]]
+                for name in self.state_init_instructions[state]
+            ]
             circuit.initialise(tick, init_instructions)
             instructions_needed = len(init_instructions)
             # Add noise, if needed.
             if noise is not None:
                 for i in range(len(init_instructions)):
                     noise_tick = tick + (2 * instructions_needed - 1)
-                    circuit.add_instruction(
-                        noise_tick, noise.instruction([qubit]))
+                    circuit.add_instruction(noise_tick, noise.instruction([qubit]))
 
             ticks_needed = max(ticks_needed, 2 * instructions_needed)
 
@@ -209,8 +217,14 @@ class Compiler(ABC):
             # used, then start the next round of checks from this tick.
             round = layer * code.schedule_length + relative_round
             tick = self.compile_round(
-                round, relative_round, detector_schedule, observables,
-                tick, circuit, code)
+                round,
+                relative_round,
+                detector_schedule,
+                observables,
+                tick,
+                circuit,
+                code,
+            )
         return tick
 
     def compile_round(
@@ -238,7 +252,8 @@ class Compiler(ABC):
         # First compile the syndrome extraction circuits for the checks.
         for check in code.check_schedule[relative_round]:
             check_tick = self.syndrome_extractor.extract_check(
-                check, round, self, tick, circuit)
+                check, round, self, tick, circuit
+            )
 
             if not self.syndrome_extractor.extract_checks_in_parallel:
                 # If extracting one check at a time, need to increase the
@@ -252,16 +267,18 @@ class Compiler(ABC):
         circuit.measurer.add_detectors(detectors, round)
 
         # And likewise note down any logical observables that need updating.
+
         if observables is not None:
             observable_updates = code.update_logical_qubits(round)
             for observable in observables:
                 circuit.measurer.add_to_logical_observable(
                     observable_updates[observable], observable, round)
 
+        circuit.end_round(final_tick - 2)
+
         return final_tick
 
-    def add_start_of_round_noise(
-            self, tick: int, circuit: Circuit, code: Code):
+    def add_start_of_round_noise(self, tick: int, circuit: Circuit, code: Code):
         noise = self.noise_model.data_qubit_start_round
         if noise is not None:
             for qubit in code.data_qubits.values():
@@ -315,6 +332,7 @@ class Compiler(ABC):
             final_stabilizers: List[Stabilizer], layer: int,
             circuit: Circuit, code: Code):
         round = layer * code.schedule_length
+
         if final_stabilizers is None:
             final_detectors = self.compile_final_detectors_from_measurements(
                 final_checks, round, layer, code)
@@ -344,10 +362,12 @@ class Compiler(ABC):
         final_detectors = []
         for detector in code.detectors:
             open_lid, checks_measured = detector.has_open_lid(
-                round - 1, layer - 1, code.schedule_length)
+                round - 1, layer - 1, code.schedule_length
+            )
             if open_lid:
                 # This detector can potentially be 'finished off', if our
                 # final data qubit measurements are in the right bases.
+
                 detector_checks = sorted(
                     checks_measured, key=lambda check: -check[0])
                 detector_product = PauliProduct([
@@ -359,16 +379,14 @@ class Compiler(ABC):
                     list(final_checks[data_qubit].paulis.values())[0]
                     for data_qubit in detector_qubits]
                 measurement_product = PauliProduct(measurements)
+                
                 if detector_product.equal_up_to_sign(measurement_product):
                     # Can make a lid for this detector!
                     floor = [
-                        (t + detector.lid_end, check)
-                        for t, check in detector_checks]
-                    lid = [
-                        (0, final_checks[qubit])
-                        for qubit in detector_qubits]
-                    final_detectors.append(
-                        Drum(floor, lid, 0, detector.anchor))
+                        (t + detector.lid_end, check) for t, check in detector_checks
+                    ]
+                    lid = [(0, final_checks[qubit]) for qubit in detector_qubits]
+                    final_detectors.append(Drum(floor, lid, 0, detector.anchor))
 
         return final_detectors
 
@@ -392,13 +410,20 @@ class Compiler(ABC):
                     logical_checks, observable, round)
 
     def measure_qubit(
-            self, qubit: Qubit, basis: PauliLetter, check: Check, round: int,
-            tick: int, circuit: Circuit):
+        self,
+        qubit: Qubit,
+        basis: PauliLetter,
+        check: Check,
+        round: int,
+        tick: int,
+        circuit: Circuit,
+    ):
         # TODO - generalise for native multi-qubit measurements.
         noise = self.noise_model.measurement
         params = noise.params if noise is not None else ()
         measurement_name = self.basis_measurements[basis]
         measurement = Instruction(
-            [qubit], measurement_name, params, is_measurement=True)
+            [qubit], measurement_name, params, is_measurement=True
+        )
         circuit.measure(measurement, check, round, tick)
         return tick + 2
