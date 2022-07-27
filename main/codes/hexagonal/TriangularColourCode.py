@@ -24,9 +24,9 @@ class TriangularColourCode(HexagonalCode):
         checks = []
         for check in toric_code.check_schedule[0]:
             if self._is_in_triangle(check.anchor):
-                check.paulis = [
-                    pauli for pauli in check.paulis
-                    if self._is_in_triangle(pauli.qubit.coords)]
+                check.paulis = {
+                    coords: pauli for coords, pauli in check.paulis.items()
+                    if self._is_in_triangle(pauli.qubit.coords)}
                 checks.append(check)
 
         super().__init__(data_qubits, [checks], distance)

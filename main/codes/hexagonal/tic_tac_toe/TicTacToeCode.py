@@ -10,7 +10,7 @@ from main.building_blocks.pauli.Pauli import Pauli
 from main.building_blocks.pauli.PauliLetter import PauliLetter
 from main.codes.hexagonal.ToricHexagonalCode import ToricHexagonalCode
 from main.codes.hexagonal.tic_tac_toe.DetectorBlueprint import DetectorBlueprint
-from main.utils.utils import mid, xor
+from main.utils.utils import mid, xor, tuple_minus, embed_coords
 
 TicTacToeRoute = List[Tuple[Colour, PauliLetter]]
 
@@ -19,7 +19,9 @@ class TicTacToeCode(ToricHexagonalCode):
     def __init__(self, distance: int, tic_tac_toe_route: TicTacToeRoute):
         # Initialise parent class immediately so that we have data qubits
         # etc available for use in the rest of this init.
-        super().__init__(distance)
+        rows = 3 * (distance // 4)
+        columns = 4 * (distance // 4)
+        super().__init__(rows, columns, distance)
 
         assert self.follows_tic_tac_toe_rules(tic_tac_toe_route)
         assert self.is_good_code(tic_tac_toe_route)
@@ -120,7 +122,7 @@ class TicTacToeCode(ToricHexagonalCode):
             self, anchor, edge_colour, pauli_letters, checks, borders):
         """Add checks of one colour around the border of a single plaquette.
         """
-        corners = self.get_neighbours(anchor)
+        corners = self.get_neighbour_coords(anchor)
         for j in range(3):
             u, v = corners[2 * j], corners[2 * j + 1]
             midpoint = mid([u, v])
@@ -137,7 +139,9 @@ class TicTacToeCode(ToricHexagonalCode):
 
             for letter in pauli_letters:
                 # Create the check object and note which plaquettes it borders
-                paulis = [Pauli(qubit_u, letter), Pauli(qubit_v, letter)]
+                paulis = {
+                    (tuple_minus(u, midpoint)): Pauli(qubit_u, letter),
+                    (tuple_minus(v, midpoint)): Pauli(qubit_v, letter)}
                 check = Check(paulis, self.wrap_coords(midpoint), edge_colour)
                 checks[(edge_colour, letter)].append(check)
                 borders[anchor][(edge_colour, letter)].append(check)
@@ -340,10 +344,7 @@ class TicTacToeCode(ToricHexagonalCode):
                     for (t, edge_colour, edge_letter) in blueprint.lid:
                         checks = borders[anchor][(edge_colour, edge_letter)]
                         lid.extend((t, check) for check in checks)
-                    drum_anchor = min([
-                        pauli.qubit.coords
-                        for _, check in lid for pauli in check.paulis])
-                    drum_anchor = (drum_anchor[0] + 4, drum_anchor[1])
+                    drum_anchor = embed_coords(anchor, 3)
                     detector = Drum(floor, lid, blueprint.learned, drum_anchor)
                     detectors[blueprint.learned].append(detector)
 
@@ -444,7 +445,6 @@ class TicTacToeCode(ToricHexagonalCode):
 
     def update_logical_qubits(self, round: int):
         # 'round' is the round we've just finished doing measurements for.
-        relative_round = round % self.schedule_length
         update_checks = defaultdict(list)
 
         # Mustn't use relative round in the following
@@ -455,46 +455,47 @@ class TicTacToeCode(ToricHexagonalCode):
             # Need to update the logical X operators
             logical = self.logical_qubits[0].x
             update_checks[logical] = self.update_operator(
-                logical, relative_round, vertical=False)
+                logical, round, vertical=False)
             logical = self.logical_qubits[1].x
             update_checks[logical] = self.update_operator(
-                logical, relative_round, vertical=True)
+                logical, round, vertical=True)
 
         if next_z_type != prev_z_type:
             # Need to update the logical Z operators
             logical = self.logical_qubits[0].z
             update_checks[logical] = self.update_operator(
-                logical, relative_round, vertical=True)
+                logical, round, vertical=True)
             logical = self.logical_qubits[1].z
             update_checks[logical] = self.update_operator(
-                logical, relative_round, vertical=False)
+                logical, round, vertical=False)
 
         # Return - for each operator - the checks that have been multiplied
         # into this operator in order to update it.
         return update_checks
 
     def update_operator(
-            self, operator: LogicalOperator, relative_round: int,
+            self, operator: LogicalOperator, round: int,
             vertical: bool = False):
         # Slightly different depending on whether operator is vertical or
         # horizontal - horizontal operators are multiplied by ALL
         # intersecting checks, whereas vertical ones are only multiplied by
         # those in their support (i.e. not horizontal ones).
 
-        def intersect(check, operator):
+        def intersect(check: Check, operator: LogicalOperator):
             # It's possible for the Paulis that make up the operator to
             # contain an identity Pauli with some sign - only consider checks
             # that touch the operator at a non-identity Pauli to be
             # intersecting.
-            check_qubits = {pauli.qubit for pauli in check.paulis}
+            check_qubits = {pauli.qubit for pauli in check.paulis.values()}
             return any(
                 pauli.letter.letter != 'I' and pauli.qubit in check_qubits
-                for pauli in operator.paulis)
+                for pauli in operator.at_round(round - 1))
 
         def is_horizontal(check):
-            y_coords = [pauli.qubit.coords[1] for pauli in check.paulis]
+            y_coords = [pauli.qubit.coords[1] for pauli in check.paulis.values()]
             return len(set(y_coords)) == 1
 
+        relative_round = round % self.schedule_length
         check_type = self.tic_tac_toe_route[relative_round]
         checks = self.checks_by_type[check_type]
         intersecting_checks = [
@@ -507,7 +508,7 @@ class TicTacToeCode(ToricHexagonalCode):
         intersecting_paulis = [
             pauli
             for check in intersecting_checks
-            for pauli in check.paulis]
+            for pauli in check.paulis.values()]
 
-        operator.update(intersecting_paulis)
+        operator.update(round, intersecting_paulis)
         return intersecting_checks

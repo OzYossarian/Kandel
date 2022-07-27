@@ -24,11 +24,11 @@ class RepetitionCode(Code):
     def init_checks(self, distance: int):
         data_qubits = {2 * i: Qubit(2 * i) for i in range(distance)}
         checks = []
-        for i in range(distance-1):
-            paulis = [
-                Pauli(data_qubits[2 * i], PauliZ),
-                Pauli(data_qubits[2 * (i + 1)], PauliZ)]
-            anchor = 2*i + 1
+        for i in range(distance - 1):
+            paulis = {
+                (-1, 0): Pauli(data_qubits[2 * i], PauliZ),
+                (1, 0): Pauli(data_qubits[2 * (i + 1)], PauliZ)}
+            anchor = 2 * i + 1
             new_check = Check(paulis, anchor)
             checks.append(new_check)
         return data_qubits, checks

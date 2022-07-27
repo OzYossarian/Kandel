@@ -17,7 +17,7 @@ class HexagonalCode(Code):
         super().__init__(data_qubits, check_schedule, distance=distance)
 
     @staticmethod
-    def get_neighbours(coords: Tuple[int, int]) -> List[Tuple[int, int]]:
+    def get_neighbour_coords(coords: Tuple[int, int]) -> List[Tuple[int, int]]:
         # These coordinates must be returned in 'polygonal order' - i.e.
         # such that two coordinates adjacent in this list are adjacent
         # corners when drawing this plaquette as a polygon.

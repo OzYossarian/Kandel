@@ -1,4 +1,4 @@
-from typing import List
+from typing import List, Dict
 
 from main.Colour import Colour
 from main.building_blocks.pauli.Pauli import Pauli
@@ -8,8 +8,8 @@ from main.utils.NiceRepr import NiceRepr
 
 class Check(NiceRepr):
     def __init__(
-            self, paulis: List[Pauli], anchor: Coordinates = None,
-            colour: Colour = None):
+            self, paulis: Dict[Coordinates, Pauli],
+            anchor: Coordinates = None, colour: Colour = None):
         """A check is a Pauli operator that is actually measured as part of
         the code. In some codes the checks are just the stabilizers (e.g.
         surface code, colour code), but this need not be the case (e.g.
@@ -30,6 +30,7 @@ class Check(NiceRepr):
         self.paulis = paulis
         self.anchor = anchor
         self.colour = colour
+        self.weight = len(paulis)
 
         # The following properties are set by a compiler.
         self.ancilla = None

@@ -112,9 +112,14 @@ class Circuit:
                 # measurements.
                 all_noise = all([instruction.is_noise for instruction in instructions])
                 all_product_measurements = all(
-                    [instruction.name == "MPP" for instruction in instructions]
-                )
-                assert all_noise or all_product_measurements
+                    [instruction.name == 'MPP' for instruction in instructions])
+                if not (all_noise or all_product_measurements):
+                    instructions_string = '\n'.join(
+                        [str(instruction) for instruction in instructions])
+                    raise ValueError(
+                        f'Tried to compile conflicting instructions on qubit '
+                        f'{qubit.coords} at pseudo-tick {tick}! Instructions '
+                        f'are:\n {instructions_string}')
             # Add this to the set of qubits we've come across in the circuit.
             self.qubits.add(qubit)
 

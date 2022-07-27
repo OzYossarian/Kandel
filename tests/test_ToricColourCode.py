@@ -28,10 +28,10 @@ def test_distance_4_toric_colour_code():
     assert plaquette_anchors == expected_anchors
 
     for check in colour_code.checks:
-        neighbours = colour_code.get_neighbours(check.anchor)
+        neighbours = colour_code.get_neighbour_coords(check.anchor)
         expected_coords = {
             colour_code.wrap_coords(coords) for coords in neighbours}
         check_qubit_coords = {
-            pauli.qubit.coords for pauli in check.paulis}
+            pauli.qubit.coords for pauli in check.paulis.values()}
         assert expected_coords == check_qubit_coords
 

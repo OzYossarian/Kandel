@@ -1,5 +1,6 @@
 from main.QPUs.QPU import QPU
 from main.building_blocks.Qubit import Coordinates
+from main.utils.utils import tuple_sum
 
 
 class Printer:
@@ -9,7 +10,7 @@ class Printer:
     def scale(self, coords: Coordinates, offset: Coordinates):
         if isinstance(coords, tuple):
             assert isinstance(offset, tuple)
-            coords = tuple(map(sum, zip(coords, offset)))
+            coords = tuple_sum(coords, offset)
             return tuple(map(lambda x: x * self.scale_factor, coords))
         else:
             # So 'coords' and 'offset' must just be integers.

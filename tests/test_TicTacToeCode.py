@@ -96,7 +96,7 @@ def test_create_checks():
             # the test doesn't just use the same code as the method itself.
             plaquette_anchors = code.colourful_plaquette_anchors[colour]
             for anchor in plaquette_anchors:
-                every_other_corner = code.get_neighbours(anchor)[::2]
+                every_other_corner = code.get_neighbour_coords(anchor)[::2]
                 for u in every_other_corner:
                     diff = (u[0] - anchor[0], u[1] - anchor[1])
                     v = (u[0] + diff[0], u[1] + diff[1])
@@ -113,8 +113,8 @@ def test_create_checks():
 
 
 def check_is_of_type(check, colour, letter, u, v):
-    qubit_coords = {pauli.qubit.coords for pauli in check.paulis}
-    pauli_word = {pauli.letter for pauli in check.paulis}
+    qubit_coords = {pauli.qubit.coords for pauli in check.paulis.values()}
+    pauli_word = {pauli.letter for pauli in check.paulis.values()}
     return \
         qubit_coords == {u, v} and \
         check.colour == colour and \
@@ -135,7 +135,7 @@ def test_create_borders():
         # us duplicating code.
         def assert_plaquette_borders_correct(anchors, borders_used, e):
             for anchor in anchors:
-                corners = code.get_neighbours(anchor)
+                corners = code.get_neighbour_coords(anchor)
                 for j in range(3):
                     # Loop through corners either anti-clockwise (e = 1) or
                     # clockwise (e = -1)

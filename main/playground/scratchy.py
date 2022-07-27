@@ -22,10 +22,13 @@ from main.printing.Printer2D import Printer2D
 
 
 # Codes
-# rep_code = RepetitionCode(3)
-rsc = RotatedSurfaceCode(5)
-# fcc = FloquetColourCode(4)
-# hcc = HoneycombCode(16)
+rep_code = RepetitionCode(3)
+rsc = RotatedSurfaceCode(3)
+fcc = FloquetColourCode(4)
+hcc = HoneycombCode(4)
+
+# Print codes
+printer = Printer2D()
 
 # Orderers
 trivial_orderer = TrivialOrderer()
@@ -57,51 +60,63 @@ capacity_pure_rsc_compiler = AncillaPerCheckCompiler(code_capacity_noise, pure_r
 # cln_mixed_rep_circuit = cln_mixed_trivial_compiler.compile_code(rep_code, 5)
 # noiseless_pure_fcc_circuit = noiseless_pure_trivial_compiler.compile_code(fcc, 2)
 
-# fcc_qubits = list(fcc.data_qubits.values())
-# fcc_initials = {qubit: State.Plus for qubit in fcc_qubits}
-# fcc_finals = [Pauli(qubit, PauliX) for qubit in fcc_qubits]
-# fcc_logicals = [fcc.logical_qubits[1].x]
-# phenom_fcc_circuit = phenom_pure_trivial_compiler.compile_code(
-#     fcc, 2, fcc_initials, fcc_finals, fcc_logicals)
+fcc_qubits = list(fcc.data_qubits.values())
+fcc_initials = {qubit: State.Plus for qubit in fcc_qubits}
+fcc_finals = [Pauli(qubit, PauliX) for qubit in fcc_qubits]
+fcc_logicals = [fcc.logical_qubits[1].x]
+phenom_fcc_circuit = phenom_pure_trivial_compiler.compile_code(
+    fcc, 2,
+    initial_states=fcc_initials,
+    final_measurements=fcc_finals,
+    logical_observables=fcc_logicals)
 
-# hcc_qubits = list(hcc.data_qubits.values())
-# hcc_initials = {qubit: State.Plus for qubit in hcc_qubits}
-# hcc_finals = [Pauli(qubit, PauliX) for qubit in hcc_qubits]
-# hcc_logicals = [hcc.logical_qubits[0].x]
+hcc_qubits = list(hcc.data_qubits.values())
+hcc_initials = {qubit: State.Plus for qubit in hcc_qubits}
+hcc_finals = [Pauli(qubit, PauliX) for qubit in hcc_qubits]
+hcc_logicals = [hcc.logical_qubits[0].x]
+phenom_hcc_circuit = phenom_pure_trivial_compiler.compile_code(
+    hcc, hcc.distance,
+    initial_states=hcc_initials,
+    final_measurements=hcc_finals,
+    logical_observables=hcc_logicals)
+
 # cProfile.run(
 #      'phenom_pure_trivial_compiler.compile_code('
 #      'hcc, hcc.distance, hcc_initials, hcc_finals, hcc_logicals)',
 #      'hcc_distance_16_better_determinism_checks.prof')
-# phenom_hcc_circuit = phenom_pure_trivial_compiler.compile_code(
-#     hcc, hcc.distance, hcc_initials, hcc_finals, hcc_logicals)
 
 rsc_qubits = list(rsc.data_qubits.values())
 rsc_initials = {qubit: State.Zero for qubit in rsc_qubits}
 rsc_finals = [Pauli(qubit, PauliZ) for qubit in rsc_qubits]
 rsc_logicals = [rsc.logical_qubits[0].z]
 phenom_rsc_circuit = phenom_pure_rsc_compiler.compile_code(
-     rsc, rsc.distance, rsc_initials, rsc_finals, rsc_logicals)
+    rsc, rsc.distance,
+    initial_states=rsc_initials,
+    final_measurements=rsc_finals,
+    logical_observables=rsc_logicals)
+
 # cProfile.run(
 #      'phenom_pure_rsc_compiler.compile_code(rsc, rsc.distance, rsc_initials, rsc_finals, rsc_logicals)',
 #      f'rsc_distance_{rsc.distance}.prof')
 #
-# rep_qubits = list(rep_code.data_qubits.values())
-# rep_initials = {qubit: State.Zero for qubit in rep_qubits}
-# rep_finals = [Pauli(qubit, PauliZ) for qubit in rep_qubits]
-# rep_logicals = [rep_code.logical_qubits[0].z]
-# phenom_rep_circuit = phenom_pure_trivial_compiler.compile_code(
-#     rep_code, 2, rep_initials, rep_finals, rep_logicals)
+rep_qubits = list(rep_code.data_qubits.values())
+rep_initials = {qubit: State.Zero for qubit in rep_qubits}
+rep_finals = [Pauli(qubit, PauliZ) for qubit in rep_qubits]
+rep_logicals = [rep_code.logical_qubits[0].z]
+phenom_rep_circuit = phenom_pure_trivial_compiler.compile_code(
+    rep_code, rep_code.distance,
+    initial_states=rep_initials,
+    final_measurements=rep_finals,
+    logical_observables=rep_logicals)
 
 # Printing
-# print(phenom_rep_circuit)
-# print()
+print(phenom_rep_circuit)
+print()
 print(phenom_rsc_circuit)
-# print()
-# print(capacity_rsc_circuit)
-# print()
-# print(phenom_fcc_circuit)
-# print()
-# print(phenom_hcc_circuit)
+print()
+print(phenom_fcc_circuit)
+print()
+print(phenom_hcc_circuit)
 
 # Raw sampling
 # raw_sampler = noiseless_pure_fcc_circuit.compile_sampler()

@@ -20,14 +20,8 @@ class RotatedSurfaceCodeOrderer(ControlledGateOrderer):
             (PauliZ, (-1, 0)): 3}
 
     def order(self, check: Check) -> List[Pauli | None]:
-        relative_paulis = []
         ordered = [None, None, None, None]
-        for pauli in check.paulis:
-            relative_coords = (
-                pauli.qubit.coords[0] - check.anchor[0],
-                pauli.qubit.coords[1] - check.anchor[1])
-            relative_paulis.append((pauli, relative_coords))
-        for pauli, relative_coords in relative_paulis:
+        for relative_coords, pauli in check.paulis.items():
             order = self.orders[(pauli.letter, relative_coords)]
             ordered[order] = pauli
         return ordered
