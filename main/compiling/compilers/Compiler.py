@@ -27,9 +27,11 @@ import stim
 
 class Compiler(ABC):
     def __init__(
-            self, noise_model: NoiseModel | None,
-            syndrome_extractor: SyndromeExtractor,
-            gate_set=("CNOT", "RZ", "MZ", "RX", "MX", "RY", "MY")):
+        self,
+        noise_model: NoiseModel | None,
+        syndrome_extractor: SyndromeExtractor,
+        gate_set=("CNOT", "RZ", "MZ", "RX", "MX", "RY", "MY"),
+    ):
         if noise_model is None:
             noise_model = NoNoise()
         self.noise_model = noise_model
@@ -333,12 +335,7 @@ class Compiler(ABC):
         if final_measurements is not None:
             final_checks = {}
             for pauli in final_measurements:
-                zero = (
-                    tuple([0 for _ in pauli.qubit.coords])
-                    if isinstance(pauli.qubit.coords, tuple)
-                    else 0
-                )
-                check = Check({zero: pauli}, pauli.qubit.coords)
+                check = Check([pauli], pauli.qubit.coords)
                 final_checks[pauli.qubit] = check
 
             # First, compile instructions for actually measuring the qubits.
