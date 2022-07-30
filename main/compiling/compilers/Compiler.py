@@ -333,16 +333,12 @@ class Compiler(ABC):
         if final_measurements is not None:
             final_checks = {}
             for pauli in final_measurements:
-<<<<<<< Updated upstream
-                check = Check([pauli], pauli.qubit.coords)
-=======
                 zero = (
                     tuple([0 for _ in pauli.qubit.coords])
                     if isinstance(pauli.qubit.coords, tuple)
                     else 0
                 )
                 check = Check({zero: pauli}, pauli.qubit.coords)
->>>>>>> Stashed changes
                 final_checks[pauli.qubit] = check
 
             # First, compile instructions for actually measuring the qubits.
