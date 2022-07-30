@@ -1,7 +1,6 @@
 from main.building_blocks.pauli.Pauli import Pauli
 from main.building_blocks.pauli.PauliLetter import PauliX, PauliZ
 from main.codes.RepetitionCode import RepetitionCode
-from main.enums import State
 
 d3_rep_code = RepetitionCode(3)
 
@@ -11,11 +10,11 @@ def test_init():
     qubit = d3_rep_code.data_qubits[4]
     assert qubit.coords == 4
 
-    assert d3_rep_code.logical_qubits[0].z.paulis == [
+    assert d3_rep_code.logical_qubits[0].z.at_round(-1) == [
         Pauli(d3_rep_code.data_qubits[0], PauliZ)
     ]
 
-    assert d3_rep_code.logical_qubits[0].x.paulis == [
+    assert d3_rep_code.logical_qubits[0].x.at_round(-1) == [
         Pauli(d3_rep_code.data_qubits[0], PauliX),
         Pauli(d3_rep_code.data_qubits[2], PauliX),
         Pauli(d3_rep_code.data_qubits[4], PauliX),

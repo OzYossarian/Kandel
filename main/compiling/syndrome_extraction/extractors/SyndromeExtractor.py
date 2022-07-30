@@ -33,28 +33,23 @@ from main.enums import State
 #  the ancilla in each case.
 class SyndromeExtractor:
     def __init__(
-        self,
-        controlled_gate_orderer: ControlledGateOrderer = None,
-        extract_checks_in_parallel: bool = True,
-    ):
+            self,
+            controlled_gate_orderer: ControlledGateOrderer = None,
+            extract_checks_in_parallel: bool = True):
         # This extractor will work for any pauli word stabilizer,
         # but won't necessarily give an optimal circuit.
-        quit
         if controlled_gate_orderer is None:
             controlled_gate_orderer = TrivialOrderer()
         self.controlled_gate_orderer = controlled_gate_orderer
         self.extract_checks_in_parallel = extract_checks_in_parallel
 
     def extract_check(
-        self, check: Check, round: int, compiler: Compiler, tick: int, circuit: Circuit
-    ):
+        self, check: Check, round: int, compiler: Compiler, tick: int, circuit: Circuit):
         # First initialise the ancilla qubit.
         ancilla_init_state, measurement_basis = self.ancilla_init_and_measurement(
-            check, compiler.gate_set
-        )
+            check, compiler.gate_set)
         tick = compiler.initialize_qubits(
-            {check.ancilla: ancilla_init_state}, tick, circuit
-        )
+            {check.ancilla: ancilla_init_state}, tick, circuit)
 
         # Now place controlled gates between data qubits and the ancilla,
         # possibly with some rotation gates on data qubits too.
@@ -68,22 +63,12 @@ class SyndromeExtractor:
                 tick += 6
             elif pauli.letter == PauliX:
                 tick = self.extract_pauli_X(
-                    tick,
-                    pauli,
-                    check.ancilla,
-                    circuit,
-                    compiler.noise_model,
-                    compiler.gate_set,
-                )
+                    tick, pauli, check.ancilla, circuit, compiler.noise_model,
+                    compiler.gate_set)
             elif pauli.letter == PauliY:
                 tick = self.extract_pauli_Y(
-                    tick,
-                    pauli,
-                    check.ancilla,
-                    circuit,
-                    compiler.noise_model,
-                    compiler.gate_set,
-                )
+                    tick, pauli, check.ancilla, circuit, compiler.noise_model,
+                    compiler.gate_set)
             else:
                 assert pauli.letter == PauliZ
                 tick = self.extract_pauli_Z(

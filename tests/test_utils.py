@@ -20,17 +20,16 @@ def test_debug_friendly():
 def test_modulo_duplicates():
     # Construct some random list of integers, apply the 'mod duplicates'
     # method, and check it worked. Repeat several times.
-    pass
-repeat = 100
-for i in range(repeat):
-    list_range = random.randint(1, 100)
-    list_size = random.randint(1, 100)
-    xs = random.choices(range(0, list_range), k=list_size)
-    unique = set(xs)
-    x_counts = Counter(xs)
-    for j in range(1, list_size):
-        ys = modulo_duplicates(xs, j)
-        y_counts = Counter(ys)
-        assert all(
-            y_counts[item] == (x_counts[item] % j)
-            for item in unique)
+    repeat = 100
+    for i in range(repeat):
+        list_range = random.randint(1, 100)
+        list_size = random.randint(1, 100)
+        xs = random.choices(range(0, list_range), k=list_size)
+        unique = set(xs)
+        x_counts = Counter(xs)
+        for j in range(1, list_size):
+            ys = modulo_duplicates(xs, j)
+            y_counts = Counter(ys)
+            assert all(
+                y_counts[item] == (x_counts[item] % j)
+                for item in unique)
