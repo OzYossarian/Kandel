@@ -18,15 +18,15 @@ class NoiseModel:
         def default_to_uniform_noise(arg, noise: Type[Noise]):
             return arg if not isinstance(arg, float) else noise.uniform(arg)
 
-        self.initialisation: Noise = \
+        self.initialisation: OneQubitNoise = \
             default_to_uniform_noise(initialisation, OneQubitNoise)
-        self.idling: Noise = \
+        self.idling: OneQubitNoise = \
             default_to_uniform_noise(idling, OneQubitNoise)
-        self.data_qubit_start_round: Noise = \
+        self.data_qubit_start_round: OneQubitNoise = \
             default_to_uniform_noise(data_qubit_start_round, OneQubitNoise)
-        self.one_qubit_gate: Noise = \
+        self.one_qubit_gate: OneQubitNoise = \
             default_to_uniform_noise(one_qubit_gate, OneQubitNoise)
-        self.two_qubit_gate: Noise = \
+        self.two_qubit_gate: TwoQubitNoise = \
             default_to_uniform_noise(two_qubit_gate, TwoQubitNoise)
-        self.measurement: Noise = \
+        self.measurement: OneBitNoise = \
             default_to_uniform_noise(measurement, OneBitNoise)

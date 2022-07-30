@@ -11,7 +11,7 @@ from main.QPUs.QPU import QPU
 from main.building_blocks.Qubit import Qubit
 from main.printing.Printer import Printer
 from main.printing.Printout import Printout
-from main.utils.utils import mid, tuple_sum
+from main.utils.utils import coords_mid, coords_sum
 
 
 class Printer2D(Printer):
@@ -44,7 +44,7 @@ class Printer2D(Printer):
         for check in code.checks:
             coords.append(check.anchor)
             for offset in check.paulis:
-                coords.append(tuple_sum(check.anchor, offset))
+                coords.append(coords_sum(check.anchor, offset))
         printouts = self.get_printouts(coords, [code])
 
         for round, printout in enumerate(printouts):
@@ -88,11 +88,11 @@ class Printer2D(Printer):
     def _print_weight_2_check(self, check: Check, printout: Printout):
         # Find pauli locations given their relation to check anchor.
         paulis = {
-            tuple_sum(check.anchor, offset): pauli
+            coords_sum(check.anchor, offset): pauli
             for offset, pauli in check.paulis.items()}  # Quick shorthand
         pauli_coords = list(paulis.keys())
 
-        midpoint = mid([pauli_coords[0], pauli_coords[1]])
+        midpoint = coords_mid([pauli_coords[0], pauli_coords[1]])
         midpoint = self.scale(midpoint, printout.offset)
         anchor = self.scale(check.anchor, printout.offset)
 
@@ -117,14 +117,14 @@ class Printer2D(Printer):
     def _print_higher_weight_check(self, check: Check, printout: Printout):
         # Find pauli locations given their relation to check anchor.
         paulis = {
-            tuple_sum(check.anchor, offset): pauli
+            coords_sum(check.anchor, offset): pauli
             for offset, pauli in check.paulis.items()}  # Quick shorthand
         pauli_coords = list(paulis.keys())
 
-        mid_next = mid([pauli_coords[0], pauli_coords[-1]])
+        mid_next = coords_mid([pauli_coords[0], pauli_coords[-1]])
         for i in range(check.weight):
             mid_last = mid_next
-            mid_next = mid([
+            mid_next = coords_mid([
                 pauli_coords[i],
                 pauli_coords[(i + 1) % check.weight]])
             polygon = (check.anchor, mid_last, pauli_coords[i], mid_next)

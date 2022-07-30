@@ -1,9 +1,12 @@
+from __future__ import annotations
+
 from collections import defaultdict
 from statistics import mean
-from typing import List, Tuple, Hashable, Iterable
+from typing import List, Tuple, Hashable, Iterable, TYPE_CHECKING
 from pathlib import Path
 
-from main.building_blocks.Qubit import Coordinates
+if TYPE_CHECKING:
+    from main.building_blocks.Qubit import Coordinates
 
 
 def output_path() -> Path:
@@ -12,7 +15,7 @@ def output_path() -> Path:
     return output
 
 
-def mid(coords: Iterable[Coordinates]) -> Coordinates:
+def coords_mid(coords: Iterable[Coordinates]) -> Coordinates:
     if all(isinstance(coord, tuple) for coord in coords):
         return tuple(map(mean, zip(*coords)))
     else:
@@ -37,12 +40,18 @@ def modulo_duplicates(xs: List[Hashable], n: int):
     return [r for r in result if r is not None]
 
 
-def tuple_sum(*tuples: Tuple[int | float, ...]):
-    return tuple(map(sum, zip(*tuples)))
+def coords_sum(*coords: Coordinates):
+    if all(isinstance(coord, tuple) for coord in coords):
+        return tuple(map(sum, zip(*coords)))
+    else:
+        return sum(coords)
 
 
-def tuple_minus(xs: Tuple[int | float, ...], ys: Tuple[int | float, ...]) -> object:
-    return tuple(map(lambda pair: pair[0]-pair[1], zip(xs, ys)))
+def coords_minus(x: Coordinates, y: Coordinates):
+    if all(isinstance(coords, tuple) for coords in [x, y]):
+        return tuple(map(lambda pair: pair[0]-pair[1], zip(x, y)))
+    else:
+        return x-y
 
 
 def embed_coords(
@@ -62,15 +71,14 @@ def embed_coords(
         assert len(offset) == dimension
 
     # Get the current dimension of the coordinates.
-    if isinstance(coords, tuple):
-        current_dimension = len(coords)
-    else:
-        assert isinstance(coords, int | float)
-        current_dimension = 1
+    current_dimension = coords_length(coords)
     assert dimension > current_dimension
 
     if hyperplane is None:
         hyperplane = tuple(i for i in range(current_dimension))
+
+    if current_dimension == 1:
+        coords = (coords, )
 
     # Finally, embed these coordinates into the given (hyper)plane
     embedded = list(offset)
@@ -79,3 +87,6 @@ def embed_coords(
 
     return tuple(embedded)
 
+
+def coords_length(coords: Coordinates):
+    return len(coords) if isinstance(coords, tuple) else 1

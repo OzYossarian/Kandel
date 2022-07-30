@@ -72,9 +72,6 @@ def test_init_face_checks(code, distance):
     #    pauli_2 = Pauli(code.data_qubits[(1, distance)], PauliZ)
     #    pauli_3 = Pauli(code.data_qubits[(1, distance - 2)], PauliZ)
     #    pauli_4 = Pauli(code.data_qubits[(0, distance - 1)], PauliZ)
-
-    assert checks[0].anchor == (1, distance - 1)
-    assert checks[0].colour == Green
     """
     assert checks[0].ancilla == face_ancillas[(1, distance - 1)]
     assert checks[0].paulis[0].qubit == code.data_qubits[(2, distance - 1)]

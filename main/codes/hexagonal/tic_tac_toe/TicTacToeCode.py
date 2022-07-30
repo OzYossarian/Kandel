@@ -10,7 +10,7 @@ from main.building_blocks.pauli.Pauli import Pauli
 from main.building_blocks.pauli.PauliLetter import PauliLetter
 from main.codes.hexagonal.ToricHexagonalCode import ToricHexagonalCode
 from main.codes.hexagonal.tic_tac_toe.DetectorBlueprint import DetectorBlueprint
-from main.utils.utils import mid, xor, tuple_minus, embed_coords
+from main.utils.utils import coords_mid, xor, coords_minus, embed_coords
 
 TicTacToeRoute = List[Tuple[Colour, PauliLetter]]
 
@@ -125,7 +125,7 @@ class TicTacToeCode(ToricHexagonalCode):
         corners = self.get_neighbour_coords(anchor)
         for j in range(3):
             u, v = corners[2 * j], corners[2 * j + 1]
-            midpoint = mid([u, v])
+            midpoint = coords_mid([u, v])
             # The edge (u, v) is a colours[i+1]-check, shared
             # between this plaquette of colour colours[i] and a
             # neighbouring one of colour colours[i+2]. The
@@ -140,8 +140,8 @@ class TicTacToeCode(ToricHexagonalCode):
             for letter in pauli_letters:
                 # Create the check object and note which plaquettes it borders
                 paulis = {
-                    (tuple_minus(u, midpoint)): Pauli(qubit_u, letter),
-                    (tuple_minus(v, midpoint)): Pauli(qubit_v, letter)}
+                    (coords_minus(u, midpoint)): Pauli(qubit_u, letter),
+                    (coords_minus(v, midpoint)): Pauli(qubit_v, letter)}
                 check = Check(paulis, self.wrap_coords(midpoint), edge_colour)
                 checks[(edge_colour, letter)].append(check)
                 borders[anchor][(edge_colour, letter)].append(check)

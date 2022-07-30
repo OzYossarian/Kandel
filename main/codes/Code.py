@@ -31,6 +31,14 @@ class Code:
             logical_qubits = []
         self.logical_qubits = logical_qubits
 
+        # Assign the code a dimension based on data qubits' dimension.
+        qubit_dims = {qubit.dimension for qubit in self.data_qubits.values()}
+        self.dimension = max(qubit_dims)
+        if len(qubit_dims) != 1:
+            raise ValueError(
+                f'All data qubits must have the same dimension! Set of all '
+                f'qubit dimensions is instead {qubit_dims}.')
+
         # Compiler will set up ancilla qubits later if needed
         self.ancilla_qubits = {}
 
@@ -49,6 +57,9 @@ class Code:
     def set_schedules(
             self, check_schedule: List[List[Check]],
             detector_schedule: List[List[Drum]] = None):
+        # TODO - rethink whether this is the right abstraction/signature/thing
+        #  - e.g. for subsystem codes, could do more than just force the user
+        #  to define the whole detector schedule.
         self.check_schedule = check_schedule
         self.schedule_length = len(check_schedule)
         self.checks = set(
@@ -59,7 +70,9 @@ class Code:
             # twice in consecutive rounds.
             self.detector_schedule = [[]]
             for check in self.check_schedule[0]:
-                anchor = embed_coords(check.anchor, len(check.anchor) + 1)
+                anchor = embed_coords(check.anchor, check.dimension + 1) \
+                    if check.anchor is not None \
+                    else None
                 drum = Drum([(-1, check)], [(0, check)], 0, anchor)
                 self.detector_schedule[0].append(drum)
         else:

@@ -115,8 +115,7 @@ class Measurer:
     def detector_to_stim(self, detector: Detector, round: int, track_coords: bool):
         targets = [
             self.measurement_target(check, round + rounds_ago)
-            for rounds_ago, check in detector.checks
-        ]
+            for rounds_ago, check in detector.checks]
         # Anchor needs to now be a tuple for Stim to accept it.
         if track_coords and isinstance(detector.anchor, tuple):
             anchor = detector.anchor

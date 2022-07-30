@@ -174,10 +174,7 @@ class Circuit:
     def _to_stim(self, noise_model: NoiseModel, track_coords: bool, progress_bar: Any):
         # Figure out which temporal dimension to shift if tracking coords.
         if track_coords:
-            qubit_dimensions = {
-                len(qubit.coords) if isinstance(qubit.coords, tuple) else 1
-                for qubit in self.qubits
-            }
+            qubit_dimensions = {qubit.dimension for qubit in self.qubits}
             assert len(qubit_dimensions) == 1
             dimension = qubit_dimensions.pop()
             shift_coords = tuple([0 for _ in range(dimension)] + [1])

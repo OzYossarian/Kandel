@@ -9,7 +9,7 @@ from main.building_blocks.logical.LogicalQubit import LogicalQubit
 from main.building_blocks.pauli import Pauli
 from main.building_blocks.pauli.PauliLetter import PauliX, PauliY, PauliZ
 from main.codes.hexagonal.ToricHexagonalCode import ToricHexagonalCode
-from main.utils.utils import tuple_minus
+from main.utils.utils import coords_minus
 
 
 class ToricXyzSquaredCode(ToricHexagonalCode):
@@ -52,7 +52,7 @@ class ToricXyzSquaredCode(ToricHexagonalCode):
         data_qubits = [
             self.data_qubits[self.wrap_coords(corner)]
             for corner in corners]
-        offsets = [tuple_minus(corner, anchor) for corner in corners]
+        offsets = [coords_minus(corner, anchor) for corner in corners]
         zipped = zip(offsets, data_qubits, self.xyzxyz)
         paulis = {
             offset: Pauli(qubit, letter)

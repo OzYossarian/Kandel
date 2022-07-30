@@ -8,12 +8,8 @@ from main.codes.RotatedSurfaceCode import RotatedSurfaceCode
 from main.compiling.Circuit import Circuit
 from main.compiling.noise.models import CircuitLevelNoise
 from main.codes.hexagonal.tic_tac_toe.HoneycombCode import HoneycombCode
-from main.compiling.syndrome_extraction.controlled_gate_orderers.TrivialOrderer import (
-    TrivialOrderer,
-)
-from main.compiling.syndrome_extraction.extractors.PurePauliWordExtractor import (
-    PurePauliWordExtractor,
-)
+from main.compiling.syndrome_extraction.controlled_gate_orderers.TrivialOrderer import TrivialOrderer
+from main.compiling.syndrome_extraction.extractors.PurePauliWordExtractor import PurePauliWordExtractor
 from main.enums import State
 
 test_qpu = SquareLatticeQPU((3, 1))
@@ -24,20 +20,31 @@ extractor = PurePauliWordExtractor(trivial_orderer)
 noise_model = CircuitLevelNoise(0.1, 0.15, 0.05, 0.03, 0.03)
 test_compiler = AncillaPerCheckCompiler(noise_model, extractor)
 rep_qubits = list(rep_code.data_qubits.values())
-rep_initials_Z = {qubit: State.Zero for qubit in rep_qubits}
-rep_initials_X = {rep_qubits[0]: State.Plus}
+rep_initials_zero = {qubit: State.Zero for qubit in rep_qubits}
+rep_initials_plus = {qubit: State.Plus for qubit in rep_qubits}
 rep_finals = [Pauli(qubit, PauliZ) for qubit in rep_qubits]
 rep_logicals = [rep_code.logical_qubits[0].z]
 
 
 def test_compile_initialisation():
-    _, _, circuit = test_compiler.compile_initialisation(rep_code, rep_initials_Z)
+    _, _, circuit = test_compiler.compile_initialisation(rep_code, rep_initials_zero, None)
     assert circuit.instructions[0][rep_code.data_qubits[0]][0].name == "RZ"
     assert circuit.instructions[1][rep_code.data_qubits[2]][0].name == "PAULI_CHANNEL_1"
 
-    _, _, circuit = test_compiler.compile_initialisation(rep_code, rep_initials_X)
+    _, _, circuit = test_compiler.compile_initialisation(rep_code, rep_initials_plus, None)
     assert circuit.instructions[0][rep_code.data_qubits[0]][0].name == "RX"
     assert circuit.instructions[1][rep_code.data_qubits[0]][0].name == "PAULI_CHANNEL_1"
+
+    try:
+        _, _, circuit = test_compiler.compile_initialisation(rep_code, {}, None)
+        raise ValueError("Shouldn't be able to initialise if no states given.")
+    except ValueError as error:
+        expected_message = \
+            "Some data qubits' initial states either aren't given or " \
+            "aren't determined by the given initial stabilizers! Please " \
+            "give a complete set of desired initial states or desired " \
+            "stabilizers for the first round of measurements."
+        assert str(error) == expected_message
 
 
 """
