@@ -29,7 +29,7 @@ class PurePauliWordExtractor(SyndromeExtractor):
         # gates.
         super().__init__(controlled_gate_orderer, extract_checks_in_parallel)
 
-    def ancilla_init_and_measurement(self, check: Check):
+    def ancilla_init_and_measurement(self, check: Check, gate_set: set):
         pauli_set = {pauli.letter for pauli in check.paulis.values()}
         if pauli_set in [{PauliX}, {PauliY}]:
             init_state = State.Plus
