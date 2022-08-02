@@ -10,19 +10,17 @@ from main.building_blocks.pauli.PauliLetter import PauliX
 from main.codes.hexagonal.tic_tac_toe.HoneycombCode import HoneycombCode
 from main.codes.hexagonal.tic_tac_toe.TicTacToeCode import TicTacToeCode
 from main.compiling.compilers.AncillaPerCheckCompiler import AncillaPerCheckCompiler
-from main.compiling.compilers.Compiler import Compiler
 from main.compiling.noise.models.PhenomenologicalNoise import PhenomenologicalNoise
 from main.compiling.syndrome_extraction.controlled_gate_orderers.TrivialOrderer import TrivialOrderer
-from main.compiling.syndrome_extraction.extractors.PurePauliWordExtractor import PurePauliWordExtractor
-from main.compiling.syndrome_extraction.extractors.SyndromeExtractor import SyndromeExtractor
+from main.compiling.syndrome_extraction.extractors.mixed.CxCyCzExtractor import CxCyCzExtractor
+from main.compiling.syndrome_extraction.extractors.mixed.UniformAncillaBasisExtractor import UniformAncillaBasisExtractor
 from main.enums import State
 from main.utils.utils import output_path
 
 
-def tic_tac_toe_phenom_tasks(
-        constructor: Callable[[int], TicTacToeCode]):
+def tic_tac_toe_phenom_tasks(constructor: Callable[[int], TicTacToeCode]):
     tasks = []
-    syndrome_extractor = PurePauliWordExtractor(TrivialOrderer())
+    syndrome_extractor = CxCyCzExtractor(TrivialOrderer())
     error_rates = [0.002, 0.004, 0.006, 0.008, 0.01]
     distances = [4, 8, 12]
     for error_rate in error_rates:
@@ -36,7 +34,7 @@ def tic_tac_toe_phenom_tasks(
 
 def tic_tac_toe_phenom_task(
         constructor: Callable[[int], TicTacToeCode],
-        distance: int, error_rate: float, syndrome_extractor: SyndromeExtractor):
+        distance: int, error_rate: float, syndrome_extractor: UniformAncillaBasisExtractor):
     noise_model = PhenomenologicalNoise(error_rate, error_rate)
     compiler = AncillaPerCheckCompiler(noise_model, syndrome_extractor)
 
@@ -46,7 +44,11 @@ def tic_tac_toe_phenom_task(
     final_measurements = [Pauli(qubit, PauliX) for qubit in data_qubits]
     observables = [code.logical_qubits[1].x]
     circuit = compiler.compile_code(
-        code, distance, initial_states, final_measurements, observables)
+        code=code,
+        layers=distance,
+        initial_states=initial_states,
+        final_measurements=final_measurements,
+        logical_observables=observables)
     return sinter.Task(
         circuit=circuit,
         json_metadata={

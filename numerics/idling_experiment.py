@@ -3,14 +3,10 @@ from main.building_blocks.pauli.Pauli import Pauli
 from main.building_blocks.pauli.PauliLetter import PauliZ
 from main.codes.RepetitionCode import RepetitionCode
 from main.codes.RotatedSurfaceCode import RotatedSurfaceCode
-from main.compiling.Circuit import Circuit
 from main.compiling.compilers.AncillaPerCheckCompiler import AncillaPerCheckCompiler
-from main.compiling.compilers.Compiler import Compiler
 from main.compiling.noise.models.CodeCapacityBitFlipNoise import CodeCapacityBitFlipNoise
-from main.compiling.syndrome_extraction.controlled_gate_orderers.RotatedSurfaceCodeOrderer import RotatedSurfaceCodeOrderer
 from main.compiling.syndrome_extraction.controlled_gate_orderers.TrivialOrderer import TrivialOrderer
-from main.compiling.syndrome_extraction.extractors.PurePauliWordExtractor import PurePauliWordExtractor
-#from main.compiling.syndrome_extraction.extractors.CSSExtractor import PurePauliWordExtractor
+from main.compiling.syndrome_extraction.extractors.mixed.CxCyCzExtractor import CxCyCzExtractor
 from main.decoding.PymatchingDecoder import PymatchingDecoder
 import numpy as np
 
@@ -29,7 +25,7 @@ class IdlingExperiment():
             self.initialize_circuit(noise_model)
 
     def initialize_circuit(self, noise_model, decoder='pymatching'):
-        pure_trivial_extractor = PurePauliWordExtractor(TrivialOrderer())
+        pure_trivial_extractor = CxCyCzExtractor(TrivialOrderer())
         compiler = AncillaPerCheckCompiler(noise_model, pure_trivial_extractor)
 
         code_qubits = list(self.code.data_qubits.values())
@@ -40,8 +36,11 @@ class IdlingExperiment():
 
         if noise_model.measurement is None:
             circuit = compiler.compile_code(
-                self.code, 1, code_initials, code_finals, code_logicals)
- 
+                code=self.code,
+                layers=1,
+                initial_states=code_initials,
+                final_measurements=code_finals,
+                logical_observables=code_logicals)
         else:
             circuit = compiler.compile_code(
                 code, 3)

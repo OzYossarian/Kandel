@@ -1,6 +1,8 @@
+from __future__ import annotations
+
 import math
 from collections import defaultdict
-from typing import List, Dict, Tuple
+from typing import List, Dict, Tuple, TYPE_CHECKING
 
 import stim
 
@@ -12,16 +14,16 @@ from main.building_blocks.pauli.PauliProduct import PauliProduct
 from main.codes.Code import Code
 from main.compiling.Circuit import Circuit
 from main.compiling.Instruction import Instruction
+if TYPE_CHECKING:
+    from main.compiling.compilers.Compiler import Compiler
 from main.compiling.noise.models.NoNoise import NoNoise
 from main.enums import State
 
 
 class Determiner:
-    def __init__(
-            self, code: Code,
-            state_init_instructions: Dict[State, List[str]]):
+    def __init__(self, code: Code, compiler: Compiler):
         self.code = code
-        self.state_init_instructions = state_init_instructions
+        self.compiler = compiler
         self.stim_pauli_targeters = {
             'X': stim.target_x,
             'Y': stim.target_y,
@@ -44,7 +46,7 @@ class Determiner:
             round = 0
 
         # We're done when no more 'lid-only' detectors can occur
-        min_floor_start = min(
+        min_floor_start = round + min(
             detector.floor_start for detector in self.code.detectors)
         done = min_floor_start >= 0
 
@@ -117,7 +119,7 @@ class Determiner:
         for stabilizer in initial_stabilizers:
             initial_detector_schedule[stabilizer.end].append(stabilizer)
 
-        # Measure the checks for the rounds we're not so interested in
+        # Measure the checks for these rounds
         for round in range(len(initial_detector_schedule)):
             self.measure_checks(round, tick, circuit)
             tick += 2
@@ -178,14 +180,8 @@ class Determiner:
         circuit = Circuit()
         # This method returns the tick to be used by whatever the next
         # instructions are.
-        next_tick = 2
-        for qubit, state in initial_states.items():
-            instructions = [
-                Instruction([qubit], name)
-                for name in self.state_init_instructions[state]]
-            circuit.initialise(0, instructions)
-            next_tick = max(next_tick, 2 * len(instructions))
-        return next_tick, circuit
+        tick = self.compiler.initialize_qubits(initial_states, 0, circuit)
+        return tick, circuit
 
     def is_deterministic(
             self, timed_checks: List[Tuple[int, Check]], circuit: Circuit,

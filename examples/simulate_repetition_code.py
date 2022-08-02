@@ -12,17 +12,12 @@
 #     language: python
 #     name: python3
 # ---
-
-from main.compiling.Circuit import Circuit
+from main.building_blocks.pauli import Pauli
+from main.building_blocks.pauli.PauliLetter import PauliZ
 from main.codes.RepetitionCode import RepetitionCode
 from main.QPUs.SquareLatticeQPU import SquareLatticeQPU
-from main.compiling.compilers.Compiler import Compiler
-from main.compiling.syndrome_extraction.controlled_gate_orderers.TrivialOrderer import (
-    TrivialOrderer,
-)
-from main.compiling.syndrome_extraction.extractors.SyndromeExtractor import (
-    SyndromeExtractor,
-)
+from main.compiling.compilers.AncillaPerCheckCompiler import AncillaPerCheckCompiler
+from main.enums import State
 from main.printing.Printer2D import Printer2D
 
 # ### Create a QPU
@@ -41,17 +36,21 @@ rep_code = RepetitionCode(2)
 test_qpu.embed(rep_code, (0, 0), 0)
 printer = Printer2D(scale_factor=50)
 printer.print_qpu(test_qpu, "small_18_rep_code_qpu")
-# , width=400, height=400)
 Image(url="../output/small_18_rep_code_qpu_round_0.jpg")
 
 # ### Compile the repetition code to stim
 
 # +
 
-syndrome_extractor = SyndromeExtractor(TrivialOrderer())
-test_compiler = Compiler(noise_model=None, syndrome_extractor=syndrome_extractor)
-
-stim_circuit = test_compiler.compile_code(rep_code, layers=3, perfect_final_layer=True)
+test_compiler = AncillaPerCheckCompiler()
+data_qubits = rep_code.data_qubits.values()
+initial_states = {qubit: State.Zero for qubit in data_qubits}
+final_measurements = [Pauli(qubit, PauliZ) for qubit in data_qubits]
+stim_circuit = test_compiler.compile_code(
+    rep_code,
+    layers=3,
+    initial_states=initial_states,
+    final_measurements=final_measurements)
 print(stim_circuit)
 
 # -
