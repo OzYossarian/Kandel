@@ -1,3 +1,4 @@
+import stim
 from main.building_blocks.pauli.Pauli import Pauli
 from main.building_blocks.pauli.PauliLetter import PauliZ
 from main.compiling.compilers.AncillaPerCheckCompiler import AncillaPerCheckCompiler
@@ -8,9 +9,17 @@ from main.codes.RotatedSurfaceCode import RotatedSurfaceCode
 from main.compiling.Circuit import Circuit
 from main.compiling.noise.models import CircuitLevelNoise
 from main.codes.hexagonal.tic_tac_toe.HoneycombCode import HoneycombCode
-from main.compiling.syndrome_extraction.controlled_gate_orderers.TrivialOrderer import TrivialOrderer
-from main.compiling.syndrome_extraction.extractors.PurePauliWordExtractor import PurePauliWordExtractor
+from main.compiling.syndrome_extraction.controlled_gate_orderers.TrivialOrderer import (
+    TrivialOrderer,
+)
+from main.compiling.syndrome_extraction.controlled_gate_orderers.RotatedSurfaceCodeOrderer import (
+    RotatedSurfaceCodeOrderer,
+)
+from main.compiling.syndrome_extraction.extractors.PurePauliWordExtractor import (
+    PurePauliWordExtractor,
+)
 from main.enums import State
+import stimcirq
 
 test_qpu = SquareLatticeQPU((3, 1))
 rep_code = RepetitionCode(2)
@@ -27,11 +36,15 @@ rep_logicals = [rep_code.logical_qubits[0].z]
 
 
 def test_compile_initialisation():
-    _, _, circuit = test_compiler.compile_initialisation(rep_code, rep_initials_zero, None)
+    _, _, circuit = test_compiler.compile_initialisation(
+        rep_code, rep_initials_zero, None
+    )
     assert circuit.instructions[0][rep_code.data_qubits[0]][0].name == "RZ"
     assert circuit.instructions[1][rep_code.data_qubits[2]][0].name == "PAULI_CHANNEL_1"
 
-    _, _, circuit = test_compiler.compile_initialisation(rep_code, rep_initials_plus, None)
+    _, _, circuit = test_compiler.compile_initialisation(
+        rep_code, rep_initials_plus, None
+    )
     assert circuit.instructions[0][rep_code.data_qubits[0]][0].name == "RX"
     assert circuit.instructions[1][rep_code.data_qubits[0]][0].name == "PAULI_CHANNEL_1"
 
@@ -39,12 +52,57 @@ def test_compile_initialisation():
         _, _, circuit = test_compiler.compile_initialisation(rep_code, {}, None)
         raise ValueError("Shouldn't be able to initialise if no states given.")
     except ValueError as error:
-        expected_message = \
-            "Some data qubits' initial states either aren't given or " \
-            "aren't determined by the given initial stabilizers! Please " \
-            "give a complete set of desired initial states or desired " \
+        expected_message = (
+            "Some data qubits' initial states either aren't given or "
+            "aren't determined by the given initial stabilizers! Please "
+            "give a complete set of desired initial states or desired "
             "stabilizers for the first round of measurements."
+        )
         assert str(error) == expected_message
+
+
+def test_compile_code():
+    code = RotatedSurfaceCode(3)
+
+    syndrome_extractor = PurePauliWordExtractor(RotatedSurfaceCodeOrderer())
+    p = 0.1
+    noise_model = CircuitLevelNoise(
+        initialisation=0.3, idling=p, one_qubit_gate=p, two_qubit_gate=p, measurement=p
+    )
+
+    compiler = AncillaPerCheckCompiler(noise_model, syndrome_extractor)
+
+    rsc_qubits = list(code.data_qubits.values())
+    rsc_initials = {qubit: State.Zero for qubit in rsc_qubits}
+    rsc_finals = [Pauli(qubit, PauliZ) for qubit in rsc_qubits]
+    rsc_logicals = [code.logical_qubits[0].z]
+
+    rsc_circuit: stim.Circuit = compiler.compile_code(
+        code,
+        code.distance,
+        initial_states=rsc_initials,
+        final_measurements=rsc_finals,
+        logical_observables=rsc_logicals,
+    )
+
+    """
+    print(
+        stimcirq.stim_circuit_to_cirq_circuit(rsc_circuit.without_noise()),
+        file=open("output2.txt", "a"),
+    )
+    """
+
+    # 4 + 8 + 8+4
+    assert rsc_circuit.num_detectors == 24
+
+    # 8 + 8 + 17 = 3
+    assert rsc_circuit.num_measurements == 33
+    error: stim.ExplainedError = rsc_circuit.shortest_graphlike_error()[0]
+    print(error, "\n \n \n")
+    error: stim.ExplainedError = rsc_circuit.shortest_graphlike_error()[1]
+    print(error)
+    #    print(rsc_circuit.shortest_graphlike_error())
+    assert len(rsc_circuit.shortest_graphlike_error()) == 3
 
 
 """
