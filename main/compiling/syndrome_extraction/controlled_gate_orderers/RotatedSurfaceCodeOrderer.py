@@ -13,12 +13,12 @@ class RotatedSurfaceCodeOrderer(ControlledGateOrderer):
         super().__init__()
         self.gate_order = {
             (PauliX, (1, 0)): 0,
-            (PauliX, (0, 1)): 1,
-            (PauliX, (0, -1)): 2,
+            (PauliX, (0, 1)): 2,
+            (PauliX, (0, -1)): 1,
             (PauliX, (-1, 0)): 3,
             (PauliZ, (1, 0)): 0,
-            (PauliZ, (0, 1)): 2,
-            (PauliZ, (0, -1)): 1,
+            (PauliZ, (0, 1)): 1,
+            (PauliZ, (0, -1)): 2,
             (PauliZ, (-1, 0)): 3,
         }
 

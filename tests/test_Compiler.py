@@ -85,23 +85,11 @@ def test_compile_code():
         logical_observables=rsc_logicals,
     )
 
-    """
-    print(
-        stimcirq.stim_circuit_to_cirq_circuit(rsc_circuit.without_noise()),
-        file=open("output2.txt", "a"),
-    )
-    """
-
     # 4 + 8 + 8+4
     assert rsc_circuit.num_detectors == 24
 
     # 8 + 8 + 17 = 3
     assert rsc_circuit.num_measurements == 33
-    error: stim.ExplainedError = rsc_circuit.shortest_graphlike_error()[0]
-    print(error, "\n \n \n")
-    error: stim.ExplainedError = rsc_circuit.shortest_graphlike_error()[1]
-    print(error)
-    #    print(rsc_circuit.shortest_graphlike_error())
     assert len(rsc_circuit.shortest_graphlike_error()) == 3
 
 
