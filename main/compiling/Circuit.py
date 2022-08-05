@@ -112,14 +112,17 @@ class Circuit:
                 # measurements.
                 all_noise = all([instruction.is_noise for instruction in instructions])
                 all_product_measurements = all(
-                    [instruction.name == 'MPP' for instruction in instructions])
+                    [instruction.name == "MPP" for instruction in instructions]
+                )
                 if not (all_noise or all_product_measurements):
-                    instructions_string = '\n'.join(
-                        [str(instruction) for instruction in instructions])
+                    instructions_string = "\n".join(
+                        [str(instruction) for instruction in instructions]
+                    )
                     raise ValueError(
-                        f'Tried to compile conflicting instructions on qubit '
-                        f'{qubit.coords} at pseudo-tick {tick}! Instructions '
-                        f'are:\n {instructions_string}')
+                        f"Tried to compile conflicting instructions on qubit "
+                        f"{qubit.coords} at pseudo-tick {tick}! Instructions "
+                        f"are:\n {instructions_string}"
+                    )
             # Add this to the set of qubits we've come across in the circuit.
             self.qubits.add(qubit)
 
@@ -194,7 +197,6 @@ class Circuit:
 
         most_recent_tick = -1
         final_tick = max(self.instructions.keys())
-
         if track_coords:
             for qubit in sorted(self.qubits, key=lambda qubit: qubit.coords):
                 index = self.qubit_index(qubit)
@@ -202,7 +204,6 @@ class Circuit:
 
         for tick, qubit_instructions in sorted(self.instructions.items()):
             # Check whether we need to close a repeat block
-
             repeats = self.left_repeat_block(tick, most_recent_tick)
             if repeats is not None:
                 repeat_circuit = stim.CircuitRepeatBlock(repeats, circuit)
