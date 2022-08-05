@@ -102,8 +102,16 @@ def test_compile_layer(code, n_instructions):
     assert number_of_operations == n_instructions
 
 
-def test_compile_final_measurement():
-    code = RotatedSurfaceCode(3)
+@pytest.mark.parametrize(
+    "code, n_instructions",
+    [
+        # 17 qubits initialized, 9 errors on data qubits, 4 * 6 cnots + 1 * 8 measurements
+        (RotatedSurfaceCode(3), 1, [17, 9, 12, 12, 12, 12, 17]),
+        # 13 qubits initialized, 2 * (9 errors on data qubits, 4*3 cnots + 1 * 4 measurements)
+        (ShortRotatedSurfaceCode(3), 2, [13, 9, 6, 6, 6, 6, 4, 9, 4, 6, 6, 6, 6, 13]),
+    ],
+)
+def test_compile_final_measurement(code, layer, n_instructions):
     syndrome_extractor = PurePauliWordExtractor(RotatedSurfaceCodeOrderer())
     p = 0.1
     noise_model = CodeCapacityBitFlipNoise(0.1)
@@ -129,15 +137,20 @@ def test_compile_final_measurement():
         rsc_finals,
         None,
         [code.logical_qubits[0].z],
-        1,
-        26,
+        layer,
+        tick - 2,
         circuit,
         code,
     )
     number_of_operations = []
     for index, layer in enumerate(circuit.instructions):
         number_of_operations.append(len(circuit.instructions[layer]))
-    assert number_of_operations == [17, 9, 12, 12, 12, 12, 17]
+    assert number_of_operations == n_instructions
+
+
+test_compile_final_measurement(
+    ShortRotatedSurfaceCode(3), 2, [13, 9, 6, 6, 6, 6, 4, 9, 4, 6, 6, 6, 6, 13]
+)
 
 
 @pytest.mark.parametrize(
@@ -145,16 +158,17 @@ def test_compile_final_measurement():
     [
         (RotatedSurfaceCode(3), 3, 24, 33),
         (RotatedSurfaceCode(5), 5, 120, 145),
-#        (ShortRotatedSurfaceCode(3), 3, 24, 33),
+        #        (ShortRotatedSurfaceCode(3), 3, 24, 33),
         #        (ShortRotatedSurfaceCode(5), 5, 120, 145),
     ],
 )
 def test_compile_code(code, distance, num_detectors, num_measurements):
     syndrome_extractor = PurePauliWordExtractor(RotatedSurfaceCodeOrderer())
     p = 0.1
-    noise_model = CircuitLevelNoise(
-        initialisation=0.3, idling=p, one_qubit_gate=p, two_qubit_gate=p, measurement=p
-    )
+    noise_model = CodeCapacityBitFlipNoise(0.1)
+    #    noise_model = CircuitLevelNoise(
+    #        initialisation=0.3, idling=p, one_qubit_gate=p, two_qubit_gate=p, measurement=p
+    #    )
 
     compiler = AncillaPerCheckCompiler(noise_model, syndrome_extractor)
 
@@ -170,10 +184,10 @@ def test_compile_code(code, distance, num_detectors, num_measurements):
         logical_observables=rsc_logicals,
     )
     print(
-        stimcirq.stim_circuit_to_cirq_circuit(rsc_circuit),
+        stimcirq.stim_circuit_to_cirq_circuit(rsc_circuit.without_noise()),
         file=open("new_compiled.txt", "a"),
     )
-    print(rsc_circuit.num_detectors, "num detectors")
+
     assert rsc_circuit.num_detectors == num_detectors
 
     # 8 + 8 + 17 = 3
@@ -181,4 +195,4 @@ def test_compile_code(code, distance, num_detectors, num_measurements):
     assert len(rsc_circuit.shortest_graphlike_error()) == distance
 
 
-# test_compile_code(RotatedSurfaceCode(3), 3, 12, 17)
+test_compile_code(ShortRotatedSurfaceCode(3), 1, 24, 17)
