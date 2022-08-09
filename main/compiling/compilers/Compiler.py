@@ -94,33 +94,23 @@ class Compiler(ABC):
 
         # Compile these initial layers.
         for layer, detector_schedule in enumerate(initial_detector_schedules):
-            tick, circuit = self.compile_layer(
-                layer, detector_schedule, logical_observables, tick - 2, circuit, code
-            )
-        number_of_operations = []
+            tick = self.compile_layer(
+                layer, detector_schedule, logical_observables, tick,
+                circuit, code)
 
         # Compile the remaining layers.
         layer = initial_layers
         while layer < layers:
-            tick, circuit = self.compile_layer(
-                layer, code.detector_schedule, logical_observables, tick, circuit, code
-            )
+            tick = self.compile_layer(
+                layer, code.detector_schedule, logical_observables, tick,
+                circuit, code)
             layer += 1
 
         # Finish with data qubit measurements, and use these to reconstruct
         # some detectors.
         self.compile_final_measurements(
-            final_measurements,
-            final_stabilizers,
-            logical_observables,
-            layer - 1,
-            tick - 2,
-            circuit,
-            code,
-        )
-        number_of_operations = []
-        for index, layer in enumerate(circuit.instructions):
-            number_of_operations.append(len(circuit.instructions[layer]))
+            final_measurements, final_stabilizers, logical_observables,
+            layer, tick, circuit, code)
 
         return circuit.to_stim(self.noise_model)
 
@@ -231,28 +221,21 @@ class Compiler(ABC):
         return tick + ticks_needed
 
     def compile_layer(
-        self,
-        layer: int,
-        detector_schedule: List[List[Detector]],
-        observables: List[LogicalOperator] | None,
-        tick: int,
-        circuit: Circuit,
-        code: Code,
-    ):
+            self,
+            layer: int,
+            detector_schedule: List[List[Detector]],
+            observables: List[LogicalOperator] | None,
+            tick: int,
+            circuit: Circuit,
+            code: Code) -> int:
         for relative_round in range(code.schedule_length):
             # Compile one round of checks, and note down the final tick
             # used, then start the next round of checks from this tick.
             round = layer * code.schedule_length + relative_round
-            tick, circuit = self.compile_round(
-                round,
-                relative_round,
-                detector_schedule,
-                observables,
-                tick,
-                circuit,
-                code,
-            )
-        return tick, circuit
+            tick = self.compile_round(
+                round, relative_round, detector_schedule, observables, tick,
+                circuit, code)
+        return tick
 
     def compile_round(
         self,
@@ -264,7 +247,7 @@ class Compiler(ABC):
         circuit: Circuit,
         code: Code,
     ):
-        self.add_start_of_round_noise(tick + 1, circuit, code)
+        self.add_start_of_round_noise(tick - 1, circuit, code)
         # We will eventually return the tick we're on after one whole round
         # has been compiled.
         final_tick = tick
@@ -309,7 +292,7 @@ class Compiler(ABC):
 
         circuit.end_round(final_tick - 2)
 
-        return final_tick, circuit
+        return final_tick
 
     def add_start_of_round_noise(self, tick: int, circuit: Circuit, code: Code):
         noise = self.noise_model.data_qubit_start_round
@@ -355,7 +338,6 @@ class Compiler(ABC):
 
             # Now try to use these as lids for any detectors that at this point
             # have a floor but no lid.
-            # this is what I need to fix
             self.compile_final_detectors(
                 final_checks, final_stabilizers, layer, circuit, code
             )
@@ -388,9 +370,8 @@ class Compiler(ABC):
             final_detectors = self.compile_final_detectors_from_stabilizers(
                 final_checks, final_stabilizers
             )
-
         # Finally, compile these detectors to the circuit.
-        circuit.measurer.add_detectors(final_detectors, round)  # round)
+        circuit.measurer.add_detectors(final_detectors, round)
 
     def compile_final_detectors_from_stabilizers(
         self, final_checks: Dict[Qubit, Check], final_stabilizers: List[Stabilizer]

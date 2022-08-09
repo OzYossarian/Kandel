@@ -78,17 +78,14 @@ class Measurer:
         for measurement in measurements:
             # First record the measurement numbers
             check, round = self.measurement_checks[measurement]
-            #            round = 0
             self.measurement_numbers[(check, round)] = self.total_measurements
             self.total_measurements += 1
 
             # Now see if measuring this check triggers any extra instructions.
-
             for trigger in self.triggers[(check, round)]:
                 if isinstance(trigger, Detector):
                     # This check (amongst others) triggers a detector.
                     detector = trigger
-                    #                    round = 0
                     if self.can_build_detector(detector, round):
                         # Must wait til all measurement numbers have been
                         # assigned (at the end of the outer for loop we're in)
