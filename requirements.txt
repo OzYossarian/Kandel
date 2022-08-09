@@ -62,6 +62,7 @@ sinter==1.9
 six==1.16.0
 stack-data==0.2.0
 stim==1.9
+stimcirq
 toml==0.10.2
 tomli==2.0.1
 tornado==6.1

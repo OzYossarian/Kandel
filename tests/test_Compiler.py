@@ -3,13 +3,10 @@ import pytest
 from main.building_blocks.pauli.Pauli import Pauli
 from main.building_blocks.pauli.PauliLetter import PauliZ
 from main.compiling.compilers.AncillaPerCheckCompiler import AncillaPerCheckCompiler
-from main.compiling.compilers.Compiler import Compiler
 from main.QPUs.SquareLatticeQPU import SquareLatticeQPU
 from main.codes.RepetitionCode import RepetitionCode
 from main.codes.RotatedSurfaceCode import RotatedSurfaceCode
-from main.compiling.Circuit import Circuit
 from main.compiling.noise.models import CircuitLevelNoise
-from main.codes.hexagonal.tic_tac_toe.HoneycombCode import HoneycombCode
 from main.compiling.noise.models.CodeCapacityBitFlipNoise import (
     CodeCapacityBitFlipNoise,
 )
@@ -23,7 +20,6 @@ from main.compiling.syndrome_extraction.extractors.PurePauliWordExtractor import
     PurePauliWordExtractor,
 )
 from main.enums import State
-import stimcirq
 
 test_qpu = SquareLatticeQPU((3, 1))
 rep_code = RepetitionCode(2)
@@ -159,11 +155,6 @@ def test_compile_code(code, distance, num_detectors, num_measurements):
         final_measurements=rsc_finals,
         logical_observables=rsc_logicals,
     )
-    print(
-        stimcirq.stim_circuit_to_cirq_circuit(rsc_circuit),
-        file=open("new_compiled.txt", "a"),
-    )
-    print(rsc_circuit.num_detectors, "num detectors")
     assert rsc_circuit.num_detectors == num_detectors
 
     # 8 + 8 + 17 = 3
