@@ -2,16 +2,11 @@ import stim
 import pytest
 from main.building_blocks.pauli.Pauli import Pauli
 from main.building_blocks.pauli.PauliLetter import PauliZ
-from main.codes.ShortRotatedSurfaceCode import ShortRotatedSurfaceCode
 from main.compiling.compilers.AncillaPerCheckCompiler import AncillaPerCheckCompiler
-from main.compiling.compilers.Compiler import Compiler
 from main.QPUs.SquareLatticeQPU import SquareLatticeQPU
 from main.codes.RepetitionCode import RepetitionCode
 from main.codes.RotatedSurfaceCode import RotatedSurfaceCode
-from main.codes.ShortRotatedSurfaceCode import ShortRotatedSurfaceCode
-from main.compiling.Circuit import Circuit
 from main.compiling.noise.models import CircuitLevelNoise
-from main.codes.hexagonal.tic_tac_toe.HoneycombCode import HoneycombCode
 from main.compiling.noise.models.CodeCapacityBitFlipNoise import (
     CodeCapacityBitFlipNoise,
 )
@@ -25,7 +20,6 @@ from main.compiling.syndrome_extraction.extractors.PurePauliWordExtractor import
     PurePauliWordExtractor,
 )
 from main.enums import State
-import stimcirq
 
 test_qpu = SquareLatticeQPU((3, 1))
 rep_code = RepetitionCode(2)
@@ -67,18 +61,10 @@ def test_compile_initialisation():
         assert str(error) == expected_message
 
 
-@pytest.mark.parametrize(
-    "code, n_instructions",
-    [
-        # 17 qubits initialized, 9 errors on data qubits, 4 * 6 cnots + 1 * 8 measurements
-        (RotatedSurfaceCode(3), [17, 9, 12, 12, 12, 12, 8]),
-        # 13 qubits initialized, 2 * (9 errors on data qubits, 4*3 cnots + 1 * 4 measurements)
-        (ShortRotatedSurfaceCode(3), [13, 9, 6, 6, 6, 6, 4, 9, 4, 6, 6, 6, 6, 4]),
-    ],
-)
-def test_compile_layer(code, n_instructions):
+def test_compile_layer():
+    code = RotatedSurfaceCode(3)
+    expected_instructions_per_tick = [17, 9, 12, 12, 12, 12, 8]
     syndrome_extractor = PurePauliWordExtractor(RotatedSurfaceCodeOrderer())
-    p = 0.1
     noise_model = CodeCapacityBitFlipNoise(0.1)
 
     rsc_qubits = list(code.data_qubits.values())
@@ -88,7 +74,9 @@ def test_compile_layer(code, n_instructions):
         code, rsc_initials, None
     )
 
-    tick, circuit = compiler.compile_layer(
+    # In this test, compile first syndrome extraction round at time tick - 2!
+    #  Reduces idling time and means more inits are done in parallel.
+    compiler.compile_layer(
         0,
         initial_detector_schedules[0],
         [code.logical_qubits[0].z],
@@ -96,16 +84,16 @@ def test_compile_layer(code, n_instructions):
         circuit,
         code,
     )
-    number_of_operations = []
-    for index, layer in enumerate(circuit.instructions):
-        number_of_operations.append(len(circuit.instructions[layer]))
-    assert number_of_operations == n_instructions
+    instructions_per_tick = [
+        len(tick_instructions)
+        for tick_instructions in circuit.instructions.values()]
+    assert instructions_per_tick == expected_instructions_per_tick
 
 
 def test_compile_final_measurement():
     code = RotatedSurfaceCode(3)
+    expected_instructions_per_tick = [17, 9, 12, 12, 12, 12, 17]
     syndrome_extractor = PurePauliWordExtractor(RotatedSurfaceCodeOrderer())
-    p = 0.1
     noise_model = CodeCapacityBitFlipNoise(0.1)
 
     rsc_qubits = list(code.data_qubits.values())
@@ -116,7 +104,7 @@ def test_compile_final_measurement():
     )
 
     rsc_finals = [Pauli(qubit, PauliZ) for qubit in rsc_qubits]
-    tick, circuit = compiler.compile_layer(
+    compiler.compile_layer(
         0,
         initial_detector_schedules[0],
         [code.logical_qubits[0].z],
@@ -134,10 +122,10 @@ def test_compile_final_measurement():
         circuit,
         code,
     )
-    number_of_operations = []
-    for index, layer in enumerate(circuit.instructions):
-        number_of_operations.append(len(circuit.instructions[layer]))
-    assert number_of_operations == [17, 9, 12, 12, 12, 12, 17]
+    instructions_per_tick = [
+        len(tick_instructions)
+        for tick_instructions in circuit.instructions.values()]
+    assert instructions_per_tick == expected_instructions_per_tick
 
 
 @pytest.mark.parametrize(
@@ -145,8 +133,6 @@ def test_compile_final_measurement():
     [
         (RotatedSurfaceCode(3), 3, 24, 33),
         (RotatedSurfaceCode(5), 5, 120, 145),
-#        (ShortRotatedSurfaceCode(3), 3, 24, 33),
-        #        (ShortRotatedSurfaceCode(5), 5, 120, 145),
     ],
 )
 def test_compile_code(code, distance, num_detectors, num_measurements):
@@ -169,16 +155,8 @@ def test_compile_code(code, distance, num_detectors, num_measurements):
         final_measurements=rsc_finals,
         logical_observables=rsc_logicals,
     )
-    print(
-        stimcirq.stim_circuit_to_cirq_circuit(rsc_circuit),
-        file=open("new_compiled.txt", "a"),
-    )
-    print(rsc_circuit.num_detectors, "num detectors")
     assert rsc_circuit.num_detectors == num_detectors
 
     # 8 + 8 + 17 = 3
     assert rsc_circuit.num_measurements == num_measurements
     assert len(rsc_circuit.shortest_graphlike_error()) == distance
-
-
-# test_compile_code(RotatedSurfaceCode(3), 3, 12, 17)
