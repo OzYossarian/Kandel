@@ -73,7 +73,7 @@ def coords_minus(xs: Coordinates, ys: Coordinates):
 
 def embed_coords(
         coords: Coordinates, dimension: int, offset: Coordinates = None,
-        hyperplane: Tuple[int, ...] = None):
+        hyperplane: int | Tuple[int, ...] = None):
     # Embed coordinates into a strictly higher dimension.
     # 'hyperplane' lets user embed into specific axes - e.g. if embedding 2D
     # coordinates into 3D, and hyperplane is (0, 1), this embeds coords into
@@ -81,27 +81,45 @@ def embed_coords(
     # Defaults to (0, 1, ..., current_dimension-1)
     # 'offset' shifts embedded coordinates by the given amount.
     # Defaults to (0, 0, ..., 0)
-    assert dimension > 1
+
+    current_dimension = coords_length(coords)
+    if dimension <= current_dimension:
+        raise ValueError(
+            f"Can't embed coordinates {coords} into dimension {dimension} - "
+            f"dimension must be greater than that of the coordinates.")
+
     if offset is None:
         offset = tuple(0 for _ in range(dimension))
-    else:
-        assert len(offset) == dimension
-
-    # Get the current dimension of the coordinates.
-    current_dimension = coords_length(coords)
-    assert dimension > current_dimension
+    elif len(offset) != dimension:
+        raise ValueError(
+            f"Can't embed coordinates {coords} into dimension {dimension} "
+            f"with offset {offset}, because offset does not have dimension "
+            f"{dimension}.")
 
     if hyperplane is None:
-        hyperplane = tuple(i for i in range(current_dimension))
-
-    if current_dimension == 1:
-        coords = (coords, )
+        if isinstance(coords, tuple):
+            hyperplane = tuple(i for i in range(current_dimension))
+        else:
+            hyperplane = 0
+    elif xor(isinstance(coords, tuple), isinstance(hyperplane, tuple)):
+        raise ValueError(
+            f"Can't embed coordinates {coords} into dimension {dimension} in"
+            f"hyperplane {hyperplane}, because types of coordinates and "
+            f"hyperplane don't match. They should either both be tuples, or "
+            f"neither of them should be.")
+    elif coords_length(hyperplane) != current_dimension:
+        raise ValueError(
+            f"Can't embed coordinates {coords} into dimension {dimension} in"
+            f"hyperplane {hyperplane}, because dimensions of coordinates and "
+            f"hyperplane don't match.")
 
     # Finally, embed these coordinates into the given (hyper)plane
     embedded = list(offset)
-    for i in range(current_dimension):
-        embedded[hyperplane[i]] = coords[i]
-
+    if isinstance(coords, tuple):
+        for i in range(current_dimension):
+            embedded[hyperplane[i]] += coords[i]
+    else:
+        embedded[hyperplane] += coords
     return tuple(embedded)
 
 

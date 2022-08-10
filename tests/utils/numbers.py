@@ -1,6 +1,10 @@
 import random
 
 
+def random_tuple_mixed_int_or_float(size: int, min: int, max: int):
+    return tuple(random_int_or_float(min, max) for _ in range(size))
+
+
 def random_int_or_float(min: int, max: int):
     number_type = random.randint(0, 1)
     if number_type == 0:

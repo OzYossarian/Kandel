@@ -5,8 +5,8 @@ from collections import Counter
 from typing import Callable, Iterable
 
 from main.building_blocks.Qubit import Coordinates
-from main.utils.utils import modulo_duplicates, coords_mid, coords_sum, coords_minus
-from tests.utils.numbers import random_int_or_float
+from main.utils.utils import modulo_duplicates, coords_mid, coords_sum, coords_minus, embed_coords, coords_length
+from tests.utils.numbers import random_int_or_float, random_tuple_mixed_int_or_float
 
 
 def test_modulo_duplicates():
@@ -65,7 +65,7 @@ def test_coords_mid_if_all_coords_tuples():
     _test_coords_method(create_coords, coords_mid, get_expected_mid)
 
 
-def test_coords_mid_if_all_coords_singletons():
+def test_coords_mid_if_all_coords_not_tuples():
     coord_range = (-100, 100)
 
     def create_coords():
@@ -102,7 +102,7 @@ def test_coords_sum_if_all_coords_tuples():
     _test_coords_method(create_coords, coords_sum, get_expected_sum)
 
 
-def test_coords_sum_if_all_coords_singletons():
+def test_coords_sum_if_all_coords_not_tuples():
     coord_range = (-100, 100)
 
     def create_coords():
@@ -143,19 +143,19 @@ def test_coords_minus_if_all_coords_tuples():
             for _ in range(coords_dim)])
 
     def get_expected(xs, ys):
-        return tuple(x-y for x, y in zip(xs, ys))
+        return tuple(x - y for x, y in zip(xs, ys))
 
     _test_coords_minus(create_coords, get_expected)
 
 
-def test_coords_minus_if_all_coords_singletons():
+def test_coords_minus_if_all_coords_not_tuples():
     coord_range = (-100, 100)
 
     def create_coords():
         return random_int_or_float(coord_range[0], coord_range[1])
 
     def get_expected(x, y):
-        return x-y
+        return x - y
 
     _test_coords_minus(create_coords, get_expected)
 
@@ -168,3 +168,157 @@ def test_coords_minus_fails_if_lengths_unequal():
     xs, ys = (0, 0), (1, 1, 1)
     with pytest.raises(ValueError):
         coords_minus(xs, ys)
+
+
+def test_embed_coords_fails_if_dimension_too_low():
+    coords = (0, 1)
+    dimension = 2
+    with pytest.raises(ValueError):
+        embed_coords(coords, dimension)
+
+
+def test_embed_coords_fails_if_offset_dimension_is_wrong():
+    coords = (0, 1)
+    dimension = 3
+    offset = (1, 1)
+    with pytest.raises(ValueError):
+        embed_coords(coords, dimension, offset=offset)
+
+
+def test_embed_coords_fails_if_hyperplane_dimension_is_wrong():
+    coords = (0, 1)
+    dimension = 3
+    hyperplane = (1, 1, 1)
+    with pytest.raises(ValueError):
+        embed_coords(coords, dimension, hyperplane=hyperplane)
+
+
+def test_embed_coords_fails_if_exactly_one_of_coords_and_hyperplane_is_tuple():
+    coords = 0
+    dimension = 2
+    hyperplane = (1,)
+    with pytest.raises(ValueError):
+        embed_coords(coords, dimension, hyperplane=hyperplane)
+
+    coords = (0,)
+    dimension = 2
+    hyperplane = 1
+    with pytest.raises(ValueError):
+        embed_coords(coords, dimension, hyperplane=hyperplane)
+
+
+def test_embed_coords_if_coords_is_tuple():
+    coord_range = (-100, 100)
+    coords_dim = random.randint(1, 100)
+
+    def create_coords():
+        return random_tuple_mixed_int_or_float(
+            coords_dim, coord_range[0], coord_range[1])
+
+    def create_offset(dimension):
+        return random_tuple_mixed_int_or_float(
+            dimension, coord_range[0], coord_range[1])
+
+    def create_hyperplane(dimension, coords_dim):
+        return tuple(random.sample(range(dimension), k=coords_dim))
+
+    def get_expected(coords, dimension, offset, hyperplane):
+        expected = list(offset)
+        for i in range(coords_dim):
+            expected[hyperplane[i]] += coords[i]
+        return tuple(expected)
+
+    _test_embed_coords(
+        create_coords, create_offset, create_hyperplane, get_expected)
+
+
+def test_embed_coords_if_coords_is_not_tuple():
+    coord_range = (-100, 100)
+
+    def create_coords():
+        return random_int_or_float(coord_range[0], coord_range[1])
+
+    def create_offset(dimension):
+        return random_tuple_mixed_int_or_float(
+            dimension, coord_range[0], coord_range[1])
+
+    def create_hyperplane(dimension, coords_dim):
+        return random.randint(0, dimension-1)
+
+    def get_expected(coords, dimension, offset, hyperplane):
+        expected = list(offset)
+        expected[hyperplane] += coords
+        return tuple(expected)
+
+    _test_embed_coords(
+        create_coords, create_offset, create_hyperplane, get_expected)
+
+
+def test_embed_coords_if_offset_is_None():
+    # `offset` should then default to 0 vector
+    coord_range = (0, 5)
+    coords_dim = random.randint(1, 3)
+
+    def create_coords():
+        return random_tuple_mixed_int_or_float(
+            coords_dim, coord_range[0], coord_range[1])
+
+    def create_offset(dimension):
+        return None
+
+    def create_hyperplane(dimension, coords_dim):
+        return tuple(random.sample(range(dimension), k=coords_dim))
+
+    def get_expected(coords, dimension, offset, hyperplane):
+        expected = [0 for _ in range(dimension)]
+        for i in range(coords_dim):
+            expected[hyperplane[i]] += coords[i]
+        return tuple(expected)
+
+    _test_embed_coords(
+        create_coords, create_offset, create_hyperplane, get_expected)
+
+
+def test_embed_coords_if_hyperplane_is_None():
+    # `hyperplane` should then default to 0 vector
+    coord_range = (-100, 100)
+    coords_dim = random.randint(1, 100)
+
+    def create_coords():
+        return random_tuple_mixed_int_or_float(
+            coords_dim, coord_range[0], coord_range[1])
+
+    def create_offset(dimension):
+        return random_tuple_mixed_int_or_float(
+            dimension, coord_range[0], coord_range[1])
+
+    def create_hyperplane(dimension, coords_dim):
+        return None
+
+    def get_expected(coords, dimension, offset, hyperplane):
+        expected = list(offset)
+        for i in range(coords_dim):
+            expected[i] += coords[i]
+        return tuple(expected)
+
+    _test_embed_coords(
+        create_coords, create_offset, create_hyperplane, get_expected)
+
+
+def _test_embed_coords(
+        create_coords: Callable[[], Coordinates],
+        create_offset: Callable[[int], Coordinates],
+        create_hyperplane: Callable[[int, int], Coordinates],
+        get_expected: Callable[[Coordinates, int, Coordinates, Coordinates], Coordinates]):
+    repeats = 100
+    for _ in range(repeats):
+        coords = create_coords()
+        coords_dim = len(coords) if isinstance(coords, tuple) else 1
+        dimension = random.randint(coords_dim + 1, coords_dim + 3)
+        offset = create_offset(dimension)
+        hyperplane = create_hyperplane(dimension, coords_dim)
+
+        result = embed_coords(coords, dimension, offset, hyperplane)
+        expected = get_expected(coords, dimension, offset, hyperplane)
+
+        assert result == expected
