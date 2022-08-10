@@ -59,16 +59,16 @@ def coords_sum(*coords: Coordinates) -> Coordinates:
         return sum(coords)
 
 
-def coords_minus(x: Coordinates, y: Coordinates):
-    lengths = {coords_length(x), coords_length(y)}
+def coords_minus(xs: Coordinates, ys: Coordinates):
+    lengths = {coords_length(xs), coords_length(ys)}
     if len(lengths) != 1:
         raise ValueError(
             f"Can't sum over coordinates of different lengths. "
-            f"Coordinates are {(x, y)}.")
-    if isinstance(x, tuple) and isinstance(y, tuple):
-        return tuple(map(lambda pair: pair[0]-pair[1], zip(x, y)))
+            f"Coordinates are {(xs, ys)}.")
+    if isinstance(xs, tuple) and isinstance(ys, tuple):
+        return tuple(x-y for x, y in zip(xs, ys))
     else:
-        return x-y
+        return xs - ys
 
 
 def embed_coords(
