@@ -18,7 +18,13 @@ def output_path() -> Path:
 
 
 def coords_mid(coords: Iterable[Coordinates]) -> Coordinates:
-    if all(isinstance(coord, tuple) for coord in coords):
+    lengths = {coords_length(coord) for coord in coords}
+    if len(lengths) != 1:
+        raise ValueError(
+            f"Can't find the midpoint of coordinates of different lengths. "
+            f"Set of all coordinates' lengths is {lengths}.")
+    length = lengths.pop()
+    if length > 1:
         return tuple(map(mean, zip(*coords)))
     else:
         return mean(coords)
