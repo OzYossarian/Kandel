@@ -17,23 +17,6 @@ def output_path() -> Path:
     return output
 
 
-def coords_mid(coords: Iterable[Coordinates]) -> Coordinates:
-    lengths = {coords_length(coord) for coord in coords}
-    if len(lengths) != 1:
-        raise ValueError(
-            f"Can't find the midpoint of coordinates of different lengths. "
-            f"Set of all coordinates' lengths is {lengths}.")
-    length = lengths.pop()
-    if length > 1:
-        return tuple(map(mean, zip(*coords)))
-    else:
-        return mean(coords)
-
-
-def xor(a: bool, b: bool) -> bool:
-    return a != b
-
-
 def modulo_duplicates(xs: List[Hashable], n: int):
     # As order-preserving as possible, given that we're removing elements.
     result: type(xs) = [None for _ in xs]
@@ -48,15 +31,41 @@ def modulo_duplicates(xs: List[Hashable], n: int):
     return [r for r in result if r is not None]
 
 
-def coords_sum(*coords: Coordinates):
-    if all(isinstance(coord, tuple) for coord in coords):
+def xor(a: bool, b: bool) -> bool:
+    return a != b
+
+
+def coords_mid(*coords: Coordinates) -> Coordinates:
+    lengths = {coords_length(coord) for coord in coords}
+    if len(lengths) != 1:
+        raise ValueError(
+            f"Can't find the midpoint of coordinates of different lengths. "
+            f"Coordinates are {list(coords)}.")
+    if all([isinstance(coord, tuple) for coord in coords]):
+        return tuple(map(mean, zip(*coords)))
+    else:
+        return mean(coords)
+
+
+def coords_sum(*coords: Coordinates) -> Coordinates:
+    lengths = {coords_length(coord) for coord in coords}
+    if len(lengths) != 1:
+        raise ValueError(
+            f"Can't sum over coordinates of different lengths. "
+            f"Coordinates are {list(coords)}.")
+    if all([isinstance(coord, tuple) for coord in coords]):
         return tuple(map(sum, zip(*coords)))
     else:
         return sum(coords)
 
 
 def coords_minus(x: Coordinates, y: Coordinates):
-    if all(isinstance(coords, tuple) for coords in [x, y]):
+    lengths = {coords_length(x), coords_length(y)}
+    if len(lengths) != 1:
+        raise ValueError(
+            f"Can't sum over coordinates of different lengths. "
+            f"Coordinates are {(x, y)}.")
+    if isinstance(x, tuple) and isinstance(y, tuple):
         return tuple(map(lambda pair: pair[0]-pair[1], zip(x, y)))
     else:
         return x-y

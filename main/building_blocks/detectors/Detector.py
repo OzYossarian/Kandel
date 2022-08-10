@@ -20,7 +20,7 @@ class Detector(NiceRepr):
         self.negate = None
 
         if anchor is None:
-            anchor = coords_mid([check.anchor for _, check in self.lid])
+            anchor = coords_mid(*[check.anchor for _, check in self.lid])
         self.anchor = anchor
 
         # Including the same check twice in a detector does nothing - note
