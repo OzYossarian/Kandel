@@ -23,6 +23,7 @@ from main.compiling.syndrome_extraction.extractors.mixed.CnotExtractor import Cn
 from main.enums import State
 from main.utils.types import Tick
 from main.utils.utils import xor
+import stim
 
 
 class Compiler(ABC):
@@ -72,27 +73,31 @@ class Compiler(ABC):
         self.measurement_instructions = measurement_instructions
 
     def compile_code(
-            self, code: Code, layers: int,
+            self,
+            code: Code,
+            layers: int,
             initial_states: Dict[Qubit, State] = None,
             initial_stabilizers: List[Stabilizer] = None,
             final_measurements: List[Pauli] = None,
             final_stabilizers: List[Stabilizer] = None,
-            logical_observables: List[LogicalOperator] = None):
+            logical_observables: List[LogicalOperator] = None
+    ) -> stim.Circuit():
 
         # TODO - actually might make more sense to only allow
         #  initial_stabilizers and final_stabilizers?? Is more general! But no
         #  harm keeping both for now.
         if not xor(initial_states is None, initial_stabilizers is None):
             raise ValueError(
-                'Exactly one of initial_states and initial_stabilizers '
-                'should be provided.')
+                "Exactly one of initial_states and initial_stabilizers "
+                "should be provided."
+            )
         if final_measurements is not None and final_stabilizers is not None:
             raise ValueError(
                 "Shouldn't provide both final_measurements and "
-                "final_stabilizers - pick one!")
+                "final_stabilizers - pick one!"
+            )
 
-        initial_detector_schedules, tick, circuit = \
-            self.compile_initialisation(
+        initial_detector_schedules, tick, circuit = self.compile_initialisation(
                 code, initial_states, initial_stabilizers)
 
         initial_layers = len(initial_detector_schedules)
@@ -121,14 +126,25 @@ class Compiler(ABC):
         # Finish with data qubit measurements, and use these to reconstruct
         # some detectors.
         self.compile_final_measurements(
-            final_measurements, final_stabilizers, logical_observables, layer,
-            tick, circuit, code)
+            final_measurements,
+            final_stabilizers,
+            logical_observables,
+            layer - 1,
+            tick - 2,
+            circuit,
+            code,
+        )
+        number_of_operations = []
+        for index, layer in enumerate(circuit.instructions):
+            number_of_operations.append(len(circuit.instructions[layer]))
 
         return circuit.to_stim(self.noise_model)
 
     def compile_initialisation(
-            self, code: Code, initial_states: Dict[Qubit, State] | None,
-            initial_stabilizers: List[Stabilizer] | None):
+            self,
+            code: Code,
+            initial_states: Dict[Qubit, State],
+            initial_stabilizers: List[Stabilizer]):
         # For now, always start a new circuit from scratch. Later, allow
         # compilation onto an existing circuit (e.g. in a lattice surgery or
         # gauge fixing protocol),
@@ -193,9 +209,10 @@ class Compiler(ABC):
                     paulis[pauli.qubit] = pauli
                 elif existing != pauli:
                     raise ValueError(
-                        f'The desired initial stabilizers are inconsistent! '
-                        f'Qubit at {pauli.qubit.coords} resolves to '
-                        f'both {existing.letter} and {pauli.letter}.')
+                        f"The desired initial stabilizers are inconsistent! "
+                        f"Qubit at {pauli.qubit.coords} resolves to "
+                        f"both {existing.letter} and {pauli.letter}."
+                    )
         return paulis
 
     def initialize_qubits(
@@ -232,8 +249,12 @@ class Compiler(ABC):
         return tick + ticks_needed
 
     def compile_layer(
-            self, layer: int, detector_schedule: List[List[Detector]],
-            observables: List[LogicalOperator] | None, tick: int, circuit: Circuit,
+            self,
+            layer: int,
+            detector_schedule: List[List[Detector]],
+            observables: List[LogicalOperator] | None,
+            tick: int,
+            circuit: Circuit,
             code: Code):
         for relative_round in range(code.schedule_length):
             # Compile one round of checks, and note down the final tick
@@ -265,7 +286,8 @@ class Compiler(ABC):
             observable_updates = code.update_logical_qubits(round)
             for observable in observables:
                 circuit.measurer.add_to_logical_observable(
-                    observable_updates[observable], observable, round)
+                    observable_updates[observable], observable, round
+                )
 
         circuit.end_round(tick - 2)
 
@@ -278,10 +300,14 @@ class Compiler(ABC):
                 circuit.add_instruction(tick, noise.instruction([qubit]))
 
     def compile_final_measurements(
-            self, final_measurements: List[Pauli] | None,
+            self,
+            final_measurements: List[Pauli] | None,
             final_stabilizers: List[Stabilizer] | None,
             logical_observables: List[LogicalOperator] | None,
-            layer: int, tick: int, circuit: Circuit, code: Code):
+            layer: int,
+            tick: int,
+            circuit: Circuit,
+            code: Code):
         # TODO - allow measurements other than single data qubits
         #  measurements at the end? e.g. Pauli product measurements.
         round = layer * code.schedule_length
@@ -303,12 +329,14 @@ class Compiler(ABC):
 
             # Now try to use these as lids for any detectors that at this point
             # have a floor but no lid.
+            # this is what I need to fix
             self.compile_final_detectors(
                 final_checks, final_stabilizers, layer, circuit, code)
 
             # Finally, define the logical observables we want to measure
             self.compile_initial_logical_observables(
                 logical_observables, final_checks, round, circuit)
+
         elif logical_observables is not None:
             raise ValueError(
                 "Can't measure any logical observables if no method is given "
@@ -316,11 +344,13 @@ class Compiler(ABC):
                 "final_measurements or final_stabilizers.")
 
     def compile_final_detectors(
-            self, final_checks: Dict[Qubit, Check],
-            final_stabilizers: List[Stabilizer], layer: int,
-            circuit: Circuit, code: Code):
+            self,
+            final_checks: Dict[Qubit, Check],
+            final_stabilizers: List[Stabilizer],
+            layer: int,
+            circuit: Circuit,
+            code: Code):
         round = layer * code.schedule_length
-
         if final_stabilizers is None:
             final_detectors = self.compile_final_detectors_from_measurements(
                 final_checks, round, layer, code)
@@ -329,7 +359,7 @@ class Compiler(ABC):
                 final_checks, final_stabilizers)
 
         # Finally, compile these detectors to the circuit.
-        circuit.measurer.add_detectors(final_detectors, round)
+        circuit.measurer.add_detectors(final_detectors, round)  # round)
 
     def compile_final_detectors_from_stabilizers(
             self, final_checks: Dict[Qubit, Check],
@@ -345,8 +375,8 @@ class Compiler(ABC):
         return final_detectors
 
     def compile_final_detectors_from_measurements(
-            self, final_checks: Dict[Qubit, Check], round: int, layer: int,
-            code: Code):
+            self, final_checks: Dict[Qubit, Check],
+            round: int, layer: int, code: Code):
         final_detectors = []
         for detector in code.detectors:
             open_lid, checks_measured = detector.has_open_lid(
@@ -365,7 +395,7 @@ class Compiler(ABC):
                     list(final_checks[data_qubit].paulis.values())[0]
                     for data_qubit in detector_qubits]
                 measurement_product = PauliProduct(measurements)
-                
+
                 if detector_product.equal_up_to_sign(measurement_product):
                     # Can make a lid for this detector!
                     floor = [
@@ -380,8 +410,11 @@ class Compiler(ABC):
         return final_detectors
 
     def compile_initial_logical_observables(
-            self, logical_observables: List[LogicalOperator] | None,
-            final_checks: Dict[Qubit, Check] | None, round: int, circuit: Circuit):
+            self,
+            logical_observables: List[LogicalOperator] | None,
+            final_checks: Dict[Qubit, Check] | None,
+            round: int,
+            circuit: Circuit):
         # The Paulis that initially made up the logical observables that we
         # want to measure should be a subset of the final individual data
         # qubit measurements.

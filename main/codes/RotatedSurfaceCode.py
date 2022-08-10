@@ -50,7 +50,8 @@ class RotatedSurfaceCode(Code):
                     (1, 0): Pauli(data_qubits[anchor[0] + 1, anchor[1]], letter),
                     (0, 1): Pauli(data_qubits[anchor[0], anchor[1] + 1], letter),
                     (-1, 0): Pauli(data_qubits[anchor[0] - 1, anchor[1]], letter),
-                    (0, -1): Pauli(data_qubits[anchor[0], anchor[1] - 1], letter)}
+                    (0, -1): Pauli(data_qubits[anchor[0], anchor[1] - 1], letter),
+                }
                 check = Check(paulis, anchor)
                 checks.append(check)
 
@@ -70,7 +71,8 @@ class RotatedSurfaceCode(Code):
             anchor = (2 * i + 1, y_middle - 2 * (i + 1))
             paulis = {
                 (1, 0): Pauli(data_qubits[anchor[0] + 1, anchor[1]], PauliZ),
-                (0, 1): Pauli(data_qubits[anchor[0], anchor[1] + 1], PauliZ)}
+                (0, 1): Pauli(data_qubits[anchor[0], anchor[1] + 1], PauliZ),
+            }
             new_check = Check(paulis, anchor)
             checks.append(new_check)
 
@@ -78,7 +80,8 @@ class RotatedSurfaceCode(Code):
             anchor = (x_middle + 2 * i + 1, 2 * (distance - 1) - 2 * i)
             paulis = {
                 (0, -1): Pauli(data_qubits[anchor[0], anchor[1] - 1], PauliZ),
-                (-1, 0): Pauli(data_qubits[anchor[0] - 1, anchor[1]], PauliZ)}
+                (-1, 0): Pauli(data_qubits[anchor[0] - 1, anchor[1]], PauliZ),
+            }
             new_check = Check(paulis, anchor)
             checks.append(new_check)
 
@@ -86,7 +89,8 @@ class RotatedSurfaceCode(Code):
             anchor = (2 * i, y_middle + 2 * i + 1)
             paulis = {
                 (1, 0): Pauli(data_qubits[anchor[0] + 1, anchor[1]], PauliX),
-                (0, -1): Pauli(data_qubits[anchor[0], anchor[1] - 1], PauliX)}
+                (0, -1): Pauli(data_qubits[anchor[0], anchor[1] - 1], PauliX),
+            }
             new_check = Check(paulis, anchor)
             checks.append(new_check)
 
@@ -94,7 +98,8 @@ class RotatedSurfaceCode(Code):
             anchor = (x_middle + 2 * (i + 1), 2 * i + 1)
             paulis = {
                 (0, 1): Pauli(data_qubits[anchor[0], anchor[1] + 1], PauliX),
-                (-1, 0): Pauli(data_qubits[anchor[0] - 1, anchor[1]], PauliX)}
+                (-1, 0): Pauli(data_qubits[anchor[0] - 1, anchor[1]], PauliX),
+            }
             new_check = Check(paulis, anchor)
             checks.append(new_check)
         return checks
