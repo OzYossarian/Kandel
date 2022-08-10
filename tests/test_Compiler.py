@@ -85,8 +85,8 @@ def test_compile_layer():
         code,
     )
     instructions_per_tick = [
-        len(tick_instructions)
-        for tick_instructions in circuit.instructions.values()]
+        len(tick_instructions) for tick_instructions in circuit.instructions.values()
+    ]
     assert instructions_per_tick == expected_instructions_per_tick
 
 
@@ -123,8 +123,8 @@ def test_compile_final_measurement():
         code,
     )
     instructions_per_tick = [
-        len(tick_instructions)
-        for tick_instructions in circuit.instructions.values()]
+        len(tick_instructions) for tick_instructions in circuit.instructions.values()
+    ]
     assert instructions_per_tick == expected_instructions_per_tick
 
 
@@ -138,10 +138,7 @@ def test_compile_final_measurement():
 def test_compile_code(code, distance, num_detectors, num_measurements):
     syndrome_extractor = PurePauliWordExtractor(RotatedSurfaceCodeOrderer())
     p = 0.1
-    noise_model = CircuitLevelNoise(
-        initialisation=0.3, idling=p, one_qubit_gate=p, two_qubit_gate=p, measurement=p
-    )
-
+    noise_model = CodeCapacityBitFlipNoise(0.1)
     compiler = AncillaPerCheckCompiler(noise_model, syndrome_extractor)
 
     rsc_qubits = list(code.data_qubits.values())
