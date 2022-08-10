@@ -1,20 +1,7 @@
 import random
 from collections import Counter
 
-from main.utils.NiceRepr import NiceRepr
 from main.utils.utils import modulo_duplicates
-
-
-class TestDebugFriendly(NiceRepr):
-    def __init__(self, something):
-        self.something = something
-        super().__init__(['something'])
-
-
-def test_debug_friendly():
-    text = 'some string'
-    obj = TestDebugFriendly(text)
-    assert str(obj) == "{'something': 'some string'}"
 
 
 def test_modulo_duplicates():
@@ -33,3 +20,14 @@ def test_modulo_duplicates():
             assert all(
                 y_counts[item] == (x_counts[item] % j)
                 for item in unique)
+
+
+def test_output_path():
+    # No test needed here because this method will be binned eventually.
+    # In future, if user doesn't provide absolute path then we'll just
+    # put files in the folder they're currently running code from.
+    assert True
+
+
+def test_coords_mid():
+    assert False

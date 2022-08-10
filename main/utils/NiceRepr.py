@@ -22,6 +22,8 @@ class NiceRepr:
             parts = key.split('.')
             item = vars(self)[parts[0]]
             for part in parts[1:]:
-                item = vars(item)[part]
+                item = vars(item)[part] \
+                    if hasattr(item, '__dict__') \
+                    else item[part]
             result[key] = item
         return result

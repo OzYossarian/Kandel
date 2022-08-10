@@ -10,6 +10,8 @@ if TYPE_CHECKING:
 
 
 def output_path() -> Path:
+    # TODO - Can't use a helper method like this when Kandel becomes a proper
+    #  package.
     root = Path(__file__).parent.parent.parent
     output = Path(root, 'output')
     return output
