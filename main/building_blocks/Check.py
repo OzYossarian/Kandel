@@ -3,6 +3,7 @@ from typing import List, Dict
 from main.Colour import Colour
 from main.building_blocks.pauli.Pauli import Pauli
 from main.building_blocks.Qubit import Coordinates
+from main.building_blocks.pauli.PauliProduct import PauliProduct
 from main.utils.NiceRepr import NiceRepr
 from main.utils.utils import coords_mid, coords_length, coords_minus
 
@@ -43,11 +44,20 @@ class Check(NiceRepr):
                 coords_minus(pauli.qubit.coords, anchor): pauli
                 for pauli in paulis}
 
+        qubits = [pauli.qubit for pauli in paulis.values()]
+        if len(set(qubits)) != len(qubits):
+            raise ValueError(
+                f"Can't include the same qubit more than once in a check! "
+                f"Qubits involved in the check are: {qubits}")
+
+        # TODO - do we want to restrict these Paulis to only those with sign
+        #  +1? Need to sort the whole +1/-1 thing everywhere tbh...
         self.paulis = paulis
         self.anchor = anchor
         self.colour = colour
         self.weight = len(paulis)
         self.dimension = coords_length(self.anchor)
+        self.product = PauliProduct(paulis.values())
 
         # The following properties are set by a compiler.
         self.ancilla = None

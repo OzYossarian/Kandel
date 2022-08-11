@@ -69,22 +69,14 @@ class Circuit:
         measures = [t for t in sorted(self.measure_ticks[qubit]) if t <= tick]
         return max(inits, default=-1) > max(measures, default=-1)
 
-    def initialise(self, tick: int, gates: List[Instruction]):
-        # Initialise a single qubit using the specified gates.
-        qubits = {qubit for gate in gates for qubit in gate.qubits}
-        # We only allow one qubit to be initialised at a time.
-        assert len(qubits) == 1
-        qubit = qubits.pop()
-
-        # We want to know the tick at which we apply the last gate,
-        # since this is when the qubit is considered 'initialised'
-        initialised_tick = tick
-        for i, gate in enumerate(gates):
-            gate_tick = tick + 2 * i
-            self.add_instruction(gate_tick, gate)
-            initialised_tick = gate_tick
+    def initialise(self, tick: int, instruction: Instruction):
+        # Initialise a single qubit..
+        assert len(instruction.qubits) == 1
+        qubit = instruction.qubits[0]
+        assert (instruction.name[0] == 'R')
+        self.add_instruction(tick, instruction)
         # Note down at which tick this qubit is considered initialised.
-        self.init_ticks[qubit].append(initialised_tick)
+        self.init_ticks[qubit].append(tick)
 
     def end_round(self, tick: int):
         self.shift_ticks.append(tick)
@@ -169,6 +161,7 @@ class Circuit:
         track_progress: bool = True,
     ):
         if track_progress:
+            # TODO - bug here: sometimes this progress bar overfills!
             with alive_bar(len(self.instructions), force_tty=True) as bar:
                 return self._to_stim(noise_model, track_coords, bar)
         else:

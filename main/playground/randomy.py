@@ -5,7 +5,7 @@ from main.codes.hexagonal.tic_tac_toe.utils import random_good_route
 from main.compiling.compilers.AncillaPerCheckCompiler import AncillaPerCheckCompiler
 from main.compiling.noise.models.PhenomenologicalNoise import PhenomenologicalNoise
 from main.compiling.syndrome_extraction.controlled_gate_orderers.TrivialOrderer import TrivialOrderer
-from main.compiling.syndrome_extraction.extractors.PurePauliWordExtractor import PurePauliWordExtractor
+from main.compiling.syndrome_extraction.extractors.mixed.CxCyCzExtractor import CxCyCzExtractor
 
 distance = 4
 pseudo_layer_size = 3
@@ -13,7 +13,7 @@ route = random_good_route(distance * pseudo_layer_size)
 code = TicTacToeCode(distance, route)
 
 noise_model = PhenomenologicalNoise(0.1, 0.2)
-extractor = PurePauliWordExtractor(TrivialOrderer())
+extractor = CxCyCzExtractor(TrivialOrderer())
 compiler = AncillaPerCheckCompiler(noise_model, extractor)
 
 initial_checks_letter = code.tic_tac_toe_route[0][1]
@@ -28,7 +28,11 @@ final_measurements = [
 #  yet for logical X_1, strangely.
 observables = [code.logical_qubits[1].x]
 circuit = compiler.compile_code(
-    code, 1, initial_states, final_measurements, observables)
+    code=code,
+    layers=1,
+    initial_states=initial_states,
+    final_measurements=final_measurements,
+    logical_observables=observables)
 
 print(circuit)
 dem = circuit.detector_error_model(

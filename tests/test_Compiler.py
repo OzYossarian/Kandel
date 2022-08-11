@@ -7,25 +7,18 @@ from main.QPUs.SquareLatticeQPU import SquareLatticeQPU
 from main.codes.RepetitionCode import RepetitionCode
 from main.codes.RotatedSurfaceCode import RotatedSurfaceCode
 from main.compiling.noise.models import CircuitLevelNoise
-from main.compiling.noise.models.CodeCapacityBitFlipNoise import (
-    CodeCapacityBitFlipNoise,
-)
-from main.compiling.syndrome_extraction.controlled_gate_orderers.TrivialOrderer import (
-    TrivialOrderer,
-)
-from main.compiling.syndrome_extraction.controlled_gate_orderers.RotatedSurfaceCodeOrderer import (
-    RotatedSurfaceCodeOrderer,
-)
-from main.compiling.syndrome_extraction.extractors.PurePauliWordExtractor import (
-    PurePauliWordExtractor,
-)
+from main.compiling.noise.models.CodeCapacityBitFlipNoise import CodeCapacityBitFlipNoise
+from main.compiling.syndrome_extraction.controlled_gate_orderers.TrivialOrderer import TrivialOrderer
+from main.compiling.syndrome_extraction.controlled_gate_orderers.RotatedSurfaceCodeOrderer import \
+    RotatedSurfaceCodeOrderer
+from main.compiling.syndrome_extraction.extractors.mixed.CxCyCzExtractor import CxCyCzExtractor
 from main.enums import State
 
 test_qpu = SquareLatticeQPU((3, 1))
 rep_code = RepetitionCode(2)
 test_qpu.embed(rep_code, (0, 0), 0)
 trivial_orderer = TrivialOrderer()
-extractor = PurePauliWordExtractor(trivial_orderer)
+extractor = CxCyCzExtractor(trivial_orderer)
 noise_model = CircuitLevelNoise(0.1, 0.15, 0.05, 0.03, 0.03)
 test_compiler = AncillaPerCheckCompiler(noise_model, extractor)
 rep_qubits = list(rep_code.data_qubits.values())
@@ -64,7 +57,7 @@ def test_compile_initialisation():
 def test_compile_layer():
     code = RotatedSurfaceCode(3)
     expected_instructions_per_tick = [17, 9, 12, 12, 12, 12, 8]
-    syndrome_extractor = PurePauliWordExtractor(RotatedSurfaceCodeOrderer())
+    syndrome_extractor = CxCyCzExtractor(RotatedSurfaceCodeOrderer())
     noise_model = CodeCapacityBitFlipNoise(0.1)
 
     rsc_qubits = list(code.data_qubits.values())
@@ -75,7 +68,7 @@ def test_compile_layer():
     )
 
     # In this test, compile first syndrome extraction round at time tick - 2!
-    #  Reduces idling time and means more inits are done in parallel.
+    # Means more inits are done in parallel.
     compiler.compile_layer(
         0,
         initial_detector_schedules[0],
@@ -93,7 +86,7 @@ def test_compile_layer():
 def test_compile_final_measurement():
     code = RotatedSurfaceCode(3)
     expected_instructions_per_tick = [17, 9, 12, 12, 12, 12, 17]
-    syndrome_extractor = PurePauliWordExtractor(RotatedSurfaceCodeOrderer())
+    syndrome_extractor = CxCyCzExtractor(RotatedSurfaceCodeOrderer())
     noise_model = CodeCapacityBitFlipNoise(0.1)
 
     rsc_qubits = list(code.data_qubits.values())
@@ -104,7 +97,7 @@ def test_compile_final_measurement():
     )
 
     rsc_finals = [Pauli(qubit, PauliZ) for qubit in rsc_qubits]
-    compiler.compile_layer(
+    tick = compiler.compile_layer(
         0,
         initial_detector_schedules[0],
         [code.logical_qubits[0].z],
@@ -113,12 +106,14 @@ def test_compile_final_measurement():
         code,
     )
 
+    # Similar to above, compile final measurements at time tick-2.
+    # Means more measurements are done in parallel (data qubits and ancillas)
     compiler.compile_final_measurements(
         rsc_finals,
         None,
         [code.logical_qubits[0].z],
         1,
-        26,
+        tick - 2,
         circuit,
         code,
     )
@@ -136,7 +131,7 @@ def test_compile_final_measurement():
     ],
 )
 def test_compile_code(code, distance, num_detectors, num_measurements):
-    syndrome_extractor = PurePauliWordExtractor(RotatedSurfaceCodeOrderer())
+    syndrome_extractor = CxCyCzExtractor(RotatedSurfaceCodeOrderer())
     p = 0.1
     noise_model = CodeCapacityBitFlipNoise(0.1)
     compiler = AncillaPerCheckCompiler(noise_model, syndrome_extractor)

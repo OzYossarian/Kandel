@@ -31,7 +31,7 @@ Image(url="../output/20_20_qpu_round_0.jpg")  # , width=400, height=400)
 # ### Place error correction code on QPU
 
 d7_surface_code = RotatedSurfaceCode(3)
-test_qpu.embed(d7_surface_code, (0, 0), (0,1))
+test_qpu.embed(d7_surface_code, (0, 0), (0, 1))
 printer = Printer2D(scale_factor=50)
 printer.print_qpu(test_qpu, 'small_2_rep_code_d72_qpu')
 Image(url= "../output/small_2_rep_code_d72_qpu_round_0.jpg")#, width=400, height=400)
