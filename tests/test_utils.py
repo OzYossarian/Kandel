@@ -4,8 +4,8 @@ import pytest
 from collections import Counter
 from typing import Callable, Iterable
 
-from main.building_blocks.Qubit import Coordinates
-from main.utils.utils import modulo_duplicates, coords_mid, coords_sum, coords_minus, embed_coords, coords_length
+from main.utils.types import Coordinates
+from main.utils.utils import modulo_duplicates, coords_mid, coords_sum, coords_minus, embed_coords
 from tests.utils.numbers import random_int_or_float, random_tuple_mixed_int_or_float
 
 

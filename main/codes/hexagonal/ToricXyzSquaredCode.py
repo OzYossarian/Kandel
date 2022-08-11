@@ -2,13 +2,13 @@ from typing import List
 
 from main.Colour import Blue, Green, Red
 from main.building_blocks.Check import Check
-from main.building_blocks.Qubit import Coordinates
 from main.building_blocks.detectors.Stabilizer import Stabilizer
 from main.building_blocks.logical.LogicalOperator import LogicalOperator
 from main.building_blocks.logical.LogicalQubit import LogicalQubit
 from main.building_blocks.pauli import Pauli
 from main.building_blocks.pauli.PauliLetter import PauliX, PauliY, PauliZ
 from main.codes.hexagonal.ToricHexagonalCode import ToricHexagonalCode
+from main.utils.types import Coordinates
 from main.utils.utils import coords_minus
 
 

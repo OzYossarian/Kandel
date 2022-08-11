@@ -1,5 +1,5 @@
 from main.QPUs.QPU import QPU
-from main.building_blocks.Qubit import Coordinates
+from main.utils.types import Coordinates
 from main.utils.utils import coords_sum
 
 

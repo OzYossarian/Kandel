@@ -1,12 +1,9 @@
-from __future__ import annotations
-
 from collections import defaultdict
 from statistics import mean
-from typing import List, Tuple, Hashable, Iterable, TYPE_CHECKING
+from typing import List, Tuple, Hashable
 from pathlib import Path
 
-if TYPE_CHECKING:
-    from main.building_blocks.Qubit import Coordinates
+from main.utils.types import Coordinates
 
 
 def output_path() -> Path:

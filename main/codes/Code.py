@@ -7,13 +7,14 @@ from typing import TYPE_CHECKING
 from main.building_blocks.detectors.Drum import Drum
 from main.building_blocks.logical.LogicalOperator import LogicalOperator
 from main.building_blocks.logical.LogicalQubit import LogicalQubit
+from main.utils.types import Coordinates
 from main.utils.utils import embed_coords
 
 if TYPE_CHECKING:
     from main.QPUs.QPU import QPU
 
 from main.building_blocks.Check import Check
-from main.building_blocks.Qubit import Coordinates, Qubit
+from main.building_blocks.Qubit import Qubit
 
 CodeId = Any
 

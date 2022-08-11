@@ -1,7 +1,8 @@
 from typing import Dict
 
 from main.codes.Code import Code, CodeId
-from main.building_blocks.Qubit import Qubit, Coordinates
+from main.building_blocks.Qubit import Qubit
+from main.utils.types import Coordinates
 
 
 class QPU:

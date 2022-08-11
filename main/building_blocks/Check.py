@@ -2,9 +2,9 @@ from typing import List, Dict
 
 from main.Colour import Colour
 from main.building_blocks.pauli.Pauli import Pauli
-from main.building_blocks.Qubit import Coordinates
 from main.building_blocks.pauli.PauliProduct import PauliProduct
 from main.utils.NiceRepr import NiceRepr
+from main.utils.types import Coordinates
 from main.utils.utils import coords_mid, coords_length, coords_minus
 
 

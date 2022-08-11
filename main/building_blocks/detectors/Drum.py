@@ -2,8 +2,8 @@ from __future__ import annotations
 from typing import List, Tuple
 
 from main.building_blocks.Check import Check
-from main.building_blocks.Qubit import Coordinates
 from main.building_blocks.detectors.Detector import Detector
+from main.utils.types import Coordinates
 
 
 class Drum(Detector):

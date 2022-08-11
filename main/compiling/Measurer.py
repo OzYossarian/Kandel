@@ -4,10 +4,10 @@ from typing import List, Iterable, Tuple
 import stim
 
 from main.building_blocks.Check import Check
-from main.building_blocks.Qubit import Coordinates
 from main.building_blocks.detectors.Detector import Detector
 from main.building_blocks.logical.LogicalOperator import LogicalOperator
 from main.compiling.Instruction import Instruction
+from main.utils.types import Coordinates
 
 
 class Measurer:
