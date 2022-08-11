@@ -1,19 +1,19 @@
 import random
 
 from main.building_blocks.Qubit import Qubit
-from tests.utils.numbers import random_int_or_float, random_tuple_mixed_int_or_float
+from tests.utils.coordinates import random_non_tuple_coords, random_tuple_coords
 
 
 def test_qubit_dimension():
     repeats = 10
     for _ in range(repeats):
-        coords = random_int_or_float(-100, 100)
+        coords = random_non_tuple_coords(-100, 100)
         qubit = Qubit(coords)
         assert qubit.dimension == 1
 
     for _ in range(repeats):
         dimension = random.randint(1, 100)
-        coords = random_tuple_mixed_int_or_float(dimension, -100, 100)
+        coords = random_tuple_coords(dimension, -100, 100)
         qubit = Qubit(coords)
         assert qubit.dimension == dimension
 

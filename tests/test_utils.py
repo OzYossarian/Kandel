@@ -6,7 +6,7 @@ from typing import Callable, Iterable
 
 from main.utils.types import Coordinates
 from main.utils.utils import modulo_duplicates, coords_mid, coords_sum, coords_minus, embed_coords
-from tests.utils.numbers import random_int_or_float, random_tuple_mixed_int_or_float
+from tests.utils.coordinates import random_non_tuple_coords, random_tuple_coords
 
 
 def test_modulo_duplicates():
@@ -54,7 +54,7 @@ def test_coords_mid_if_all_coords_tuples():
     def create_coords():
         # Randomly pick int or float for each coordinate
         return tuple([
-            random_int_or_float(coord_range[0], coord_range[1])
+            random_non_tuple_coords(coord_range[0], coord_range[1])
             for _ in range(coords_dim)])
 
     def get_expected_mid(coordss: Iterable[Coordinates]):
@@ -69,7 +69,7 @@ def test_coords_mid_if_all_coords_not_tuples():
     coord_range = (-100, 100)
 
     def create_coords():
-        return random_int_or_float(coord_range[0], coord_range[1])
+        return random_non_tuple_coords(coord_range[0], coord_range[1])
 
     _test_coords_method(create_coords, coords_mid, statistics.mean)
 
@@ -91,7 +91,7 @@ def test_coords_sum_if_all_coords_tuples():
     def create_coords():
         # Randomly pick int or float for each coordinate
         return tuple([
-            random_int_or_float(coord_range[0], coord_range[1])
+            random_non_tuple_coords(coord_range[0], coord_range[1])
             for _ in range(coords_dim)])
 
     def get_expected_sum(coordss: Iterable[Coordinates]):
@@ -106,7 +106,7 @@ def test_coords_sum_if_all_coords_not_tuples():
     coord_range = (-100, 100)
 
     def create_coords():
-        return random_int_or_float(coord_range[0], coord_range[1])
+        return random_non_tuple_coords(coord_range[0], coord_range[1])
 
     _test_coords_method(create_coords, coords_sum, sum)
 
@@ -139,7 +139,7 @@ def test_coords_minus_if_all_coords_tuples():
 
     def create_coords():
         return tuple([
-            random_int_or_float(coord_range[0], coord_range[1])
+            random_non_tuple_coords(coord_range[0], coord_range[1])
             for _ in range(coords_dim)])
 
     def get_expected(xs, ys):
@@ -152,7 +152,7 @@ def test_coords_minus_if_all_coords_not_tuples():
     coord_range = (-100, 100)
 
     def create_coords():
-        return random_int_or_float(coord_range[0], coord_range[1])
+        return random_non_tuple_coords(coord_range[0], coord_range[1])
 
     def get_expected(x, y):
         return x - y
@@ -212,11 +212,11 @@ def test_embed_coords_if_coords_is_tuple():
     coords_dim = random.randint(1, 100)
 
     def create_coords():
-        return random_tuple_mixed_int_or_float(
+        return random_tuple_coords(
             coords_dim, coord_range[0], coord_range[1])
 
     def create_offset(dimension):
-        return random_tuple_mixed_int_or_float(
+        return random_tuple_coords(
             dimension, coord_range[0], coord_range[1])
 
     def create_hyperplane(dimension, coords_dim):
@@ -236,10 +236,10 @@ def test_embed_coords_if_coords_is_not_tuple():
     coord_range = (-100, 100)
 
     def create_coords():
-        return random_int_or_float(coord_range[0], coord_range[1])
+        return random_non_tuple_coords(coord_range[0], coord_range[1])
 
     def create_offset(dimension):
-        return random_tuple_mixed_int_or_float(
+        return random_tuple_coords(
             dimension, coord_range[0], coord_range[1])
 
     def create_hyperplane(dimension, coords_dim):
@@ -260,7 +260,7 @@ def test_embed_coords_if_offset_is_None():
     coords_dim = random.randint(1, 3)
 
     def create_coords():
-        return random_tuple_mixed_int_or_float(
+        return random_tuple_coords(
             coords_dim, coord_range[0], coord_range[1])
 
     def create_offset(dimension):
@@ -285,11 +285,11 @@ def test_embed_coords_if_hyperplane_is_None():
     coords_dim = random.randint(1, 100)
 
     def create_coords():
-        return random_tuple_mixed_int_or_float(
+        return random_tuple_coords(
             coords_dim, coord_range[0], coord_range[1])
 
     def create_offset(dimension):
-        return random_tuple_mixed_int_or_float(
+        return random_tuple_coords(
             dimension, coord_range[0], coord_range[1])
 
     def create_hyperplane(dimension, coords_dim):
