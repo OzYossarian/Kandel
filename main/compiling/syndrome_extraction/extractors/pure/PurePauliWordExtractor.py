@@ -22,12 +22,54 @@ class PurePauliWordExtractor(UniformAncillaBasisExtractor):
             initialisation_instructions: Dict[State, List[str]] = None,
             measurement_instructions: Dict[PauliLetter, List[str]] = None,
             parallelize: bool = True):
-        # This extractor is optimised for codes where every check is a
-        # 'pure' pauli word - i.e. just one repeated letter, e.g. surface code
-        # (always XX...X or ZZ...Z), repetition code (always ZZ) or
-        # tic-tac-toe code (always XX, YY or ZZ). It allows ancillas of
-        # different check types to be initialised (and measured) in different
-        # bases to one another.
+        """
+        This extractor is optimised for codes where every check is a 'pure'
+        Pauli word - i.e. just one repeated letter, e.g. surface code (always
+        XX...X or ZZ...Z), repetition code (always ZZ) or tic-tac-toe code
+        (always XX, YY or ZZ). It allows ancillas of different check types to
+        be initialised (and measured) in different bases to one another.
+        Args:
+            x_word_ancilla_basis:
+                The basis in which to initialise and measure the ancilla
+                qubits for XX...X checks
+            y_word_ancilla_basis:
+                The basis in which to initialise and measure the ancilla
+                qubits for YY...Y checks
+            z_word_ancilla_basis:
+                The basis in which to initialise and measure the ancilla
+                qubits for ZZ...Z checks
+            pauli_x_extractor:
+                Data concerning how to extract a Pauli X within an XX...X check
+            pauli_y_extractor:
+                Data concerning how to extract a Pauli Y within a YY...Y check
+            pauli_z_extractor:
+                Data concerning how to extract a Pauli X within a ZZ...Z check
+            controlled_gate_orderer:
+                Class that will define the order in which data qubits are
+                'extracted' (i.e. order in which we place controlled gates
+                between data qubits and ancilla qubits).
+                    If `None`, we use the trivial ordering, which is the order
+                in which the Paulis are listed within the check. This may lead
+                to exceptions, either because it means we try to place two
+                gates at the same time on the same qubit, or because we don't
+                actually implement the desired measurement.
+            initialisation_instructions:
+                Names of gates that implement initialisation into the Pauli
+                eigenstates. e.g. initialising into |+> state might be
+                implemented via ['RZ', 'H'] (meaning initialise into |0> then
+                do a Hadamard gate).
+                    If `None`, defaults to the instructions used by the
+                compiler.
+            measurement_instructions:
+                Names of gates that implement measurement in the Pauli bases.
+                e.g. measuring in X basis might be implemented via ['H' 'MZ']
+                (meaning do a Hadamard gate then measure in Z basis).
+                    If `None`, defaults to the instructions used by the
+                compiler.
+            parallelize:
+                Whether to extract all checks' syndromes for a given round in
+                parallel.
+        """
 
         super().__init__(
             pauli_x_extractor=pauli_x_extractor,

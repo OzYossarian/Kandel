@@ -22,9 +22,47 @@ class UniformAncillaBasisExtractor(SyndromeExtractor):
             initialisation_instructions: Dict[State, List[str]] = None,
             measurement_instructions: Dict[PauliLetter, List[str]] = None,
             parallelize: bool = True):
-        # This extractor will work for any pauli word stabilizer - e.g. any
-        # 'mixed' word like XZZX or XYZXYZ, not just 'pure' words like XX..X
-        # and ZZ...Z. But won't necessarily give an optimal circuit.
+        """
+        A syndrome extractor that initialises and measures all ancilla qubits
+        in the same basis.
+        Args:
+            ancilla_basis:
+                The basis in which to initialise and measure all ancilla qubits
+            pauli_x_extractor:
+                Data concerning how to extract a Pauli X within a larger Pauli
+                word - e.g. how to extract an X within XYZXYZ.
+            pauli_y_extractor:
+                Data concerning how to extract a Pauli Y within a larger Pauli
+                word - e.g. how to extract a Y within XYZXYZ.
+            pauli_z_extractor:
+                Data concerning how to extract a Pauli Z within a larger Pauli
+                word - e.g. how to extract a Z within XYZXYZ.
+            controlled_gate_orderer:
+                Class that will define the order in which data qubits are
+                'extracted' (i.e. order in which we place controlled gates
+                between data qubits and ancilla qubits).
+                    If `None`, we use the trivial ordering, which is the order
+                in which the Paulis are listed within the check. This may lead
+                to exceptions, either because it means we try to place two
+                gates at the same time on the same qubit, or because we don't
+                actually implement the desired measurement.
+            initialisation_instructions:
+                Names of gates that implement initialisation into the Pauli
+                eigenstates. e.g. initialising into |+> state might be
+                implemented via ['RZ', 'H'] (meaning initialise into |0> then
+                do a Hadamard gate).
+                    If `None`, defaults to the instructions used by the
+                compiler.
+            measurement_instructions:
+                Names of gates that implement measurement in the Pauli bases.
+                e.g. measuring in X basis might be implemented via ['H' 'MZ']
+                (meaning do a Hadamard gate then measure in Z basis).
+                    If `None`, defaults to the instructions used by the
+                compiler.
+            parallelize:
+                Whether to extract all checks' syndromes for a given round in
+                parallel.
+        """
         # TODO - could check here that the given rotations and controlled
         #  gates really do extract the right syndromes?
 
@@ -45,8 +83,8 @@ class UniformAncillaBasisExtractor(SyndromeExtractor):
             return self.ancilla_basis
         else:
             raise ValueError(
-                "Must tell the MixedPauliWordExtractor the basis in which to "
-                "initialise and measure all ancillas.")
+                "Must tell the SyndromeExtractor the basis in "
+                "which to initialise and measure all ancillas.")
 
     def get_pre_rotations(
             self, pauli: Pauli, check: Check) -> List[Instruction]:
@@ -81,5 +119,6 @@ class UniformAncillaBasisExtractor(SyndromeExtractor):
     @staticmethod
     def _no_extraction_method_error(pauli: Pauli, check: Check):
         raise ValueError(
-            f"No data was given to the PurePauliWordExtractor specifying "
-            f"how to extract pauli {pauli} as part of check {check}.")
+            f"No data was given to the SyndromeExtractor "
+            f"specifying how to extract pauli {pauli} as part of check "
+            f"{check}.")
