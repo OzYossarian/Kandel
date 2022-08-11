@@ -72,6 +72,12 @@ class UniformAncillaBasisExtractor(SyndromeExtractor):
             measurement_instructions,
             parallelize)
 
+        # The reason we don't raise an error here if ancilla basis is None is
+        # because PurePauliWordExtractor inherits from this class, and in
+        # that class it makes sense to have ancilla_basis set to None,
+        # because there we instead have an ancilla basis per check type
+        # (XX..X, YY...Y and ZZ...Z). Instead, we raise an error in the
+        # get_ancilla_basis method if necessary.
         self.ancilla_basis = ancilla_basis
         self.pauli_extractors = {
             PauliX: pauli_x_extractor,
