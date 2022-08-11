@@ -5,10 +5,7 @@ import pytest
 from main.Colour import Red, Green, Blue, Grey
 from main.building_blocks.pauli.PauliLetter import PauliLetter
 from tests.utils.numbers import random_complex_number
-
-
-valid_letters = ['I', 'X', 'Y', 'Z']
-valid_signs = [1, 0+1j, -1, 0-1j]
+from tests.utils.paulis import valid_letters, valid_signs
 
 
 class NotAPauliLetter:
