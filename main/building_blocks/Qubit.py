@@ -2,9 +2,10 @@ from typing import Tuple
 from main.utils.NiceRepr import NiceRepr
 from main.utils.utils import coords_length
 
+
 Coordinates = Tuple[int | float, ...] | int | float
-# ToDo - allow complex numbers too? Check there's no arithmetic being
-#  done that would prevent this.
+# TODO - allow complex numbers too! Would need to adapt some methods -
+#  e.g. finding mean of coordinates using statistics.mean would break.
 
 
 class Qubit(NiceRepr):

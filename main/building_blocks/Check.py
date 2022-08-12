@@ -39,7 +39,7 @@ class Check(NiceRepr):
         else:
             # Auto-create dictionary for paulis
             if anchor is None:
-                anchor = coords_mid([pauli.qubit.coords for pauli in paulis])
+                anchor = coords_mid(*[pauli.qubit.coords for pauli in paulis])
             paulis = {
                 coords_minus(pauli.qubit.coords, anchor): pauli
                 for pauli in paulis}

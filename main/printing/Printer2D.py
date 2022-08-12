@@ -92,7 +92,7 @@ class Printer2D(Printer):
             for offset, pauli in check.paulis.items()}  # Quick shorthand
         pauli_coords = list(paulis.keys())
 
-        midpoint = coords_mid([pauli_coords[0], pauli_coords[1]])
+        midpoint = coords_mid(pauli_coords[0], pauli_coords[1])
         midpoint = self.scale(midpoint, printout.offset)
         anchor = self.scale(check.anchor, printout.offset)
 
@@ -121,12 +121,12 @@ class Printer2D(Printer):
             for offset, pauli in check.paulis.items()}  # Quick shorthand
         pauli_coords = list(paulis.keys())
 
-        mid_next = coords_mid([pauli_coords[0], pauli_coords[-1]])
+        mid_next = coords_mid(pauli_coords[0], pauli_coords[-1])
         for i in range(check.weight):
             mid_last = mid_next
-            mid_next = coords_mid([
+            mid_next = coords_mid(
                 pauli_coords[i],
-                pauli_coords[(i + 1) % check.weight]])
+                pauli_coords[(i + 1) % check.weight])
             polygon = (check.anchor, mid_last, pauli_coords[i], mid_next)
             polygon = tuple(
                 self.scale(coords, printout.offset)

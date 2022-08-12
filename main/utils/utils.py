@@ -10,20 +10,11 @@ if TYPE_CHECKING:
 
 
 def output_path() -> Path:
+    # TODO - Can't use a helper method like this when Kandel becomes a proper
+    #  package.
     root = Path(__file__).parent.parent.parent
     output = Path(root, 'output')
     return output
-
-
-def coords_mid(coords: Iterable[Coordinates]) -> Coordinates:
-    if all(isinstance(coord, tuple) for coord in coords):
-        return tuple(map(mean, zip(*coords)))
-    else:
-        return mean(coords)
-
-
-def xor(a: bool, b: bool) -> bool:
-    return a != b
 
 
 def modulo_duplicates(xs: List[Hashable], n: int):
@@ -40,23 +31,49 @@ def modulo_duplicates(xs: List[Hashable], n: int):
     return [r for r in result if r is not None]
 
 
-def coords_sum(*coords: Coordinates):
-    if all(isinstance(coord, tuple) for coord in coords):
+def xor(a: bool, b: bool) -> bool:
+    return a != b
+
+
+def coords_mid(*coords: Coordinates) -> Coordinates:
+    lengths = {coords_length(coord) for coord in coords}
+    if len(lengths) != 1:
+        raise ValueError(
+            f"Can't find the midpoint of coordinates of different lengths. "
+            f"Coordinates are {list(coords)}.")
+    if all([isinstance(coord, tuple) for coord in coords]):
+        return tuple(map(mean, zip(*coords)))
+    else:
+        return mean(coords)
+
+
+def coords_sum(*coords: Coordinates) -> Coordinates:
+    lengths = {coords_length(coord) for coord in coords}
+    if len(lengths) != 1:
+        raise ValueError(
+            f"Can't sum over coordinates of different lengths. "
+            f"Coordinates are {list(coords)}.")
+    if all([isinstance(coord, tuple) for coord in coords]):
         return tuple(map(sum, zip(*coords)))
     else:
         return sum(coords)
 
 
-def coords_minus(x: Coordinates, y: Coordinates):
-    if all(isinstance(coords, tuple) for coords in [x, y]):
-        return tuple(map(lambda pair: pair[0]-pair[1], zip(x, y)))
+def coords_minus(xs: Coordinates, ys: Coordinates):
+    lengths = {coords_length(xs), coords_length(ys)}
+    if len(lengths) != 1:
+        raise ValueError(
+            f"Can't sum over coordinates of different lengths. "
+            f"Coordinates are {(xs, ys)}.")
+    if isinstance(xs, tuple) and isinstance(ys, tuple):
+        return tuple(x-y for x, y in zip(xs, ys))
     else:
-        return x-y
+        return xs - ys
 
 
 def embed_coords(
         coords: Coordinates, dimension: int, offset: Coordinates = None,
-        hyperplane: Tuple[int, ...] = None):
+        hyperplane: int | Tuple[int, ...] = None):
     # Embed coordinates into a strictly higher dimension.
     # 'hyperplane' lets user embed into specific axes - e.g. if embedding 2D
     # coordinates into 3D, and hyperplane is (0, 1), this embeds coords into
@@ -64,27 +81,45 @@ def embed_coords(
     # Defaults to (0, 1, ..., current_dimension-1)
     # 'offset' shifts embedded coordinates by the given amount.
     # Defaults to (0, 0, ..., 0)
-    assert dimension > 1
+
+    current_dimension = coords_length(coords)
+    if dimension <= current_dimension:
+        raise ValueError(
+            f"Can't embed coordinates {coords} into dimension {dimension} - "
+            f"dimension must be greater than that of the coordinates.")
+
     if offset is None:
         offset = tuple(0 for _ in range(dimension))
-    else:
-        assert len(offset) == dimension
-
-    # Get the current dimension of the coordinates.
-    current_dimension = coords_length(coords)
-    assert dimension > current_dimension
+    elif len(offset) != dimension:
+        raise ValueError(
+            f"Can't embed coordinates {coords} into dimension {dimension} "
+            f"with offset {offset}, because offset does not have dimension "
+            f"{dimension}.")
 
     if hyperplane is None:
-        hyperplane = tuple(i for i in range(current_dimension))
-
-    if current_dimension == 1:
-        coords = (coords, )
+        if isinstance(coords, tuple):
+            hyperplane = tuple(i for i in range(current_dimension))
+        else:
+            hyperplane = 0
+    elif xor(isinstance(coords, tuple), isinstance(hyperplane, tuple)):
+        raise ValueError(
+            f"Can't embed coordinates {coords} into dimension {dimension} in"
+            f"hyperplane {hyperplane}, because types of coordinates and "
+            f"hyperplane don't match. They should either both be tuples, or "
+            f"neither of them should be.")
+    elif coords_length(hyperplane) != current_dimension:
+        raise ValueError(
+            f"Can't embed coordinates {coords} into dimension {dimension} in"
+            f"hyperplane {hyperplane}, because dimensions of coordinates and "
+            f"hyperplane don't match.")
 
     # Finally, embed these coordinates into the given (hyper)plane
     embedded = list(offset)
-    for i in range(current_dimension):
-        embedded[hyperplane[i]] = coords[i]
-
+    if isinstance(coords, tuple):
+        for i in range(current_dimension):
+            embedded[hyperplane[i]] += coords[i]
+    else:
+        embedded[hyperplane] += coords
     return tuple(embedded)
 
 
