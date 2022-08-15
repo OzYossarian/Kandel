@@ -2,12 +2,14 @@ from collections import defaultdict
 from typing import List, Dict, Tuple, Any
 
 import stim
+import stimcirq
 from alive_progress import alive_bar
 
 from main.building_blocks.Check import Check
 from main.building_blocks.Qubit import Qubit
 from main.compiling.Instruction import Instruction
 from main.compiling.Measurer import Measurer
+from main.compiling.noise.models.NoNoise import NoNoise
 from main.compiling.noise.models.NoiseModel import NoiseModel
 
 RepeatBlock = Tuple[int, int, int] | None
@@ -52,6 +54,27 @@ class Circuit:
         # Track which measurements tell us the value of which checks
         self.measurer = Measurer()
 
+    def __repr__(self):
+        """Represents an instance of this class cirq, useful for debugging"""
+        return stimcirq.stim_circuit_to_cirq_circuit(self.to_stim(NoNoise())).__str__()
+
+    def get_number_of_occurences_of_gate(self, instruction_name):
+        """Counts the number of times a gate occurs.
+
+        Args:
+            instruction_name (_type_): _description_
+
+        Returns:
+            _type_: _description_
+        """
+        number_of_occurences = 0
+        for instruction_in_circuit_slice in self.instructions.values():
+            for all_instructions_on_qubit in instruction_in_circuit_slice.values():
+                for single_instruction in all_instructions_on_qubit:
+                    if single_instruction.name == instruction_name:
+                        number_of_occurences += 1
+        return number_of_occurences
+
     def qubit_index(self, qubit: Qubit):
         # Get the stim index corresponding to this qubit, or create one if
         # it doesn't yet have one.
@@ -73,7 +96,7 @@ class Circuit:
         # Initialise a single qubit..
         assert len(instruction.qubits) == 1
         qubit = instruction.qubits[0]
-        assert (instruction.name[0] == 'R')
+        assert instruction.name[0] == "R"
         self.add_instruction(tick, instruction)
         # Note down at which tick this qubit is considered initialised.
         self.init_ticks[qubit].append(tick)
@@ -93,22 +116,45 @@ class Circuit:
         self.measurer.add_measurement(measurement, check, round)
 
     def add_instruction(self, tick: int, instruction: Instruction):
+        """_summary_
+
+        Args:
+            tick (int): _description_
+            instruction (Instruction): _description_
+
+        Raises:
+            ValueError: _description_
+
+        Note:
+            DONT USE FOR INTIALIZING/MEASURING
+        """
         # Even ticks are for gates, odd ticks are for noise.
         assert tick % 2 == (1 if instruction.is_noise else 0)
         for qubit in instruction.qubits:
-            instructions = self.instructions[tick][qubit]
-            instructions.append(instruction)
-            if len(instructions) > 1:
+            instructions_on_qubit_at_tick = self.instructions[tick][qubit]
+            instructions_on_qubit_at_tick.append(instruction)
+            if len(instructions_on_qubit_at_tick) > 1:
                 # Only time a qubit can have multiple gates at the same tick
                 # is when they're all noise gates or all Pauli product
                 # measurements.
-                all_noise = all([instruction.is_noise for instruction in instructions])
+                all_noise = all(
+                    [
+                        instruction.is_noise
+                        for instruction in instructions_on_qubit_at_tick
+                    ]
+                )
                 all_product_measurements = all(
-                    [instruction.name == "MPP" for instruction in instructions]
+                    [
+                        instruction.name == "MPP"
+                        for instruction in instructions_on_qubit_at_tick
+                    ]
                 )
                 if not (all_noise or all_product_measurements):
                     instructions_string = "\n".join(
-                        [str(instruction) for instruction in instructions]
+                        [
+                            str(instruction)
+                            for instruction in instructions_on_qubit_at_tick
+                        ]
                     )
                     raise ValueError(
                         f"Tried to compile conflicting instructions on qubit "
@@ -135,9 +181,15 @@ class Circuit:
         raise NotImplementedError
 
     def add_idle_noise(self, noise_model: NoiseModel):
+        """_summary_
+
+        Args:
+            noise_model (NoiseModel): _description_
+        """
         # Not a good idea to call this method before compression is done.
         if noise_model.idling is not None:
             instructions = sorted(self.instructions.items())
+            # note that this only loop through ticks at which there is at least one instruction
             for tick, qubit_instructions in instructions:
                 # Only interested in even ticks, where actual gates happen.
                 if tick % 2 == 0:
@@ -148,8 +200,11 @@ class Circuit:
                         for qubit in self.qubits
                         if self.is_initialised(tick, qubit)
                     }
+                    print(initialised_qubits)
                     active_qubits = set(qubit_instructions.keys())
+                    print(active_qubits)
                     idle_qubits = initialised_qubits.difference(active_qubits)
+                    print(idle_qubits, "idle qubits")
                     for qubit in idle_qubits:
                         noise = noise_model.idling.instruction([qubit])
                         self.add_instruction(tick + 1, noise)
@@ -160,6 +215,16 @@ class Circuit:
         track_coords: bool = True,
         track_progress: bool = True,
     ):
+        """_summary_
+
+        Args:
+            noise_model (NoiseModel): _description_
+            track_coords (bool, optional): _description_. Defaults to True.
+            track_progress (bool, optional): _description_. Defaults to True.
+
+        Returns:
+            _type_: _description_
+        """
         if track_progress:
             # TODO - bug here: sometimes this progress bar overfills!
             with alive_bar(len(self.instructions), force_tty=True) as bar:
@@ -168,6 +233,16 @@ class Circuit:
             return self._to_stim(noise_model, track_coords, None)
 
     def _to_stim(self, noise_model: NoiseModel, track_coords: bool, progress_bar: Any):
+        """_summary_
+
+        Args:
+            noise_model (NoiseModel): _description_
+            track_coords (bool): _description_
+            progress_bar (Any): _description_
+
+        Returns:
+            _type_: _description_
+        """
         # Figure out which temporal dimension to shift if tracking coords.
         if track_coords:
             qubit_dimensions = {qubit.dimension for qubit in self.qubits}
@@ -181,7 +256,7 @@ class Circuit:
         self.add_idle_noise(noise_model)
 
         # Track which instructions have been compiled to stim.
-        compiled = defaultdict(bool)
+        compiled: defaultdict = defaultdict(bool)
 
         # Let 'circuit' denote the circuit we're currently compiling to - if
         # using repeat blocks, this need not always be the full circuit itself
@@ -246,6 +321,12 @@ class Circuit:
         return full_circuit
 
     def instruction_to_stim(self, instruction: Instruction, circuit: stim.Circuit):
+        """_summary_
+
+        Args:
+            instruction (Instruction): _description_
+            circuit (stim.Circuit): _description_
+        """
         if instruction.targets is not None:
             targets = instruction.targets
         else:
@@ -253,6 +334,15 @@ class Circuit:
         circuit.append(instruction.name, targets, instruction.params)
 
     def entered_repeat_block(self, tick: int, last_tick: int):
+        """_summary_
+
+        Args:
+            tick (int): _description_
+            last_tick (int): _description_
+
+        Returns:
+            _type_: _description_
+        """
         # Return whether we've entered a repeat block between these two ticks.
         last_block = self.repeat_blocks[last_tick]
         this_block = self.repeat_blocks[tick]
