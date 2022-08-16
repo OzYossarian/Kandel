@@ -2,12 +2,19 @@ import random
 
 from main.building_blocks.pauli import Pauli
 from main.building_blocks.pauli.PauliLetter import PauliZ, PauliY, PauliX, PauliLetter
+from main.building_blocks.pauli.PauliWord import PauliWord
 from tests.utils.qubits import unique_random_qubits_tuple_coords
 
 
 valid_letters = ['I', 'X', 'Y', 'Z']
 valid_signs = [1, 0+1j, -1, 0-1j]
 xyz_pauli_letters = [PauliX, PauliY, PauliZ]
+
+
+def random_pauli_word(length: int):
+    word = ''.join(random.choices(valid_letters, k=length))
+    sign = random.choice(valid_signs)
+    return PauliWord(word, sign)
 
 
 def random_pauli_letter():
