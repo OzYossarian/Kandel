@@ -55,17 +55,17 @@ class Circuit:
         self.measurer = Measurer()
 
     def __repr__(self):
-        """Represents an instance of this class cirq, useful for debugging"""
+        """Represents an instance of this class using cirq, useful for debugging"""
         return stimcirq.stim_circuit_to_cirq_circuit(self.to_stim(NoNoise())).__str__()
 
-    def get_number_of_occurences_of_gate(self, instruction_name):
+    def get_number_of_occurences_of_gate(self, instruction_name: str) -> int:
         """Counts the number of times a gate occurs.
 
         Args:
-            instruction_name (_type_): _description_
+            instruction_name (str): Name of the gate to count.
 
         Returns:
-            _type_: _description_
+            int: Number of occurences of the gate.
         """
         number_of_occurences = 0
         for instruction_in_circuit_slice in self.instructions.values():
@@ -126,7 +126,7 @@ class Circuit:
             ValueError: If there is already an instruction on the same qubit at the tick
 
         Note:
-            Don't use this function for initializing a qubit or for measuring a qubit. 
+            Don't use this function for initializing a qubit or for measuring a qubit.
             For measuring use Circuit.measure and for initializing use Circuit.initialize.
         """
         # Even ticks are for gates, odd ticks are for noise.
@@ -220,7 +220,7 @@ class Circuit:
         Args:
             noise_model (NoiseModel): Noise model to apply to the circuit. Note that using to_stim will only add idling noise.
             track_coords (bool, optional): Whether to track the coordinates of the qubits and detectors. Defaults to True.
-            track_progress (bool, optional): If this is set to True a progress bar is printed. The progress bar shows how many 
+            track_progress (bool, optional): If this is set to True a progress bar is printed. The progress bar shows how many
                                              ticks have been translated and the time taken. Defaults to True.
 
         Returns:
