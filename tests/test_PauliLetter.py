@@ -123,6 +123,3 @@ def test_pauli_letter_compose():
                 if letter not in ['I', letter_1, letter_2]][0]
             expected = PauliLetter(expected_letter, sign_1 * sign_2 * extra_sign)
             assert result == expected
-
-
-

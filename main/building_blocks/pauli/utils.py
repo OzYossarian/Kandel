@@ -3,17 +3,14 @@ from __future__ import annotations
 import operator
 from collections import defaultdict
 from functools import reduce
-from typing import Iterable
+from typing import Iterable, List
 
 from main.building_blocks.pauli.Pauli import Pauli
-from main.building_blocks.pauli.PauliLetter import PauliZ, PauliLetter, PauliX, PauliY, PauliI
-from typing import TYPE_CHECKING
-if TYPE_CHECKING:
-    from main.building_blocks.pauli.PauliProduct import PauliProduct
+from main.building_blocks.pauli.PauliLetter import PauliZ, PauliLetter, PauliX, PauliY
 from main.enums import State
 
 
-def compose(paulis: Iterable[Pauli]):
+def compose(paulis: Iterable[Pauli], identities_removed: bool = False):
     # Order matters because Pauli multiplication is not commutative.
     # We assume 'paulis' is ordered such that the rightmost element is the
     # first to be applied, and the leftmost element is the last to be applied
@@ -29,32 +26,28 @@ def compose(paulis: Iterable[Pauli]):
     composed = [
         Pauli(qubit, reduce(lambda x, y: x.compose(y), letters))
         for qubit, letters in grouped_paulis.items()]
-    # Omit the identity Paulis, if possible.
+    # Omit the identity Paulis, if desired.
+    return composed if not identities_removed else remove_identities(composed)
+
+
+def remove_identities(paulis: List[Pauli]) -> List[Pauli]:
     identities = [
-        pauli for pauli in composed if pauli.letter.letter == 'I']
+        pauli for pauli in paulis if pauli.letter.letter == 'I']
     identity_sign = reduce(
         operator.mul, [identity.letter.sign for identity in identities], 1)
     if identity_sign == 1:
+        # If the identities contribute no sign altogether, remove them.
         non_identities = [
-            pauli for pauli in composed if pauli.letter.letter != 'I']
+            pauli for pauli in paulis if pauli.letter.letter != 'I']
         return non_identities
     else:
-        return composed
-
-
-def get_commutator(a: PauliProduct, b: PauliProduct):
-    # Given pauli products a and b, the commutator is aba^(-1)b^(-1). But
-    # since all Paulis are self-inverse, this simplifies to abab.
-    commutator_paulis = a.paulis + b.paulis + a.paulis + b.paulis
-    commutator = PauliProduct(commutator_paulis)
-    assert all(letter == 'I' for letter in commutator.word.word)
-    assert commutator.word.sign in [1, -1]
-    return commutator
-
-
-def commutes(a: PauliProduct, b: PauliProduct):
-    commutator = get_commutator(a, b)
-    return commutator.word.sign == 1
+        # Otherwise, keep them. There are other things we might consider
+        # doing here - e.g. if there's some non-identity Paulis, remove all
+        # the identities and transfer their collective sign onto a
+        # non-identity Pauli. Or remove all the individual identities whose
+        # sign is 1 but keep the rest (those with sign j, -1 or -j). But
+        # there's no canonical choice, so to speak, so let's just do nothing.
+        return paulis
 
 
 stabilizers = {

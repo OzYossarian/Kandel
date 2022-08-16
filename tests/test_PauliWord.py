@@ -91,4 +91,3 @@ def test_pauli_word_repr():
             'word': pauli_word.word,
             'sign': pauli_word.sign}
         assert str(pauli_word) == str(expected)
-
