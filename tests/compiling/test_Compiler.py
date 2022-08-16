@@ -7,11 +7,19 @@ from main.QPUs.SquareLatticeQPU import SquareLatticeQPU
 from main.codes.RepetitionCode import RepetitionCode
 from main.codes.RotatedSurfaceCode import RotatedSurfaceCode
 from main.compiling.noise.models import CircuitLevelNoise
-from main.compiling.noise.models.CodeCapacityBitFlipNoise import CodeCapacityBitFlipNoise
-from main.compiling.syndrome_extraction.controlled_gate_orderers.TrivialOrderer import TrivialOrderer
-from main.compiling.syndrome_extraction.controlled_gate_orderers.RotatedSurfaceCodeOrderer import \
-    RotatedSurfaceCodeOrderer
-from main.compiling.syndrome_extraction.extractors.mixed.CxCyCzExtractor import CxCyCzExtractor
+from main.compiling.noise.models.CodeCapacityBitFlipNoise import (
+    CodeCapacityBitFlipNoise,
+)
+from main.compiling.noise.models.NoNoise import NoNoise
+from main.compiling.syndrome_extraction.controlled_gate_orderers.TrivialOrderer import (
+    TrivialOrderer,
+)
+from main.compiling.syndrome_extraction.controlled_gate_orderers.RotatedSurfaceCodeOrderer import (
+    RotatedSurfaceCodeOrderer,
+)
+from main.compiling.syndrome_extraction.extractors.mixed.CxCyCzExtractor import (
+    CxCyCzExtractor,
+)
 from main.enums import State
 
 test_qpu = SquareLatticeQPU((3, 1))
@@ -95,7 +103,7 @@ def test_compile_final_measurement():
     initial_detector_schedules, tick, circuit = compiler.compile_initialisation(
         code, rsc_initials, None
     )
-
+    circuit.to_stim(noise_model)
     rsc_finals = [Pauli(qubit, PauliZ) for qubit in rsc_qubits]
     tick = compiler.compile_layer(
         0,
@@ -105,7 +113,6 @@ def test_compile_final_measurement():
         circuit,
         code,
     )
-
     # Similar to above, compile final measurements at time tick-2.
     # Means more measurements are done in parallel (data qubits and ancillas)
     compiler.compile_final_measurements(

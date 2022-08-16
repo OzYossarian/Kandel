@@ -116,17 +116,18 @@ class Circuit:
         self.measurer.add_measurement(measurement, check, round)
 
     def add_instruction(self, tick: int, instruction: Instruction):
-        """_summary_
+        """Adds an instruction to the Circuit
 
         Args:
-            tick (int): _description_
-            instruction (Instruction): _description_
+            tick (int): Tick at which the instruction should be added.
+            instruction (Instruction): Instruction to be added to the circuit.
 
         Raises:
-            ValueError: _description_
+            ValueError: If there is already an instruction on the same qubit at the tick
 
         Note:
-            DONT USE FOR INTIALIZING/MEASURING
+            Don't use this function for initializing a qubit or for measuring a qubit. 
+            For measuring use Circuit.measure and for initializing use Circuit.initialize.
         """
         # Even ticks are for gates, odd ticks are for noise.
         assert tick % 2 == (1 if instruction.is_noise else 0)
@@ -181,10 +182,12 @@ class Circuit:
         raise NotImplementedError
 
     def add_idle_noise(self, noise_model: NoiseModel):
-        """_summary_
+        """Adds idling noise everywhere in the circuit
+
+        Idling noise is added at every tick to qubits that have been initialized but on which no gate is performed
 
         Args:
-            noise_model (NoiseModel): _description_
+            noise_model (NoiseModel): a noise model which contains the noise channel to apply to idling qubits.
         """
         # Not a good idea to call this method before compression is done.
         if noise_model.idling is not None:
@@ -200,11 +203,8 @@ class Circuit:
                         for qubit in self.qubits
                         if self.is_initialised(tick, qubit)
                     }
-                    print(initialised_qubits)
                     active_qubits = set(qubit_instructions.keys())
-                    print(active_qubits)
                     idle_qubits = initialised_qubits.difference(active_qubits)
-                    print(idle_qubits, "idle qubits")
                     for qubit in idle_qubits:
                         noise = noise_model.idling.instruction([qubit])
                         self.add_instruction(tick + 1, noise)
@@ -214,16 +214,18 @@ class Circuit:
         noise_model: NoiseModel,
         track_coords: bool = True,
         track_progress: bool = True,
-    ):
-        """_summary_
+    ) -> stim.Circuit:
+        """Transforms the circuit to a stim circuit.
 
         Args:
-            noise_model (NoiseModel): _description_
-            track_coords (bool, optional): _description_. Defaults to True.
-            track_progress (bool, optional): _description_. Defaults to True.
+            noise_model (NoiseModel): Noise model to apply to the circuit. Note that using to_stim will only add idling noise.
+            track_coords (bool, optional): Whether to track the coordinates of the qubits and detectors. Defaults to True.
+            track_progress (bool, optional): If this is set to True a progress bar is printed. The progress bar shows how many 
+                                             ticks have been translated and the time taken. Defaults to True.
 
         Returns:
-            _type_: _description_
+            stim.Circuit: the resulting stim circuit.
+
         """
         if track_progress:
             # TODO - bug here: sometimes this progress bar overfills!
@@ -232,16 +234,18 @@ class Circuit:
         else:
             return self._to_stim(noise_model, track_coords, None)
 
-    def _to_stim(self, noise_model: NoiseModel, track_coords: bool, progress_bar: Any):
-        """_summary_
+    def _to_stim(
+        self, noise_model: NoiseModel, track_coords: bool, progress_bar: Any
+    ) -> stim.Circuit:
+        """Called by to_stim() to transform the circuit to a stim circuit.
 
         Args:
-            noise_model (NoiseModel): _description_
-            track_coords (bool): _description_
-            progress_bar (Any): _description_
+            noise_model (NoiseModel): Noise model to apply to the circuit. Note that using to_stim will only add idling noise.
+            track_coords (bool): Whether to track the coordinates of the qubits and detectors. Defaults to True.
+            progress_bar (Any): None or an alive progress bar
 
         Returns:
-            _type_: _description_
+            stim.Circuit: the resulting stim circuit.
         """
         # Figure out which temporal dimension to shift if tracking coords.
         if track_coords:
@@ -318,14 +322,15 @@ class Circuit:
             start, end, repeats = repeat_block
             repeat_circuit = stim.CircuitRepeatBlock(repeats, circuit)
             full_circuit.append(repeat_circuit)
+
+        self.measurer.reset_compilation()
         return full_circuit
 
     def instruction_to_stim(self, instruction: Instruction, circuit: stim.Circuit):
-        """_summary_
-
+        """Adds an individual Instruction to a circuit
         Args:
-            instruction (Instruction): _description_
-            circuit (stim.Circuit): _description_
+            instruction (Instruction): The instruction to be translated
+            circuit (stim.Circuit): A stim circuit to add the instruction to.
         """
         if instruction.targets is not None:
             targets = instruction.targets
