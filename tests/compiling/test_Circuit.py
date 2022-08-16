@@ -4,6 +4,7 @@ from main.compiling.Circuit import Circuit
 from main.compiling.Instruction import Instruction
 from main.compiling.noise.models.CircuitLevelNoise import CircuitLevelNoise
 from main.compiling.noise.models.NoNoise import NoNoise
+from time import sleep
 
 single_qubit_circuit = Circuit()
 qubit = Qubit(1)
@@ -27,20 +28,17 @@ def test_get_number_of_specific_gates():
 
 
 def test_to_stim(capfd):
-
     single_qubit_circuit.to_stim(NoNoise(), track_progress=False)
     out, _ = capfd.readouterr()
     assert out == ""
 
-    # test that a progress bar is created
     single_qubit_circuit.to_stim(NoNoise())
-    out, _ = capfd.readouterr()
+    out, err = capfd.readouterr()
     assert out != ""
 
 
 def test__to_stim():
     circuit = single_qubit_circuit._to_stim(NoNoise(), True, None)
-    print(str(circuit))
     assert stim.Circuit(str(circuit)) == stim.Circuit(
         """QUBIT_COORDS(1) 0
             R 0
