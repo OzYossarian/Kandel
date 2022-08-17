@@ -9,8 +9,7 @@ from main.building_blocks.Check import Check
 from main.building_blocks.Qubit import Qubit
 from main.compiling.Instruction import Instruction
 from main.compiling.Measurer import Measurer
-from main.compiling.noise.models.NoNoise import NoNoise
-from main.compiling.noise.models.NoiseModel import NoiseModel
+from main.compiling.noise.noises import OneQubitNoise
 
 RepeatBlock = Tuple[int, int, int] | None
 
@@ -54,9 +53,17 @@ class Circuit:
         # Track which measurements tell us the value of which checks
         self.measurer = Measurer()
 
-    def __repr__(self):
-        """Represents an instance of this class using cirq, useful for debugging"""
-        return stimcirq.stim_circuit_to_cirq_circuit(self.to_stim(NoNoise())).__str__()
+    def to_cirq_string(self, idling_noise: OneQubitNoise | None = None) -> str:
+        """Represents an instance of this class as cirq ascii circuit, useful for debugging
+
+        Args:
+            idling_noise (OneQubitNoise | None, optional): a noise model which contains the noise channel to apply to idling qubits.
+                                                           Defaults to None.
+
+        Returns:
+            str : a drawing of the circuit generated using cirq.
+        """
+        return str(stimcirq.stim_circuit_to_cirq_circuit(self.to_stim(idling_noise)))
 
     def get_number_of_occurences_of_gate(self, instruction_name: str) -> int:
         """Counts the number of times a gate occurs.
@@ -68,10 +75,10 @@ class Circuit:
             int: Number of occurences of the gate.
         """
         number_of_occurences = 0
-        for instruction_in_circuit_slice in self.instructions.values():
-            for all_instructions_on_qubit in instruction_in_circuit_slice.values():
-                for single_instruction in all_instructions_on_qubit:
-                    if single_instruction.name == instruction_name:
+        for instruction_at_tick in self.instructions.values():
+            for instructions_on_qubit_at_tick in instruction_at_tick.values():
+                for instruction in instructions_on_qubit_at_tick:
+                    if instruction.name == instruction_name:
                         number_of_occurences += 1
         return number_of_occurences
 
@@ -181,16 +188,17 @@ class Circuit:
         # TODO - implement!
         raise NotImplementedError
 
-    def add_idle_noise(self, noise_model: NoiseModel):
+    def add_idle_noise(self, idling_noise: OneQubitNoise | None):
         """Adds idling noise everywhere in the circuit
 
         Idling noise is added at every tick to qubits that have been initialized but on which no gate is performed
 
         Args:
-            noise_model (NoiseModel): a noise model which contains the noise channel to apply to idling qubits.
+            noise_model (NoiseModel | None): a noise model which contains the noise channel to apply to idling qubits.
         """
+        
         # Not a good idea to call this method before compression is done.
-        if noise_model.idling is not None:
+        if idling_noise is not None:
             instructions = sorted(self.instructions.items())
             # note that this only loop through ticks at which there is at least one instruction
             for tick, qubit_instructions in instructions:
@@ -206,19 +214,19 @@ class Circuit:
                     active_qubits = set(qubit_instructions.keys())
                     idle_qubits = initialised_qubits.difference(active_qubits)
                     for qubit in idle_qubits:
-                        noise = noise_model.idling.instruction([qubit])
+                        noise = idling_noise.idling.instruction([qubit])
                         self.add_instruction(tick + 1, noise)
 
     def to_stim(
         self,
-        noise_model: NoiseModel,
+        idling_noise: OneQubitNoise | None,
         track_coords: bool = True,
         track_progress: bool = True,
     ) -> stim.Circuit:
         """Transforms the circuit to a stim circuit.
 
         Args:
-            noise_model (NoiseModel): Noise model to apply to the circuit. Note that using to_stim will only add idling noise.
+            idling_noise (OneQubitNoise | None): Noise channel to apply to idling locations in the circuit. Note that using to_stim will only add idling noise.
             track_coords (bool, optional): Whether to track the coordinates of the qubits and detectors. Defaults to True.
             track_progress (bool, optional): If this is set to True a progress bar is printed. The progress bar shows how many
                                              ticks have been translated and the time taken. Defaults to True.
@@ -230,17 +238,17 @@ class Circuit:
         if track_progress:
             # TODO - bug here: sometimes this progress bar overfills!
             with alive_bar(len(self.instructions), force_tty=True) as bar:
-                return self._to_stim(noise_model, track_coords, bar)
+                return self._to_stim(idling_noise, track_coords, bar)
         else:
-            return self._to_stim(noise_model, track_coords, None)
+            return self._to_stim(idling_noise, track_coords, None)
 
     def _to_stim(
-        self, noise_model: NoiseModel, track_coords: bool, progress_bar: Any
+        self, idling_noise: OneQubitNoise | None, track_coords: bool, progress_bar: Any
     ) -> stim.Circuit:
         """Called by to_stim() to transform the circuit to a stim circuit.
 
         Args:
-            noise_model (NoiseModel): Noise model to apply to the circuit. Note that using to_stim will only add idling noise.
+            idling_noise (OneQubitNoise | None): Noise channel to apply to idling locations in the circuit. Note that using to_stim will only add idling noise.
             track_coords (bool): Whether to track the coordinates of the qubits and detectors. Defaults to True.
             progress_bar (Any): None or an alive progress bar
 
@@ -252,15 +260,15 @@ class Circuit:
             qubit_dimensions = {qubit.dimension for qubit in self.qubits}
             assert len(qubit_dimensions) == 1
             dimension = qubit_dimensions.pop()
-            shift_coords = tuple([0 for _ in range(dimension)] + [1])
+            shift_coords = tuple([0 for _ in range(dimension)]  [1])
         else:
             shift_coords = None
 
         # Go through the circuit and add idling noise.
-        self.add_idle_noise(noise_model)
+        self.add_idle_noise(idling_noise)
 
         # Track which instructions have been compiled to stim.
-        compiled: defaultdict = defaultdict(bool)
+        compiled = defaultdict(bool)
 
         # Let 'circuit' denote the circuit we're currently compiling to - if
         # using repeat blocks, this need not always be the full circuit itself
@@ -339,15 +347,6 @@ class Circuit:
         circuit.append(instruction.name, targets, instruction.params)
 
     def entered_repeat_block(self, tick: int, last_tick: int):
-        """_summary_
-
-        Args:
-            tick (int): _description_
-            last_tick (int): _description_
-
-        Returns:
-            _type_: _description_
-        """
         # Return whether we've entered a repeat block between these two ticks.
         last_block = self.repeat_blocks[last_tick]
         this_block = self.repeat_blocks[tick]

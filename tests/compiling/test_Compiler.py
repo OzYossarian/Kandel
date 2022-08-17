@@ -103,7 +103,6 @@ def test_compile_final_measurement():
     initial_detector_schedules, tick, circuit = compiler.compile_initialisation(
         code, rsc_initials, None
     )
-    circuit.to_stim(noise_model)
     rsc_finals = [Pauli(qubit, PauliZ) for qubit in rsc_qubits]
     tick = compiler.compile_layer(
         0,

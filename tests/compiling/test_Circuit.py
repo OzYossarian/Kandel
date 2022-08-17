@@ -1,4 +1,6 @@
 from collections import defaultdict
+import random
+import string
 import stim
 from main.building_blocks.Qubit import Qubit
 from main.building_blocks.pauli.Pauli import Pauli
@@ -72,6 +74,7 @@ def test_get_number_of_specific_gates():
     assert n_X_gates == 0
 
 
+
 def test_to_stim(capfd):
     single_qubit_circuit.to_stim(NoNoise(), track_progress=False)
     out, _ = capfd.readouterr()
@@ -111,7 +114,7 @@ def test___repr__():
 def add_idling_noise():
     # test if no noise is added
     single_qubit_circuit.add_idle_noise(CircuitLevelNoise(0, 1.0, 0, 0, 0))
-    n_idling_gates = single_qubit_circuit.get_number_of_occurences_of_gate("I")
+    n_idling_gates = single_qubit_circuit.get_number_of_occurences_of_gate("PAULI_CHANNEL_I")
     assert n_idling_gates == 0
 
     two_qubit_circuit.add_idle_noise(CircuitLevelNoise(0, 1.0, 0, 0, 0))
