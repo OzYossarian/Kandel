@@ -146,7 +146,7 @@ class Compiler(ABC):
             code,
         )
 
-        return circuit.to_stim(self.noise_model)
+        return circuit.to_stim(self.noise_model.idling)
 
     def compile_initialisation(
         self,

@@ -10,8 +10,8 @@ from main.compiling.Circuit import Circuit
 from main.compiling.Instruction import Instruction
 from main.compiling.compilers.AncillaPerCheckCompiler import AncillaPerCheckCompiler
 from main.compiling.noise.models import CodeCapacityBitFlipNoise
-from main.compiling.noise.models.CircuitLevelNoise import CircuitLevelNoise
 from main.compiling.noise.models.NoNoise import NoNoise
+from main.compiling.noise.noises.OneQubitNoise import OneQubitNoise
 
 from main.compiling.syndrome_extraction.controlled_gate_orderers.RotatedSurfaceCodeOrderer import (
     RotatedSurfaceCodeOrderer,
@@ -74,19 +74,18 @@ def test_get_number_of_specific_gates():
     assert n_X_gates == 0
 
 
-
 def test_to_stim(capfd):
-    single_qubit_circuit.to_stim(NoNoise(), track_progress=False)
+    single_qubit_circuit.to_stim(None, track_progress=False)
     out, _ = capfd.readouterr()
     assert out == ""
 
-    single_qubit_circuit.to_stim(NoNoise())
+    single_qubit_circuit.to_stim(None)
     out, _ = capfd.readouterr()
     assert out != ""
 
 
 def test__to_stim():
-    circuit = single_qubit_circuit._to_stim(NoNoise(), True, None)
+    circuit = single_qubit_circuit._to_stim(None, True, None)
     assert stim.Circuit(str(circuit)) == stim.Circuit(
         """QUBIT_COORDS(1) 0
             R 0
@@ -95,7 +94,7 @@ def test__to_stim():
     )
 
     rsc_circuit_one_layer = create_rsc_circuit()
-    stim_rsc_circuit_one_layer = rsc_circuit_one_layer._to_stim(NoNoise(), True, None)
+    stim_rsc_circuit_one_layer = rsc_circuit_one_layer._to_stim(None, True, None)
 
     # testing if the properties of the measurer class are reset
     assert rsc_circuit_one_layer.measurer.measurement_numbers == {}
@@ -107,17 +106,19 @@ def test__to_stim():
     assert stim_rsc_circuit_one_layer.num_detectors == 8
 
 
-def test___repr__():
-    assert single_qubit_circuit.__repr__() == "1: ───R───Z───"
+def test_to_circ_string():
+    assert single_qubit_circuit.to_cirq_string() == "1: ───R───Z───"
 
 
-def add_idling_noise():
+def add_iddle_noise():
     # test if no noise is added
-    single_qubit_circuit.add_idle_noise(CircuitLevelNoise(0, 1.0, 0, 0, 0))
-    n_idling_gates = single_qubit_circuit.get_number_of_occurences_of_gate("PAULI_CHANNEL_I")
+    single_qubit_circuit.add_idle_noise(None)
+    n_idling_gates = single_qubit_circuit.get_number_of_occurences_of_gate(
+        "PAULI_CHANNEL_I"
+    )
     assert n_idling_gates == 0
 
-    two_qubit_circuit.add_idle_noise(CircuitLevelNoise(0, 1.0, 0, 0, 0))
+    two_qubit_circuit.add_idle_noise(OneQubitNoise(0.1, 0.1, 0.1))
     n_idling_errors = two_qubit_circuit.get_number_of_occurences_of_gate(
         "PAULI_CHANNEL_1"
     )

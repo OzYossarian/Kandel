@@ -196,7 +196,7 @@ class Circuit:
         Args:
             noise_model (NoiseModel | None): a noise model which contains the noise channel to apply to idling qubits.
         """
-        
+
         # Not a good idea to call this method before compression is done.
         if idling_noise is not None:
             instructions = sorted(self.instructions.items())
@@ -214,7 +214,7 @@ class Circuit:
                     active_qubits = set(qubit_instructions.keys())
                     idle_qubits = initialised_qubits.difference(active_qubits)
                     for qubit in idle_qubits:
-                        noise = idling_noise.idling.instruction([qubit])
+                        noise = idling_noise.instruction([qubit])
                         self.add_instruction(tick + 1, noise)
 
     def to_stim(
@@ -260,7 +260,7 @@ class Circuit:
             qubit_dimensions = {qubit.dimension for qubit in self.qubits}
             assert len(qubit_dimensions) == 1
             dimension = qubit_dimensions.pop()
-            shift_coords = tuple([0 for _ in range(dimension)]  [1])
+            shift_coords = tuple([0 for _ in range(dimension)] + [1])
         else:
             shift_coords = None
 
