@@ -63,4 +63,3 @@ def test_pauli_repr():
             'qubit': qubit,
             'letter': letter}
         assert str(pauli) == str(expected)
-
