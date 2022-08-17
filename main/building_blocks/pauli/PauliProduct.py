@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Iterable
+from typing import List
 
 from main.building_blocks.pauli.Pauli import Pauli
 from main.building_blocks.pauli.PauliWord import PauliWord
@@ -9,37 +9,58 @@ from main.utils.NiceRepr import NiceRepr
 
 
 class PauliProduct(NiceRepr):
-    def __init__(self, paulis: Iterable[Pauli], composed: bool = False):
-        """ Class representing a tensor product of Paulis.
+    def __init__(self, paulis: List[Pauli], identities_removed: bool = False):
         """
-        if not composed:
-            self.paulis = compose(paulis)
+        Class representing a tensor product of Paulis.
+
+        Args:
+            paulis:
+                the Paulis to be tensored together. It's possible to pass in
+                multiple Paulis acting on the same qubit, but note that all
+                Paulis acting on the same qubit will be composed to give a
+                single Pauli. Since Paulis don't necessarily commute, order
+                matters.
+
+            identities_removed:
+                if all the paulis with letter I have signs that multiply to 1,
+                and this flag is set to True, then all such paulis will be
+                removed. Note that this is applied after any composition of
+                Paulis. e.g. if `paulis` contains two Xs on the same qubit,
+                these will be composed to an I, and then are eligible for
+                removal.
+        """
+        unique_qubits = {pauli.qubit for pauli in paulis}
+        if len(unique_qubits) != len(paulis):
+            # At least one qubit has multiple Paulis acting on it. So let's
+            # compose all the Paulis on these qubits, so that we have exactly
+            # one Pauli on each qubit.
+            paulis = compose(paulis, identities_removed)
+        self.paulis = paulis
+        self.weight = len(paulis)
         letters = [pauli.letter for pauli in self.paulis]
         self.word = PauliWord.from_letters(letters)
 
-        # Define the following extra properties for use in comparisons.
+        # Define the following internal properties for use in comparisons.
         sorted_paulis = sorted(
             self.paulis, key=lambda pauli: pauli.qubit.coords)
-        self.qubits = tuple(pauli.qubit for pauli in sorted_paulis)
+        self._sorted_qubits = tuple(pauli.qubit for pauli in sorted_paulis)
         sorted_letters = [pauli.letter for pauli in sorted_paulis]
-        self.sorted_word = PauliWord.from_letters(sorted_letters)
+        self._sorted_word = PauliWord.from_letters(sorted_letters)
 
         repr_keys = ['word', 'paulis']
         super().__init__(repr_keys)
 
-    # TODO - do we actually want to allow this?
+    # TODO - do we actually want to allow this? Answer: YES!
     def equal_up_to_sign(self, other: PauliProduct):
         return \
-            self.qubits == other.qubits and \
-            self.sorted_word.word == other.sorted_word.word
+            self._sorted_qubits == other._sorted_qubits and \
+            self._sorted_word.word == other._sorted_word.word
 
     def __eq__(self, other):
         return \
             type(other) == type(self) and \
-            self.qubits == other.qubits and \
-            self.sorted_word == other.sorted_word
+            self._sorted_qubits == other._sorted_qubits and \
+            self._sorted_word == other._sorted_word
 
     def __hash__(self):
-        return hash((self.qubits, self.sorted_word))
-
-
+        return hash((self._sorted_qubits, self._sorted_word))

@@ -2,6 +2,9 @@ import random
 
 default_min_coord = -10
 default_max_coord = 10
+default_test_repeats_small = 10
+default_test_repeats_medium = 100
+default_test_repeats_large = 1000
 
 
 def random_complex_number(

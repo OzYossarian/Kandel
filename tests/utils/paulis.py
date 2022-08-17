@@ -1,14 +1,20 @@
 import random
+from functools import reduce
+from typing import List, Callable, Iterable
 
 from main.building_blocks.pauli import Pauli
 from main.building_blocks.pauli.PauliLetter import PauliZ, PauliY, PauliX, PauliLetter
 from main.building_blocks.pauli.PauliWord import PauliWord
-from tests.utils.numbers import default_max_coord, default_min_coord
+from tests.utils.numbers import default_max_coord, default_min_coord, default_max_unique_sample_size
 from tests.utils.qubits import unique_random_qubits_tuple_coords, unique_random_qubits_tuple_coords_int
 
 valid_letters = ['I', 'X', 'Y', 'Z']
 valid_signs = [1, 0+1j, -1, 0-1j]
 xyz = ['X', 'Y', 'Z']
+
+
+def compose_letters(letters: Iterable[PauliLetter]):
+    return reduce(lambda x, y: x.compose(y), letters)
 
 
 def random_pauli_word(length: int):
@@ -66,3 +72,60 @@ def unique_random_paulis_tuple_coords_int(
         Pauli(qubit, letter)
         for qubit, letter in zip(qubits, letters)]
     return paulis
+
+
+def random_paulis_tuple_coords_int(
+        num_qubits: int, num_letters: int, dimension: int,
+        min: int = default_min_coord, max: int = default_max_coord):
+    grouped_paulis = random_grouped_paulis_tuple_coords_int(
+        num_qubits, num_letters, dimension, min, max)
+    flattened_paulis = [
+        pauli
+        for paulis in grouped_paulis.values()
+        for pauli in paulis]
+    return flattened_paulis
+
+
+def random_xyz_paulis_tuple_coords_int(
+        num_qubits: int, num_letters: int, dimension: int,
+        min: int = default_min_coord, max: int = default_max_coord):
+    grouped_paulis = random_grouped_xyz_paulis_tuple_coords_int(
+        num_qubits, num_letters, dimension, min, max)
+    flattened_paulis = [
+        pauli
+        for paulis in grouped_paulis.values()
+        for pauli in paulis]
+    return flattened_paulis
+
+
+def random_grouped_paulis_tuple_coords_int(
+        num_qubits: int, num_letters: int, dimension: int,
+        min: int = default_min_coord, max: int = default_max_coord):
+    return _random_grouped_paulis_tuple_coords_int(
+        num_qubits, num_letters, dimension, random_pauli_letters, min, max)
+
+
+def random_grouped_xyz_paulis_tuple_coords_int(
+        num_qubits: int, num_letters: int, dimension: int,
+        min: int = default_min_coord, max: int = default_max_coord):
+    return _random_grouped_paulis_tuple_coords_int(
+        num_qubits, num_letters, dimension, random_xyz_pauli_letters, min, max)
+
+
+def _random_grouped_paulis_tuple_coords_int(
+        num_qubits: int, num_letters: int, dimension: int,
+        get_letters: Callable[[int], List[PauliLetter]],
+        min: int = default_min_coord, max: int = default_max_coord):
+    assert num_qubits <= default_max_unique_sample_size(dimension, min, max)
+    qubits = unique_random_qubits_tuple_coords_int(num_qubits, dimension)
+    letters = get_letters(num_letters)
+    indexes = random.choices(range(num_qubits), k=num_letters)
+
+    # Ignore any qubits that haven't been randomly picked in `indexes`
+    grouped_paulis = {qubits[j]: [] for j in set(indexes)}
+    for i, j in enumerate(indexes):
+        qubit = qubits[j]
+        letter = letters[i]
+        grouped_paulis[qubit].append(Pauli(qubit, letter))
+
+    return grouped_paulis

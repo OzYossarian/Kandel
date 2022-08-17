@@ -35,7 +35,7 @@ class Code:
         # Assign the code a dimension based on data qubits' dimension.
         qubit_dims = {qubit.dimension for qubit in self.data_qubits.values()}
         self.dimension = max(qubit_dims)
-        if len(qubit_dims) != 1:
+        if len(qubit_dims) > 1:
             raise ValueError(
                 f'All data qubits must have the same dimension! Set of all '
                 f'qubit dimensions is instead {qubit_dims}.')

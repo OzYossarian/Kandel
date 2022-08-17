@@ -2,10 +2,11 @@ import random
 
 from main.building_blocks.Qubit import Qubit
 from tests.utils.coordinates import random_non_tuple_coords, random_tuple_coords
+from tests.utils.numbers import default_test_repeats_small
 
 
 def test_qubit_dimension():
-    repeats = 10
+    repeats = default_test_repeats_small
     for _ in range(repeats):
         coords = random_non_tuple_coords(-100, 100)
         qubit = Qubit(coords)

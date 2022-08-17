@@ -6,7 +6,7 @@ import pytest
 
 from main.building_blocks.pauli.PauliLetter import PauliLetter
 from main.building_blocks.pauli.PauliWord import PauliWord
-from tests.utils.numbers import random_complex_number
+from tests.utils.numbers import random_complex_number, default_test_repeats_small, default_test_repeats_medium
 from tests.utils.paulis import random_pauli_word, valid_letters, valid_signs
 
 
@@ -14,11 +14,6 @@ class NotAPauliWord:
     def __init__(self, word: str, sign: complex):
         self.word = word
         self.sign = sign
-
-
-def test_pauli_word_fails_if_word_empty():
-    with pytest.raises(ValueError):
-        _ = PauliWord(word='')
 
 
 def test_pauli_word_fails_if_word_invalid():
@@ -29,7 +24,7 @@ def test_pauli_word_fails_if_word_invalid():
 
 
 def test_pauli_word_fails_if_sign_invalid():
-    repeats = 10
+    repeats = default_test_repeats_small
     for _ in range(repeats):
         sign = random_complex_number()
         if sign not in valid_signs:
@@ -38,7 +33,7 @@ def test_pauli_word_fails_if_sign_invalid():
 
 
 def test_pauli_word_from_letters():
-    repeats = 100
+    repeats = default_test_repeats_medium
     for _ in range(repeats):
         length = random.randint(1, 100)
         letters = random.choices(valid_letters, k=length)
@@ -52,7 +47,7 @@ def test_pauli_word_from_letters():
 
 
 def test_pauli_word_inequality_if_letter_or_sign_are_different():
-    repeats = 100
+    repeats = default_test_repeats_medium
     for _ in range(repeats):
         length = random.randint(1, 100)
         pauli_word_1 = random_pauli_word(length)
@@ -65,7 +60,7 @@ def test_pauli_word_inequality_if_letter_or_sign_are_different():
 
 
 def test_pauli_letter_inequality_if_one_is_not_a_pauli_letter():
-    repeats = 10
+    repeats = default_test_repeats_small
     for _ in range(repeats):
         length = random.randint(1, 100)
         pauli_word = random_pauli_word(length)
@@ -74,7 +69,7 @@ def test_pauli_letter_inequality_if_one_is_not_a_pauli_letter():
 
 
 def test_pauli_letter_equality_if_letter_and_sign_are_equal():
-    repeats = 10
+    repeats = default_test_repeats_small
     for _ in range(repeats):
         length = random.randint(1, 100)
         pauli_word_1 = random_pauli_word(length)
@@ -83,7 +78,7 @@ def test_pauli_letter_equality_if_letter_and_sign_are_equal():
 
 
 def test_pauli_word_repr():
-    repeats = 100
+    repeats = default_test_repeats_medium
     for _ in range(repeats):
         length = random.randint(1, 100)
         pauli_word = random_pauli_word(length)

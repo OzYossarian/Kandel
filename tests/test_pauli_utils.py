@@ -3,38 +3,44 @@ import random
 from collections import Counter
 from functools import reduce
 from operator import mul
-from typing import List, Callable
+from typing import List, Callable, Iterable
 
 from main.building_blocks.Qubit import Qubit
 from main.building_blocks.pauli import Pauli
 from main.building_blocks.pauli.PauliLetter import PauliLetter
 from main.building_blocks.pauli.utils import remove_identities, compose
-from tests.utils.numbers import default_max_unique_sample_size
-from tests.utils.paulis import random_pauli_letters, random_xyz_pauli_letters
-from tests.utils.qubits import unique_random_qubits_tuple_coords_int
+from tests.utils.numbers import default_max_unique_sample_size, default_test_repeats_medium
+from tests.utils.paulis import random_grouped_paulis_tuple_coords_int, random_paulis_tuple_coords_int, \
+    random_xyz_paulis_tuple_coords_int
 
 
-def test_compose_has_right_number_of_paulis():
+def test_compose():
     # This is a difficult one to test without just reimplementing the
     # function here! Will make up for it with some specific examples.
-    repeats = 100
+    repeats = default_test_repeats_medium
     for _ in range(repeats):
         dimension = random.randint(1, 10)
-        # Can't let n be too big, because we're going to use unique integer
-        # qubit coordinates for niceness, and there's only a finite number
-        # of them!
-        max_n = min(100, default_max_unique_sample_size(dimension))
-        n = random.randint(1, max_n)
-        qubits = unique_random_qubits_tuple_coords_int(n, dimension)
-        m = random.randint(0, 3 * n)
-        letters = random_pauli_letters(m)
+        max_qubits = random.randint(0, 100)
+        num_qubits = min(max_qubits, default_max_unique_sample_size(dimension))
+        num_letters = random.randint(0, 3 * max_qubits)
+
+        grouped_paulis = random_grouped_paulis_tuple_coords_int(
+            num_qubits, num_letters, dimension)
+        # Flatten the grouped paulis
         paulis = [
-            Pauli(qubit, letter)
-            for qubit, letter in zip(qubits, letters)]
+            pauli
+            for paulis in grouped_paulis.values()
+            for pauli in paulis]
+
+        def compose_letters(letters: Iterable[PauliLetter]):
+            return reduce(lambda x, y: x.compose(y), letters)
 
         result = compose(paulis, identities_removed=False)
-        # Should be exactly one Pauli on each qubit after composing.
-        assert len(result) == min(n, m)
+        expected = [
+            Pauli(qubit, compose_letters([pauli.letter for pauli in paulis]))
+            for qubit, paulis in grouped_paulis.items()]
+
+        assert result == expected
 
 
 def test_compose_XY_equals_iZ():
@@ -115,33 +121,30 @@ def test_remove_identities_when_identities_sign_1_or_not_1():
         else:
             return paulis
 
-    return _test_remove_identities(random_pauli_letters, get_expected)
+    return _test_remove_identities(
+        random_paulis_tuple_coords_int, get_expected)
 
 
 def test_remove_identities_when_no_identities_included():
     def get_expected(paulis: List[Pauli], identities_sign: int):
         # If no identity Paulis included, always expect to do nothing.
         return paulis
-    return _test_remove_identities(random_xyz_pauli_letters, get_expected)
+    return _test_remove_identities(
+        random_xyz_paulis_tuple_coords_int, get_expected)
 
 
 def _test_remove_identities(
-        get_letters: Callable[[int], List[PauliLetter]],
+        get_paulis: Callable[[int, int, int], List[Pauli]],
         get_expected: Callable[[List[Pauli], int], List[Pauli]]):
-    repeats = 100
+    repeats = default_test_repeats_medium
     for _ in range(repeats):
         dimension = random.randint(1, 10)
-        # Can't let n be too big, because we're going to use unique integer
-        # qubit coordinates for niceness, and there's only a finite number
-        # of them!
-        max_n = min(100, default_max_unique_sample_size(dimension))
-        n = random.randint(1, max_n)
-        qubits = unique_random_qubits_tuple_coords_int(n, dimension)
+        max_qubits = random.randint(0, 100)
+        num_qubits = min(max_qubits, default_max_unique_sample_size(dimension))
         # Allow choosing more letters than there are qubits
-        m = random.randint(0, 3 * n)
-        letters = get_letters(m)
+        num_paulis = random.randint(0, 3 * num_qubits)
+        paulis = get_paulis(num_qubits, num_paulis, dimension)
 
-        paulis = [Pauli(qubits[i % n], letters[i]) for i in range(m)]
         identities = [pauli for pauli in paulis if pauli.letter.letter == 'I']
         identities_signs = [pauli.letter.sign for pauli in identities]
         identities_sign = reduce(mul, identities_signs, 1)

@@ -4,7 +4,7 @@ import pytest
 
 from main.Colour import Red, Green, Blue, Grey
 from main.building_blocks.pauli.PauliLetter import PauliLetter
-from tests.utils.numbers import random_complex_number
+from tests.utils.numbers import random_complex_number, default_test_repeats_small, default_test_repeats_medium
 from tests.utils.paulis import valid_letters, valid_signs
 
 
@@ -24,7 +24,7 @@ def test_pauli_letter_fails_if_letter_invalid():
 
 
 def test_pauli_letter_fails_if_sign_invalid():
-    repeats = 10
+    repeats = default_test_repeats_small
     for _ in range(repeats):
         sign = random_complex_number()
         if sign not in valid_signs:
@@ -46,7 +46,7 @@ def test_pauli_letter_colour():
 
 
 def test_pauli_letter_inequality_if_letter_or_sign_are_different():
-    repeats = 100
+    repeats = default_test_repeats_medium
     for _ in range(repeats):
         letter_1 = random.choice(valid_letters)
         letter_2 = random.choice(valid_letters)
@@ -59,7 +59,7 @@ def test_pauli_letter_inequality_if_letter_or_sign_are_different():
 
 
 def test_pauli_letter_inequality_if_one_is_not_a_pauli_letter():
-    repeats = 10
+    repeats = default_test_repeats_small
     for _ in range(repeats):
         letter_1 = random.choice(valid_letters)
         letter_2 = random.choice(valid_letters)
@@ -93,7 +93,7 @@ def test_pauli_letter_compose():
     # define/calculate it, then compare the two. Bit annoying here because
     # the original method just works via a lookup table. Any other way
     # to define the expected outcome is a bit odd and cumbersome.
-    repeats = 100
+    repeats = default_test_repeats_medium
     for _ in range(repeats):
         letter_1 = random.choice(valid_letters)
         letter_2 = random.choice(valid_letters)

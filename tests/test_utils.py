@@ -7,6 +7,7 @@ from typing import Callable, Iterable
 from main.utils.types import Coordinates
 from main.utils.utils import modulo_duplicates, coords_mid, coords_sum, coords_minus, embed_coords
 from tests.utils.coordinates import random_non_tuple_coords, random_tuple_coords
+from tests.utils.numbers import default_test_repeats_medium
 
 
 def test_modulo_duplicates():
@@ -38,8 +39,8 @@ def _test_coords_method(
         create_coords: Callable[[], Coordinates],
         coords_method: Callable[[Iterable[Coordinates]], Coordinates],
         get_expected: Callable[[Iterable[Coordinates]], Coordinates]):
-    repeats = 100
-    num_coords = random.randint(1, 100)
+    repeats = default_test_repeats_medium
+    num_coords = random.randint(0, 100)
     for _ in range(repeats):
         coordss = [create_coords() for _ in range(num_coords)]
         result = coords_method(*coordss)
@@ -124,7 +125,7 @@ def test_coords_sum_fails_if_lengths_unequal():
 def _test_coords_minus(
         create_coords: Callable[[], Coordinates],
         get_expected: Callable[[Coordinates, Coordinates], Coordinates]):
-    repeats = 100
+    repeats = default_test_repeats_medium
     xs = create_coords()
     ys = create_coords()
     for _ in range(repeats):
@@ -310,7 +311,7 @@ def _test_embed_coords(
         create_offset: Callable[[int], Coordinates],
         create_hyperplane: Callable[[int, int], Coordinates],
         get_expected: Callable[[Coordinates, int, Coordinates, Coordinates], Coordinates]):
-    repeats = 100
+    repeats = default_test_repeats_medium
     for _ in range(repeats):
         coords = create_coords()
         coords_dim = len(coords) if isinstance(coords, tuple) else 1

@@ -34,7 +34,7 @@ def xor(a: bool, b: bool) -> bool:
 
 def coords_mid(*coords: Coordinates) -> Coordinates:
     lengths = {coords_length(coord) for coord in coords}
-    if len(lengths) != 1:
+    if len(lengths) > 1:
         raise ValueError(
             f"Can't find the midpoint of coordinates of different lengths. "
             f"Coordinates are {list(coords)}.")
@@ -46,7 +46,7 @@ def coords_mid(*coords: Coordinates) -> Coordinates:
 
 def coords_sum(*coords: Coordinates) -> Coordinates:
     lengths = {coords_length(coord) for coord in coords}
-    if len(lengths) != 1:
+    if len(lengths) > 1:
         raise ValueError(
             f"Can't sum over coordinates of different lengths. "
             f"Coordinates are {list(coords)}.")
@@ -58,7 +58,7 @@ def coords_sum(*coords: Coordinates) -> Coordinates:
 
 def coords_minus(xs: Coordinates, ys: Coordinates):
     lengths = {coords_length(xs), coords_length(ys)}
-    if len(lengths) != 1:
+    if len(lengths) > 1:
         raise ValueError(
             f"Can't sum over coordinates of different lengths. "
             f"Coordinates are {(xs, ys)}.")

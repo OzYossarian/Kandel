@@ -13,8 +13,6 @@ class PauliWord(NiceRepr):
         between PauliWords and PauliProducts is the same as the relationship
         between PauliLetters and Paulis.
         """
-        if not len(word) > 0:
-            raise ValueError(f"Can't create an 'empty' PauliWord.")
         if not all([letter in ['I', 'X', 'Y', 'Z'] for letter in word]):
             raise ValueError(
                 f"Only valid Pauli letters are I, X, Y and Z. "
