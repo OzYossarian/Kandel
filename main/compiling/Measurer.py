@@ -78,17 +78,14 @@ class Measurer:
         for measurement in measurements:
             # First record the measurement numbers
             check, round = self.measurement_checks[measurement]
-            #            round = 0
             self.measurement_numbers[(check, round)] = self.total_measurements
             self.total_measurements += 1
 
             # Now see if measuring this check triggers any extra instructions.
-
             for trigger in self.triggers[(check, round)]:
                 if isinstance(trigger, Detector):
                     # This check (amongst others) triggers a detector.
                     detector = trigger
-                    #                    round = 0
                     if self.can_build_detector(detector, round):
                         # Must wait til all measurement numbers have been
                         # assigned (at the end of the outer for loop we're in)
@@ -118,8 +115,7 @@ class Measurer:
     def detector_to_stim(self, detector: Detector, round: int, track_coords: bool):
         targets = [
             self.measurement_target(check, round + rounds_ago)
-            for rounds_ago, check in detector.checks
-        ]
+            for rounds_ago, check in detector.timed_checks_mod_2]
         # Anchor needs to now be a tuple for Stim to accept it.
         if track_coords and isinstance(detector.anchor, tuple):
             anchor = detector.anchor
@@ -133,22 +129,14 @@ class Measurer:
         # Only build this detector if all the checks in the final slice have
         # actually been measured, and if we haven't already built an
         # equivalent detector (one that compares the exact same measurements).
-        final_slice_measured = all(
-            [
-                (check, round) in self.measurement_numbers
-                for check in detector.final_slice
-            ]
-        )
+        final_slice_measured = all([
+            (check, round) in self.measurement_numbers
+            for check in detector.final_slice])
         if final_slice_measured:
             # First criteria met...
-            measurement_numbers = tuple(
-                sorted(
-                    [
-                        self.measurement_numbers[(check, round + rounds_ago)]
-                        for rounds_ago, check in detector.checks
-                    ]
-                )
-            )
+            measurement_numbers = tuple(sorted([
+                self.measurement_numbers[(check, round + rounds_ago)]
+                for rounds_ago, check in detector.timed_checks_mod_2]))
 
             already_built = self.detectors_built[measurement_numbers]
             if not already_built:

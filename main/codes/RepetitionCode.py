@@ -5,7 +5,6 @@ from main.building_blocks.pauli.Pauli import Pauli
 from main.building_blocks.pauli.PauliLetter import PauliZ, PauliX
 from main.building_blocks.Qubit import Qubit
 from main.codes.Code import Code
-from main.enums import State
 
 
 class RepetitionCode(Code):
@@ -25,9 +24,9 @@ class RepetitionCode(Code):
         data_qubits = {2 * i: Qubit(2 * i) for i in range(distance)}
         checks = []
         for i in range(distance - 1):
-            paulis = {
-                (-1, 0): Pauli(data_qubits[2 * i], PauliZ),
-                (1, 0): Pauli(data_qubits[2 * (i + 1)], PauliZ)}
+            paulis = [
+                Pauli(data_qubits[2 * i], PauliZ),
+                Pauli(data_qubits[2 * (i + 1)], PauliZ)]
             anchor = 2 * i + 1
             new_check = Check(paulis, anchor)
             checks.append(new_check)
