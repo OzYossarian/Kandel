@@ -3,8 +3,10 @@ import random
 from main.building_blocks.Qubit import Qubit
 from main.building_blocks.pauli import Pauli
 from main.building_blocks.pauli.PauliLetter import PauliLetter
+from tests.utils.numbers import default_test_repeats_medium, default_test_repeats_small
 from tests.utils.paulis import random_pauli_letters, random_pauli_letter
-from tests.utils.qubits import unique_random_qubits_tuple_coords_int, random_qubit_tuple_coords_int
+from tests.utils.qubits import unique_random_qubits_tuple_coords_int, random_qubit_tuple_coords_int, \
+    random_qubit_tuple_coords, random_qubit_non_tuple_coords
 
 
 class NotAPauli:
@@ -13,8 +15,25 @@ class NotAPauli:
         self.letter = letter
 
 
-# Not much to test here, since Pauli is basically just a tuple containing a
-# Qubit and PauliLetter
+def test_pauli_dimension_with_tuple_coords():
+    repeats = default_test_repeats_small
+    for _ in range(repeats):
+        dimension = random.randint(1, 10)
+        qubit = random_qubit_tuple_coords(dimension)
+        letter = random_pauli_letter()
+        pauli = Pauli(qubit, letter)
+        assert pauli.dimension == dimension
+
+
+def test_pauli_dimension_with_non_tuple_coords():
+    repeats = default_test_repeats_small
+    for _ in range(repeats):
+        qubit = random_qubit_non_tuple_coords()
+        letter = random_pauli_letter()
+        pauli = Pauli(qubit, letter)
+        assert pauli.dimension == 1
+
+
 def test_pauli_inequality_if_qubits_or_letters_differ():
     repeat = 100
     for _ in range(repeat):

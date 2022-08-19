@@ -7,6 +7,10 @@ from main.utils.types import Coordinates
 from tests.utils.numbers import default_max_unique_sample_size, default_min_coord, default_max_coord
 
 
+def coords_length(coords: Coordinates):
+    return len(coords) if isinstance(coords, tuple) else 1
+
+
 def random_tuple_coords(
         dimension: int,
         min: float = default_min_coord, max: float = default_max_coord):
@@ -43,7 +47,7 @@ def _unique_random_coords(
             if coords not in result:
                 found_unique_coords = True
                 result.add(coords)
-    return result
+    return list(result)
 
 
 def unique_random_tuple_coords(
@@ -62,6 +66,19 @@ def unique_random_tuple_coords_int(
     assert num <= default_max_unique_sample_size(dimension, min, max)
 
     def get_random_coords():
+        return random_tuple_coords_int(dimension, min, max)
+    return _unique_random_coords(num, get_random_coords)
+
+
+def unique_random_tuple_coords_int_varying_dims(
+        num: int, max_dimension: int,
+        min: int = default_min_coord, max: int = default_max_coord):
+    # Uniqueness constraint means we need to constrain the max size of `num` -
+    # there are only so many integer coordinates to choose from!
+    assert num <= default_max_unique_sample_size(max_dimension, min, max)
+
+    def get_random_coords():
+        dimension = random.randint(1, max_dimension)
         return random_tuple_coords_int(dimension, min, max)
     return _unique_random_coords(num, get_random_coords)
 

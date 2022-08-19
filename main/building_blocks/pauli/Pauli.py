@@ -7,6 +7,7 @@ class Pauli(NiceRepr):
     def __init__(self, qubit: Qubit, letter: PauliLetter):
         self.qubit = qubit
         self.letter = letter
+        self.dimension = qubit.dimension
         super().__init__(['qubit', 'letter'])
 
     def __eq__(self, other):

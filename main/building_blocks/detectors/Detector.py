@@ -61,7 +61,8 @@ class Detector(NiceRepr):
 
         super().__init__(['product.word', 'timed_checks'])
 
-    def timed_checks_product(self, timed_checks: List[TimedCheck]):
+    @staticmethod
+    def timed_checks_product(timed_checks: List[TimedCheck]):
         # Pauli multiplication is not commutative so order matters.
         timed_checks = sorted(
             timed_checks, key=lambda timed_check: -timed_check[0])

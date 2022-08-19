@@ -3,12 +3,16 @@ from functools import reduce
 from operator import mul
 from typing import Tuple
 
+import pytest
+
 from main.building_blocks.Qubit import Qubit
 from main.building_blocks.pauli import Pauli
 from main.building_blocks.pauli.PauliProduct import PauliProduct
 from main.building_blocks.pauli.PauliWord import PauliWord
 from tests.utils.numbers import default_max_unique_sample_size, default_test_repeats_medium, default_test_repeats_small
-from tests.utils.paulis import random_grouped_paulis_tuple_coords_int, valid_signs, compose_letters
+from tests.utils.paulis import random_grouped_paulis_tuple_coords_int, valid_signs, compose_letters, \
+    unique_random_paulis_tuple_coords_int_varying_dims, unique_random_paulis_tuple_coords_int, \
+    unique_random_paulis_non_tuple_coords_int
 
 
 class NotAPauliProduct:
@@ -46,6 +50,42 @@ def test_pauli_product_word_and_weight_and_composition():
         assert product.word.word == expected_word
         assert product.word.sign == expected_sign
         assert product.weight == len(expected_paulis)
+
+
+def test_pauli_product_fails_when_pauli_dims_vary():
+    repeats = default_test_repeats_medium
+    for _ in range(repeats):
+        max_dimension = random.randrange(1, 10)
+        max_qubits = random.randrange(1, 100)
+        num_qubits = min(
+            max_qubits, default_max_unique_sample_size(max_dimension))
+        paulis = unique_random_paulis_tuple_coords_int_varying_dims(
+            num_qubits, max_dimension)
+
+        dimensions = {len(pauli.qubit.coords) for pauli in paulis}
+        if len(dimensions) > 1:
+            with pytest.raises(ValueError):
+                _ = PauliProduct(paulis)
+
+
+def test_pauli_product_fails_when_some_pauli_coords_are_tuple_and_some_are_not():
+    repeats = default_test_repeats_medium
+    for _ in range(repeats):
+        max_tuple_qubits = random.randrange(1, 50)
+        num_tuple_qubits = min(
+            max_tuple_qubits, default_max_unique_sample_size(1))
+        tuple_paulis = unique_random_paulis_tuple_coords_int(
+            num_tuple_qubits, 1)
+
+        max_non_tuple_qubits = random.randrange(1, 50)
+        num_non_tuple_qubits = min(
+            max_non_tuple_qubits, default_max_unique_sample_size(1))
+        non_tuple_paulis = unique_random_paulis_non_tuple_coords_int(
+            num_non_tuple_qubits)
+
+        paulis = tuple_paulis + non_tuple_paulis
+        with pytest.raises(ValueError):
+            _ = PauliProduct(paulis)
 
 
 def test_pauli_product_equality_when_grouped_paulis_are_permuted():

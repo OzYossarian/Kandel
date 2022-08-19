@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import List
+from typing import Collection
 
 from main.building_blocks.pauli.Pauli import Pauli
 from main.building_blocks.pauli.PauliWord import PauliWord
@@ -9,7 +9,7 @@ from main.utils.NiceRepr import NiceRepr
 
 
 class PauliProduct(NiceRepr):
-    def __init__(self, paulis: List[Pauli], identities_removed: bool = False):
+    def __init__(self, paulis: Collection[Pauli], identities_removed: bool = False):
         """
         Class representing a tensor product of Paulis.
 
@@ -29,6 +29,21 @@ class PauliProduct(NiceRepr):
                 these will be composed to an I, and then are eligible for
                 removal.
         """
+        dimensions = {pauli.dimension for pauli in paulis}
+        if len(dimensions) > 1:
+            raise ValueError(
+                f"Paulis within a check must all have the same dimension. "
+                f"Instead, found dimensions {dimensions}. "
+                f"The given Paulis are: {list(paulis)}")
+        all_tuples = all([
+            isinstance(pauli.qubit.coords, tuple) for pauli in paulis])
+        all_non_tuples = not any([
+            isinstance(pauli.qubit.coords, tuple) for pauli in paulis])
+        if not (all_tuples or all_non_tuples):
+            raise ValueError(
+                f"Can't mix tuple and non-tuple coordinates! "
+                f"The given Paulis are: {list(paulis)}")
+
         unique_qubits = {pauli.qubit for pauli in paulis}
         if len(unique_qubits) != len(paulis):
             # At least one qubit has multiple Paulis acting on it. So let's

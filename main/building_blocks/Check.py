@@ -1,11 +1,11 @@
-from typing import List, Dict
+from typing import List, Dict, Iterable
 
 from main.Colour import Colour
 from main.building_blocks.pauli.Pauli import Pauli
 from main.building_blocks.pauli.PauliProduct import PauliProduct
 from main.utils.NiceRepr import NiceRepr
 from main.utils.types import Coordinates
-from main.utils.utils import coords_mid, coords_length, coords_minus
+from main.utils.utils import coords_mid, coords_length, coords_minus, xor
 
 
 class Check(NiceRepr):
@@ -15,43 +15,63 @@ class Check(NiceRepr):
         """A check is a Pauli operator that is actually measured as part of
         the code. In some codes the checks are just the stabilizers (e.g.
         surface code, colour code), but this need not be the case (e.g.
-        Floquet codes).
+        subsystem code, Floquet codes).
 
         Args:
             paulis:
-                The Paulis (data qubit + Pauli letter) that make up this check
+                The Paulis that make up this check. One can either pass in a
+                list of Paulis, or a dictionary with items (k, v), where v is
+                a Pauli and the key k is the coordinates of the Pauli relative
+                to the anchor. This is useful when printing codes with
+                non-planar geometries.
             anchor:
                 In some sense its center, but need not actually be the
-                midpoint of all the data qubits involved. Used for
+                midpoint of all the data qubits involved. Useful for
                 distinguishing otherwise identical checks - e.g. on a rotated
-                surface code, the weight-2 checks along the top and bottom
+                surface code, the weight-2 checks along the top and bottom -
+                and for placing ancillas. Defaults to the midpoint of all
+                Paulis in the check.
             colour:
                 If it exists, the colour assigned to this check - e.g. in the
-                colour code, each edge and each hexagon gets a colour.
+                colour code, each plaquette (i.e. check) gets a colour.
         """
+        self._assert_check_non_empty(paulis)
         if isinstance(paulis, dict):
-            # Anchor shouldn't be None in this case, because the keys of
-            # `paulis` are the offsets of the paulis from the anchor.
-            assert anchor is not None
-            # Check all offsets have the same dimensions
-            coords_lengths = {coords_length(coords) for coords in paulis}
-            assert len(coords_lengths) == 1
+            self._assert_anchor_is_given(anchor, paulis)
+            self._assert_pauli_coords_valid(paulis.values())
+            self._assert_anchor_dim_matches_pauli_dims(
+                anchor, list(paulis.values()))
+            self._assert_offset_coords_valid(paulis)
+            self._assert_anchor_dim_matches_offset_dims(
+                anchor, paulis)
+            self._assert_qubits_unique(paulis.values())
         else:
+            self._assert_qubits_unique(paulis)
+            self._assert_pauli_coords_valid(paulis)
             # Auto-create dictionary for paulis
             if anchor is None:
                 anchor = coords_mid(*[pauli.qubit.coords for pauli in paulis])
+            else:
+                self._assert_anchor_dim_matches_pauli_dims(anchor, paulis)
             paulis = {
                 coords_minus(pauli.qubit.coords, anchor): pauli
                 for pauli in paulis}
 
-        qubits = [pauli.qubit for pauli in paulis.values()]
-        if len(set(qubits)) != len(qubits):
+        # TODO - allow Paulis here to have sign -1 too.
+        valid_signs = all(
+            [pauli.letter.sign == 1 for pauli in paulis.values()])
+        if not valid_signs:
             raise ValueError(
-                f"Can't include the same qubit more than once in a check! "
-                f"Qubits involved in the check are: {qubits}")
+                f"All Paulis in a check must have sign 1. "
+                f"Given Paulis are: {list(paulis.values())}")
+        # TODO - remove the following in future. Make SyndromeExtractor
+        #  handle Pauli I letters gracefully. I'm a muppet for not doing
+        #  it from the start.
+        if any([pauli.letter.letter == 'I' for pauli in paulis.values()]):
+            raise ValueError(
+                f"Paulis with letter I aren't allowed in a Check. "
+                f"Given Paulis are: {list(paulis.values())}")
 
-        # TODO - do we want to restrict these Paulis to only those with sign
-        #  +1? Need to sort the whole +1/-1 thing everywhere tbh...
         self.paulis = paulis
         self.anchor = anchor
         self.colour = colour
@@ -63,3 +83,102 @@ class Check(NiceRepr):
         self.ancilla = None
 
         super().__init__(['paulis', 'colour'])
+
+    @staticmethod
+    def _assert_check_non_empty(
+            paulis: List[Pauli] | Dict[Coordinates, Pauli]):
+        if len(paulis) == 0:
+            raise ValueError(
+                "Can't create a check from an empty list or dict of Paulis.")
+
+    @staticmethod
+    def _assert_anchor_is_given(
+            anchor: Coordinates, paulis: Dict[Coordinates, Pauli]):
+        # Anchor shouldn't be None in this case, because the keys of
+        # `paulis` are the offsets of the paulis from the anchor.
+        if anchor is None:
+            raise ValueError(
+                "If dictionary of Paulis is supplied, `anchor` mustn't be "
+                "None, since the keys of the dictionary are the "
+                "coordinates of the Paulis relative to the anchor. (And "
+                "a sensible anchor can't be automatically inferred). "
+                f"Given Paulis are: {paulis}")
+
+    @staticmethod
+    def _assert_offset_coords_valid(paulis: Dict[Coordinates, Pauli]):
+        offset_dimensions = {coords_length(offset) for offset in paulis.keys()}
+        if len(offset_dimensions) > 1:
+            raise ValueError(
+                "The given distances from the check's anchor to the Paulis "
+                "must all have the same dimensions. The given dictionary of "
+                f"Paulis is {paulis}.")
+        all_tuples = all([
+            isinstance(offset, tuple) for offset in paulis.keys()])
+        all_non_tuples = not any([
+            isinstance(offset, tuple) for offset in paulis.keys()])
+        if not (all_tuples or all_non_tuples):
+            raise ValueError(
+                f"Can't mix tuple and non-tuple offsets! "
+                f"The given dictionary of Paulis is {paulis}.")
+
+    @staticmethod
+    def _assert_qubits_unique(paulis: Iterable[Pauli]):
+        qubits = [pauli.qubit for pauli in paulis]
+        if len(set(qubits)) != len(qubits):
+            raise ValueError(
+                f"Can't include the same qubit more than once in a check! "
+                f"Paulis that make up the check are: {list(paulis)}")
+
+    @staticmethod
+    def _assert_pauli_coords_valid(paulis: Iterable[Pauli]):
+        dimensions = {pauli.dimension for pauli in paulis}
+        if len(dimensions) > 1:
+            raise ValueError(
+                f"Paulis within a check must all have the same dimension. "
+                f"Instead, found dimensions {dimensions}. "
+                f"Paulis that make up the check are: {list(paulis)}")
+        all_tuples = all([
+            isinstance(pauli.qubit.coords, tuple) for pauli in paulis])
+        all_non_tuples = not any([
+            isinstance(pauli.qubit.coords, tuple) for pauli in paulis])
+        if not (all_tuples or all_non_tuples):
+            raise ValueError(
+                f"Can't mix tuple and non-tuple coordinates! "
+                f"Paulis that make up the check are: {list(paulis)}")
+
+    @staticmethod
+    def _assert_anchor_dim_matches_pauli_dims(
+            anchor: Coordinates, paulis: List[Pauli]):
+        # Assumes we've already checked that paulis are non-empty and has all
+        # same dimensions.
+        if coords_length(anchor) != paulis[0].dimension:
+            raise ValueError(
+                f"Anchor must have same dimensions as Paulis. "
+                f"Instead, anchor is {anchor} and Paulis are {paulis}.")
+        types_wrong = xor(
+            isinstance(anchor, tuple),
+            isinstance(paulis[0].qubit.coords, tuple))
+        if types_wrong:
+            raise ValueError(
+                f"Anchor and Pauli coordinates must all be tuples or all "
+                f"be non-tuples - can't mix! Instead, anchor is {anchor} and "
+                f"Paulis are {paulis}.")
+
+    @staticmethod
+    def _assert_anchor_dim_matches_offset_dims(
+            anchor: Coordinates, paulis: Dict[Coordinates, Pauli]):
+        # Assumes we've already checked that paulis are non-empty and all
+        # offsets have same dimensions.
+        offset = list(paulis.keys())[0]
+        if coords_length(anchor) != coords_length(offset):
+            raise ValueError(
+                f"Anchor must have same dimensions as offsets. "
+                f"Instead, anchor is {anchor} and dict of Paulis is {paulis}.")
+        types_wrong = xor(
+            isinstance(anchor, tuple),
+            isinstance(offset, tuple))
+        if types_wrong:
+            raise ValueError(
+                f"Anchor and offsets must all be tuples or all be non-tuples "
+                f"- can't mix! Instead, anchor is {anchor} and dict of Paulis "
+                f"is {paulis}.")
