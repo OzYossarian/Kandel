@@ -1,216 +1,129 @@
 import random
 from functools import reduce
-from typing import List, Callable, Iterable
+from typing import List, Iterable, Dict
 
+from main.building_blocks.Qubit import Qubit
 from main.building_blocks.pauli import Pauli
-from main.building_blocks.pauli.PauliLetter import PauliZ, PauliY, PauliX, PauliLetter
+from main.building_blocks.pauli.PauliLetter import PauliLetter
 from main.building_blocks.pauli.PauliWord import PauliWord
-from tests.utils.numbers import default_max_coord, default_min_coord, default_max_unique_sample_size
-from tests.utils.qubits import unique_random_qubits_tuple_coords, unique_random_qubits_tuple_coords_int, \
-    unique_random_qubits_tuple_coords_int_varying_dims, unique_random_qubits_non_tuple_coords_int
+from tests.utils.numbers import default_max_coord, default_min_coord
+from tests.utils.qubits import random_qubits
 
 valid_letters = ['I', 'X', 'Y', 'Z']
 valid_signs = [1, 0+1j, -1, 0-1j]
 xyz = ['X', 'Y', 'Z']
 
 
+def check_arguments(letters, signs):
+    assert set(letters).issubset(valid_letters)
+    assert set(signs).issubset(valid_signs)
+
+
 def compose_letters(letters: Iterable[PauliLetter]):
     return reduce(lambda x, y: x.compose(y), letters)
 
 
-def random_pauli_word(length: int):
-    word = ''.join(random.choices(valid_letters, k=length))
-    sign = random.choice(valid_signs)
+def random_pauli_word(
+        length: int,
+        from_letters: List[str] = None,
+        from_signs: List[complex] = None,
+) -> PauliWord:
+    if from_letters is None:
+        from_letters = valid_letters
+    if from_signs is None:
+        from_signs = valid_signs
+    check_arguments(from_letters, from_signs)
+
+    word = ''.join(random.choices(from_letters, k=length))
+    sign = random.choice(from_signs)
     return PauliWord(word, sign)
 
 
-def random_pauli_letter():
-    letter = random.choice(valid_letters)
-    sign = random.choice(valid_signs)
-    return PauliLetter(letter, sign)
+def random_pauli_letter(
+        from_letters: List[str] = None,
+        from_signs: List[complex] = None):
+    return random_pauli_letters(1, from_letters, from_signs)[0]
 
 
-def random_pauli_letters(num: int):
-    letters = random.choices(valid_letters, k=num)
-    signs = random.choices(valid_signs, k=num)
-    return [PauliLetter(letter, sign) for letter, sign in zip(letters, signs)]
-
-
-def random_xyz_pauli_letter():
-    letter = random.choice(xyz)
-    sign = random.choice(valid_signs)
-    return PauliLetter(letter, sign)
-
-
-def random_xyz_pauli_letters(num: int):
-    letters = random.choices(xyz, k=num)
-    signs = random.choices(valid_signs, k=num)
-    return [PauliLetter(letter, sign) for letter, sign in zip(letters, signs)]
-
-
-def random_xyz_sign_1_pauli_letter():
-    letter = random.choice(xyz)
-    return PauliLetter(letter, 1)
-
-
-def random_xyz_sign_1_pauli_letters(num: int):
-    letters = random.choices(xyz, k=num)
-    return [PauliLetter(letter, 1) for letter in letters]
-
-
-def random_sign_1_pauli_letters(num: int):
-    letters = random.choices(valid_letters, k=num)
-    return [PauliLetter(letter, 1) for letter in letters]
-
-
-def unique_random_paulis_tuple_coords_int(
-        num: int, dimension: int,
-        min: int = default_min_coord, max: int = default_max_coord):
-    qubits = unique_random_qubits_tuple_coords_int(num, dimension, min, max)
-    letters = random_pauli_letters(num)
-    paulis = [
-        Pauli(qubit, letter)
-        for qubit, letter in zip(qubits, letters)]
-    return paulis
-
-
-def unique_random_paulis_non_tuple_coords_int(
+def random_pauli_letters(
         num: int,
-        min: int = default_min_coord, max: int = default_max_coord):
-    qubits = unique_random_qubits_non_tuple_coords_int(num, min, max)
-    letters = random_pauli_letters(num)
-    paulis = [
-        Pauli(qubit, letter)
-        for qubit, letter in zip(qubits, letters)]
-    return paulis
+        from_letters: List[str] = None,
+        from_signs: List[complex] = None,
+) -> List[PauliLetter]:
+    if from_letters is None:
+        from_letters = valid_letters
+    if from_signs is None:
+        from_signs = valid_signs
+
+    check_arguments(from_letters, from_signs)
+
+    letters = random.choices(from_letters, k=num)
+    signs = random.choices(from_signs, k=num)
+    pauli_letters = [
+        PauliLetter(letter, sign)
+        for letter, sign in zip(letters, signs)]
+    return pauli_letters
 
 
-def unique_random_sign_1_paulis_tuple_coords_int(
-        num: int, dimension: int,
-        min: int = default_min_coord, max: int = default_max_coord):
-    qubits = unique_random_qubits_tuple_coords_int(num, dimension, min, max)
-    letters = random_sign_1_pauli_letters(num)
-    paulis = [
-        Pauli(qubit, letter)
-        for qubit, letter in zip(qubits, letters)]
-    return paulis
-
-
-def unique_random_xyz_paulis_tuple_coords_int(
-        num: int, dimension: int,
-        min: int = default_min_coord, max: int = default_max_coord):
-    qubits = unique_random_qubits_tuple_coords_int(num, dimension, min, max)
-    letters = random_xyz_pauli_letters(num)
-    paulis = [
-        Pauli(qubit, letter)
-        for qubit, letter in zip(qubits, letters)]
-    return paulis
-
-
-def unique_random_xyz_sign_1_paulis_tuple_coords_int(
-        num: int, dimension: int,
-        min: int = default_min_coord, max: int = default_max_coord):
-    qubits = unique_random_qubits_tuple_coords_int(num, dimension, min, max)
-    letters = random_xyz_sign_1_pauli_letters(num)
-    paulis = [
-        Pauli(qubit, letter)
-        for qubit, letter in zip(qubits, letters)]
-    return paulis
-
-
-def unique_random_xyz_sign_1_paulis_non_tuple_coords_int(
+def random_paulis(
         num: int,
-        min: int = default_min_coord, max: int = default_max_coord):
-    qubits = unique_random_qubits_non_tuple_coords_int(num, min, max)
-    letters = random_xyz_sign_1_pauli_letters(num)
+        unique_qubits: bool = False,
+        int_coords: bool = False,
+        tuple_coords: bool = True,
+        dimension: int = None,
+        max_dimension: int = None,
+        from_letters: List[str] = None,
+        from_signs: List[complex] = None,
+        min_coord: int | float = default_min_coord,
+        max_coord: int | float = default_max_coord,
+) -> List[Pauli]:
+    qubits = random_qubits(
+        num,
+        unique_qubits,
+        int_coords,
+        tuple_coords,
+        dimension,
+        max_dimension,
+        min_coord,
+        max_coord)
+    letters = random_pauli_letters(
+        num, from_letters, from_signs)
     paulis = [
         Pauli(qubit, letter)
         for qubit, letter in zip(qubits, letters)]
+
     return paulis
 
 
-def unique_random_paulis_tuple_coords_int_varying_dims(
-        num: int, max_dimension: int,
-        min: int = default_min_coord, max: int = default_max_coord):
-    qubits = unique_random_qubits_tuple_coords_int_varying_dims(
-        num, max_dimension, min, max)
-    letters = random_pauli_letters(num)
-    paulis = [
-        Pauli(qubit, letter)
-        for qubit, letter in zip(qubits, letters)]
-    return paulis
+def random_grouped_paulis(
+        max_qubits: int,
+        num_paulis: int,
+        int_coords: bool = False,
+        tuple_coords: bool = True,
+        dimension: int = None,
+        max_dimension: int = None,
+        from_letters: List[str] = None,
+        from_signs: List[complex] = None,
+        min_coord: int | float = default_min_coord,
+        max_coord: int | float = default_max_coord,
+) -> Dict[Qubit, List[Pauli]]:
+    unique_qubits = True
+    qubits = random_qubits(
+        max_qubits,
+        unique_qubits,
+        int_coords,
+        tuple_coords,
+        dimension,
+        max_dimension,
+        min_coord,
+        max_coord)
+    letters = random_pauli_letters(
+        num_paulis, from_letters, from_signs)
+    qubit_indexes = random.choices(range(max_qubits), k=num_paulis)
 
-
-def unique_random_xyz_sign_1_paulis_tuple_coords_int_varying_dims(
-        num: int, max_dimension: int,
-        min: int = default_min_coord, max: int = default_max_coord):
-    qubits = unique_random_qubits_tuple_coords_int_varying_dims(
-        num, max_dimension, min, max)
-    letters = random_xyz_sign_1_pauli_letters(num)
-    paulis = [
-        Pauli(qubit, letter)
-        for qubit, letter in zip(qubits, letters)]
-    return paulis
-
-
-def random_paulis_tuple_coords_int(
-        max_qubits: int, num_letters: int, dimension: int,
-        min: int = default_min_coord, max: int = default_max_coord):
-    grouped_paulis = random_grouped_paulis_tuple_coords_int(
-        max_qubits, num_letters, dimension, min, max)
-    flattened_paulis = [
-        pauli
-        for paulis in grouped_paulis.values()
-        for pauli in paulis]
-    return flattened_paulis
-
-
-def random_xyz_paulis_tuple_coords_int(
-        max_qubits: int, num_letters: int, dimension: int,
-        min: int = default_min_coord, max: int = default_max_coord):
-    grouped_paulis = random_grouped_xyz_paulis_tuple_coords_int(
-        max_qubits, num_letters, dimension, min, max)
-    flattened_paulis = [
-        pauli
-        for paulis in grouped_paulis.values()
-        for pauli in paulis]
-    return flattened_paulis
-
-
-def random_grouped_paulis_tuple_coords_int(
-        max_qubits: int, num_letters: int, dimension: int,
-        min: int = default_min_coord, max: int = default_max_coord):
-    return _random_grouped_paulis_tuple_coords_int(
-        max_qubits, num_letters, dimension, random_pauli_letters, min, max)
-
-
-def random_grouped_xyz_paulis_tuple_coords_int(
-        num_qubits: int, num_letters: int, dimension: int,
-        min: int = default_min_coord, max: int = default_max_coord):
-    return _random_grouped_paulis_tuple_coords_int(
-        num_qubits, num_letters, dimension, random_xyz_pauli_letters, min, max)
-
-
-def random_grouped_xyz_sign_1_paulis_tuple_coords_int(
-        max_qubits: int, num_letters: int, dimension: int,
-        min: int = default_min_coord, max: int = default_max_coord):
-    return _random_grouped_paulis_tuple_coords_int(
-        max_qubits, num_letters, dimension,
-        random_xyz_sign_1_pauli_letters, min, max)
-
-
-def _random_grouped_paulis_tuple_coords_int(
-        max_qubits: int, num_letters: int, dimension: int,
-        get_letters: Callable[[int], List[PauliLetter]],
-        min: int = default_min_coord, max: int = default_max_coord):
-    assert max_qubits <= default_max_unique_sample_size(dimension, min, max)
-    qubits = unique_random_qubits_tuple_coords_int(max_qubits, dimension)
-    letters = get_letters(num_letters)
-    indexes = random.choices(range(max_qubits), k=num_letters)
-
-    # Ignore any qubits that haven't been randomly picked in `indexes`
-    grouped_paulis = {qubits[j]: [] for j in set(indexes)}
-    for i, j in enumerate(indexes):
+    # Ignore any qubits that haven't been randomly picked in `qubit_indexes`
+    grouped_paulis = {qubits[j]: [] for j in set(qubit_indexes)}
+    for i, j in enumerate(qubit_indexes):
         qubit = qubits[j]
         letter = letters[i]
         grouped_paulis[qubit].append(Pauli(qubit, letter))

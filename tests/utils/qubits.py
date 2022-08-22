@@ -1,58 +1,42 @@
 from main.building_blocks.Qubit import Qubit
-from tests.utils.coordinates import random_tuple_coords, random_non_tuple_coords, unique_random_tuple_coords, \
-    unique_random_tuple_coords_int, random_tuple_coords_int, unique_random_tuple_coords_int_varying_dims, \
-    unique_random_non_tuple_coords_int
+from tests.utils.coordinates import random_coordss
 from tests.utils.numbers import default_min_coord, default_max_coord
 
 
-def random_qubit_tuple_coords(
-        dimension: int,
-        min: float = default_min_coord, max: float = default_max_coord):
-    coords = random_tuple_coords(dimension, min, max)
-    return Qubit(coords)
+def random_qubit(
+        int_coords: bool = False,
+        tuple_coords: bool = True,
+        dimension: int = None,
+        min_coord: int | float = default_min_coord,
+        max_coord: int | float = default_max_coord):
+    qubits = random_qubits(
+        num=1,
+        int_coords=int_coords,
+        tuple_coords=tuple_coords,
+        dimension=dimension,
+        min_coord=min_coord,
+        max_coord=max_coord)
+    return qubits[0]
 
 
-def random_qubit_tuple_coords_int(
-        dimension: int,
-        min: int = default_min_coord, max: int = default_max_coord):
-    coords = random_tuple_coords_int(dimension, min, max)
-    return Qubit(coords)
-
-
-def random_qubit_non_tuple_coords(
-        min: float = default_min_coord, max: float = default_max_coord):
-    coords = random_non_tuple_coords(min, max)
-    return Qubit(coords)
-
-
-def unique_random_qubits_tuple_coords(
-        num: int, dimension: int,
-        min: float = default_min_coord, max: float = default_max_coord):
-    coordss = unique_random_tuple_coords(num, dimension, min, max)
-    qubits = [Qubit(coords) for coords in coordss]
-    return qubits
-
-
-def unique_random_qubits_tuple_coords_int(
-        num: int, dimension: int,
-        min: int = default_min_coord, max: int = default_max_coord):
-    coordss = unique_random_tuple_coords_int(num, dimension, min, max)
-    qubits = [Qubit(coords) for coords in coordss]
-    return qubits
-
-
-def unique_random_qubits_non_tuple_coords_int(
+def random_qubits(
         num: int,
-        min: int = default_min_coord, max: int = default_max_coord):
-    coordss = unique_random_non_tuple_coords_int(num, min, max)
-    qubits = [Qubit(coords) for coords in coordss]
-    return qubits
-
-
-def unique_random_qubits_tuple_coords_int_varying_dims(
-        num: int, max_dimension: int,
-        min: int = default_min_coord, max: int = default_max_coord):
-    coordss = unique_random_tuple_coords_int_varying_dims(
-        num, max_dimension, min, max)
+        unique: bool = False,
+        int_coords: bool = False,
+        tuple_coords: bool = True,
+        dimension: int = None,
+        max_dimension: int = None,
+        min_coord: int | float = default_min_coord,
+        max_coord: int | float = default_max_coord
+):
+    coordss = random_coordss(
+        num,
+        unique,
+        int_coords,
+        tuple_coords,
+        dimension,
+        max_dimension,
+        min_coord,
+        max_coord)
     qubits = [Qubit(coords) for coords in coordss]
     return qubits

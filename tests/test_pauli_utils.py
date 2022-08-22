@@ -10,8 +10,7 @@ from main.building_blocks.pauli import Pauli
 from main.building_blocks.pauli.PauliLetter import PauliLetter
 from main.building_blocks.pauli.utils import remove_identities, compose
 from tests.utils.numbers import default_max_unique_sample_size, default_test_repeats_medium
-from tests.utils.paulis import random_grouped_paulis_tuple_coords_int, random_paulis_tuple_coords_int, \
-    random_xyz_paulis_tuple_coords_int
+from tests.utils.paulis import random_grouped_paulis, random_paulis
 
 
 def test_compose():
@@ -22,10 +21,10 @@ def test_compose():
         dimension = random.randint(1, 10)
         max_qubits = random.randint(0, 100)
         num_qubits = min(max_qubits, default_max_unique_sample_size(dimension))
-        num_letters = random.randint(0, 3 * max_qubits)
+        num_paulis = random.randint(0, 3 * max_qubits)
 
-        grouped_paulis = random_grouped_paulis_tuple_coords_int(
-            num_qubits, num_letters, dimension)
+        grouped_paulis = random_grouped_paulis(
+            num_qubits, num_paulis, int_coords=True, dimension=dimension)
         # Flatten the grouped paulis
         paulis = [
             pauli
@@ -121,30 +120,37 @@ def test_remove_identities_when_identities_sign_1_or_not_1():
         else:
             return paulis
 
-    return _test_remove_identities(
-        random_paulis_tuple_coords_int, get_expected)
+    def get_paulis():
+        dimension = random.randint(1, 10)
+        num_paulis = random.randint(0, 100)
+        return random_paulis(num_paulis, int_coords=True, dimension=dimension)
+
+    return _test_remove_identities(get_paulis, get_expected)
 
 
 def test_remove_identities_when_no_identities_included():
     def get_expected(paulis: List[Pauli], identities_sign: int):
         # If no identity Paulis included, always expect to do nothing.
         return paulis
-    return _test_remove_identities(
-        random_xyz_paulis_tuple_coords_int, get_expected)
+
+    def get_paulis():
+        dimension = random.randint(1, 10)
+        num_paulis = random.randint(0, 100)
+        return random_paulis(
+            num_paulis,
+            int_coords=True,
+            dimension=dimension,
+            from_letters=['X', 'Y', 'Z'])
+
+    return _test_remove_identities(get_paulis, get_expected)
 
 
 def _test_remove_identities(
-        get_paulis: Callable[[int, int, int], List[Pauli]],
+        get_paulis: Callable[[], List[Pauli]],
         get_expected: Callable[[List[Pauli], int], List[Pauli]]):
     repeats = default_test_repeats_medium
     for _ in range(repeats):
-        dimension = random.randint(1, 10)
-        max_qubits = random.randint(0, 100)
-        num_qubits = min(max_qubits, default_max_unique_sample_size(dimension))
-        # Allow choosing more letters than there are qubits
-        num_paulis = random.randint(0, 3 * num_qubits)
-        paulis = get_paulis(num_qubits, num_paulis, dimension)
-
+        paulis = get_paulis()
         identities = [pauli for pauli in paulis if pauli.letter.letter == 'I']
         identities_signs = [pauli.letter.sign for pauli in identities]
         identities_sign = reduce(mul, identities_signs, 1)

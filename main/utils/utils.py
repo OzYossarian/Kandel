@@ -38,6 +38,9 @@ def coords_mid(*coords: Coordinates) -> Coordinates:
         raise ValueError(
             f"Can't find the midpoint of coordinates of different lengths. "
             f"Coordinates are {list(coords)}.")
+    elif len(lengths) == 0:
+        raise ValueError(
+            f"Can't find the midpoint of an empty sequence of coordinates!")
     if all([isinstance(coord, tuple) for coord in coords]):
         return tuple(map(mean, zip(*coords)))
     else:
@@ -50,6 +53,9 @@ def coords_sum(*coords: Coordinates) -> Coordinates:
         raise ValueError(
             f"Can't sum over coordinates of different lengths. "
             f"Coordinates are {list(coords)}.")
+    elif len(lengths) == 0:
+        raise ValueError(
+            f"Can't find the sum of an empty sequence of coordinates!")
     if all([isinstance(coord, tuple) for coord in coords]):
         return tuple(map(sum, zip(*coords)))
     else:
@@ -60,7 +66,7 @@ def coords_minus(xs: Coordinates, ys: Coordinates):
     lengths = {coords_length(xs), coords_length(ys)}
     if len(lengths) > 1:
         raise ValueError(
-            f"Can't sum over coordinates of different lengths. "
+            f"Can't find difference of coordinates of different lengths. "
             f"Coordinates are {(xs, ys)}.")
     if isinstance(xs, tuple) and isinstance(ys, tuple):
         return tuple(x-y for x, y in zip(xs, ys))

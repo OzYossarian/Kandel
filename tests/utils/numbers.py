@@ -24,4 +24,4 @@ def random_complex_number_int(
 def default_max_unique_sample_size(
         dimension: int,
         min: int = default_min_coord, max: int = default_max_coord):
-    return ((max - min) ** dimension) // 4
+    return ((max - min) ** dimension) // 2

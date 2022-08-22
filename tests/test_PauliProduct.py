@@ -10,9 +10,7 @@ from main.building_blocks.pauli import Pauli
 from main.building_blocks.pauli.PauliProduct import PauliProduct
 from main.building_blocks.pauli.PauliWord import PauliWord
 from tests.utils.numbers import default_max_unique_sample_size, default_test_repeats_medium, default_test_repeats_small
-from tests.utils.paulis import random_grouped_paulis_tuple_coords_int, valid_signs, compose_letters, \
-    unique_random_paulis_tuple_coords_int_varying_dims, unique_random_paulis_tuple_coords_int, \
-    unique_random_paulis_non_tuple_coords_int
+from tests.utils.paulis import random_grouped_paulis, compose_letters, random_paulis, valid_signs
 
 
 class NotAPauliProduct:
@@ -26,11 +24,11 @@ def test_pauli_product_word_and_weight_and_composition():
     for _ in range(repeats):
         dimension = random.randint(1, 10)
         max_qubits = random.randint(0, 100)
-        num_qubits = min(max_qubits, default_max_unique_sample_size(dimension))
-        num_letters = random.randint(0, 3 * max_qubits)
+        max_qubits = min(max_qubits, default_max_unique_sample_size(dimension))
+        num_paulis = random.randint(0, 3 * max_qubits)
 
-        grouped_paulis = random_grouped_paulis_tuple_coords_int(
-            num_qubits, num_letters, dimension)
+        grouped_paulis = random_grouped_paulis(
+            max_qubits, num_paulis, int_coords=True, dimension=dimension)
         # Flatten the grouped paulis
         paulis = [
             pauli
@@ -54,37 +52,46 @@ def test_pauli_product_word_and_weight_and_composition():
 
 def test_pauli_product_fails_when_pauli_dims_vary():
     repeats = default_test_repeats_medium
+    expected_error = "Paulis within a check must all have the same dimension"
     for _ in range(repeats):
         max_dimension = random.randrange(1, 10)
-        max_qubits = random.randrange(1, 100)
-        num_qubits = min(
-            max_qubits, default_max_unique_sample_size(max_dimension))
-        paulis = unique_random_paulis_tuple_coords_int_varying_dims(
-            num_qubits, max_dimension)
+        max_paulis = random.randrange(1, 100)
+        num_paulis = min(
+            max_paulis, default_max_unique_sample_size(max_dimension))
+        paulis = random_paulis(
+            num_paulis,
+            unique_qubits=True,
+            int_coords=True,
+            max_dimension=max_dimension)
 
         dimensions = {len(pauli.qubit.coords) for pauli in paulis}
         if len(dimensions) > 1:
-            with pytest.raises(ValueError):
+            with pytest.raises(ValueError, match=expected_error):
                 _ = PauliProduct(paulis)
 
 
 def test_pauli_product_fails_when_some_pauli_coords_are_tuple_and_some_are_not():
     repeats = default_test_repeats_medium
+    expected_error = "Can't mix tuple and non-tuple coordinates"
     for _ in range(repeats):
-        max_tuple_qubits = random.randrange(1, 50)
-        num_tuple_qubits = min(
-            max_tuple_qubits, default_max_unique_sample_size(1))
-        tuple_paulis = unique_random_paulis_tuple_coords_int(
-            num_tuple_qubits, 1)
+        # Need at least two paulis here, with tuple coordinates.
+        max_paulis = random.randrange(2, 50)
+        num_paulis = min(max_paulis, default_max_unique_sample_size(1))
+        paulis = random_paulis(
+            num_paulis,
+            unique_qubits=True,
+            int_coords=True,
+            dimension=1)
 
-        max_non_tuple_qubits = random.randrange(1, 50)
-        num_non_tuple_qubits = min(
-            max_non_tuple_qubits, default_max_unique_sample_size(1))
-        non_tuple_paulis = unique_random_paulis_non_tuple_coords_int(
-            num_non_tuple_qubits)
+        # Pick at least one but not all the paulis and turn their
+        # coordinates into a non-tuple.
+        num_non_tuple_paulis = random.randint(1, num_paulis - 1)
+        non_tuple_pauli_indexes = random.sample(
+            range(num_paulis), k=num_non_tuple_paulis)
+        for i in non_tuple_pauli_indexes:
+            paulis[i].qubit.coords = paulis[i].qubit.coords[0]
 
-        paulis = tuple_paulis + non_tuple_paulis
-        with pytest.raises(ValueError):
+        with pytest.raises(ValueError, match=expected_error):
             _ = PauliProduct(paulis)
 
 
@@ -93,11 +100,11 @@ def test_pauli_product_equality_when_grouped_paulis_are_permuted():
     for _ in range(repeats):
         dimension = random.randint(1, 10)
         max_qubits = random.randint(0, 100)
-        num_qubits = min(max_qubits, default_max_unique_sample_size(dimension))
-        num_letters = random.randint(0, 3 * max_qubits)
+        max_qubits = min(max_qubits, default_max_unique_sample_size(dimension))
+        num_paulis = random.randint(0, 3 * max_qubits)
 
-        grouped_paulis = random_grouped_paulis_tuple_coords_int(
-            num_qubits, num_letters, dimension)
+        grouped_paulis = random_grouped_paulis(
+            max_qubits, num_paulis, int_coords=True, dimension=dimension)
         # Convert it to a list so we can use shuffle.
         grouped_paulis = [
             (qubit, paulis) for qubit, paulis in grouped_paulis.items()]
@@ -117,11 +124,11 @@ def test_pauli_product_equality():
     for _ in range(repeats):
         dimension = random.randint(1, 10)
         max_qubits = random.randint(0, 100)
-        num_qubits = min(max_qubits, default_max_unique_sample_size(dimension))
-        num_letters = random.randint(0, 3 * max_qubits)
+        max_qubits = min(max_qubits, default_max_unique_sample_size(dimension))
+        num_paulis = random.randint(0, 3 * max_qubits)
 
-        grouped_paulis = random_grouped_paulis_tuple_coords_int(
-            num_qubits, num_letters, dimension)
+        grouped_paulis = random_grouped_paulis(
+            max_qubits, num_paulis, int_coords=True, dimension=dimension)
         paulis = [
             pauli for
             _, paulis in grouped_paulis.items()
@@ -137,18 +144,18 @@ def test_pauli_product_inequality_when_data_are_different():
     for _ in range(repeats):
         dimension = random.randint(1, 10)
         max_qubits = random.randint(0, 100)
-        num_qubits = min(max_qubits, default_max_unique_sample_size(dimension))
-        num_letters = random.randint(0, 3 * max_qubits)
+        max_qubits = min(max_qubits, default_max_unique_sample_size(dimension))
+        num_paulis = random.randint(0, 3 * max_qubits)
 
-        grouped_paulis_1 = random_grouped_paulis_tuple_coords_int(
-            num_qubits, num_letters, dimension)
+        grouped_paulis_1 = random_grouped_paulis(
+            max_qubits, num_paulis, int_coords=True, dimension=dimension)
         paulis_1 = [
             pauli
             for _, paulis in grouped_paulis_1.items()
             for pauli in paulis]
 
-        grouped_paulis_2 = random_grouped_paulis_tuple_coords_int(
-            num_qubits, num_letters, dimension)
+        grouped_paulis_2 = random_grouped_paulis(
+            max_qubits, num_paulis, int_coords=True, dimension=dimension)
         paulis_2 = [
             pauli
             for _, paulis in grouped_paulis_2.items()
@@ -169,11 +176,11 @@ def test_pauli_product_inequality_when_types_are_different():
     for _ in range(repeats):
         dimension = random.randint(1, 10)
         max_qubits = random.randint(0, 100)
-        num_qubits = min(max_qubits, default_max_unique_sample_size(dimension))
-        num_letters = random.randint(0, 3 * max_qubits)
+        max_qubits = min(max_qubits, default_max_unique_sample_size(dimension))
+        num_paulis = random.randint(0, 3 * max_qubits)
 
-        grouped_paulis = random_grouped_paulis_tuple_coords_int(
-            num_qubits, num_letters, dimension)
+        grouped_paulis = random_grouped_paulis(
+            max_qubits, num_paulis, int_coords=True, dimension=dimension)
         paulis = [
             pauli
             for _, paulis in grouped_paulis.items()
@@ -191,11 +198,11 @@ def test_pauli_product_equal_up_to_sign():
     for _ in range(repeats):
         dimension = random.randint(1, 10)
         max_qubits = random.randint(0, 100)
-        num_qubits = min(max_qubits, default_max_unique_sample_size(dimension))
-        num_letters = random.randint(0, 3 * max_qubits)
+        max_qubits = min(max_qubits, default_max_unique_sample_size(dimension))
+        num_paulis = random.randint(0, 3 * max_qubits)
 
-        grouped_paulis_1 = random_grouped_paulis_tuple_coords_int(
-            num_qubits, num_letters, dimension)
+        grouped_paulis_1 = random_grouped_paulis(
+            max_qubits, num_paulis, int_coords=True, dimension=dimension)
         paulis_1 = [
             pauli
             for _, paulis in grouped_paulis_1.items()
@@ -218,11 +225,11 @@ def test_pauli_product_repr():
     for _ in range(repeats):
         dimension = random.randint(1, 10)
         max_qubits = random.randint(0, 100)
-        num_qubits = min(max_qubits, default_max_unique_sample_size(dimension))
-        num_letters = random.randint(0, 3 * max_qubits)
+        max_qubits = min(max_qubits, default_max_unique_sample_size(dimension))
+        num_paulis = random.randint(0, 3 * max_qubits)
 
-        grouped_paulis = random_grouped_paulis_tuple_coords_int(
-            num_qubits, num_letters, dimension)
+        grouped_paulis = random_grouped_paulis(
+            max_qubits, num_paulis, int_coords=True, dimension=dimension)
         paulis = [
             pauli
             for _, paulis in grouped_paulis.items()

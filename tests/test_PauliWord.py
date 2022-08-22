@@ -18,17 +18,19 @@ class NotAPauliWord:
 
 def test_pauli_word_fails_if_word_invalid():
     wrong = ['Nope', 'Sorry', 'ABC', 'UVW', 'XYZ!']
+    expected_error = "Only valid Pauli letters are I, X, Y and Z"
     for string in wrong:
-        with pytest.raises(ValueError):
+        with pytest.raises(ValueError, match=expected_error):
             _ = PauliWord(string)
 
 
 def test_pauli_word_fails_if_sign_invalid():
     repeats = default_test_repeats_small
+    expected_error = "Only valid signs are 1, j, -1, -j"
     for _ in range(repeats):
         sign = random_complex_number()
         if sign not in valid_signs:
-            with pytest.raises(ValueError):
+            with pytest.raises(ValueError, match=expected_error):
                 _ = PauliWord('I', sign)
 
 

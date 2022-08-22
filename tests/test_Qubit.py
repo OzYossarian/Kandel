@@ -1,20 +1,23 @@
 import random
 
 from main.building_blocks.Qubit import Qubit
-from tests.utils.coordinates import random_non_tuple_coords, random_tuple_coords
+from tests.utils.coordinates import random_coords
 from tests.utils.numbers import default_test_repeats_small
 
 
-def test_qubit_dimension():
+def test_qubit_dimension_when_coords_non_tuple():
     repeats = default_test_repeats_small
     for _ in range(repeats):
-        coords = random_non_tuple_coords(-100, 100)
+        coords = random_coords(tuple_coords=False)
         qubit = Qubit(coords)
         assert qubit.dimension == 1
 
+
+def test_qubit_dimension_when_coords_tuple():
+    repeats = default_test_repeats_small
     for _ in range(repeats):
         dimension = random.randint(1, 100)
-        coords = random_tuple_coords(dimension, -100, 100)
+        coords = random_coords(dimension=dimension)
         qubit = Qubit(coords)
         assert qubit.dimension == dimension
 

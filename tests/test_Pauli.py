@@ -5,8 +5,7 @@ from main.building_blocks.pauli import Pauli
 from main.building_blocks.pauli.PauliLetter import PauliLetter
 from tests.utils.numbers import default_test_repeats_medium, default_test_repeats_small
 from tests.utils.paulis import random_pauli_letters, random_pauli_letter
-from tests.utils.qubits import unique_random_qubits_tuple_coords_int, random_qubit_tuple_coords_int, \
-    random_qubit_tuple_coords, random_qubit_non_tuple_coords
+from tests.utils.qubits import random_qubit, random_qubits
 
 
 class NotAPauli:
@@ -19,7 +18,7 @@ def test_pauli_dimension_with_tuple_coords():
     repeats = default_test_repeats_small
     for _ in range(repeats):
         dimension = random.randint(1, 10)
-        qubit = random_qubit_tuple_coords(dimension)
+        qubit = random_qubit(dimension=dimension)
         letter = random_pauli_letter()
         pauli = Pauli(qubit, letter)
         assert pauli.dimension == dimension
@@ -28,17 +27,18 @@ def test_pauli_dimension_with_tuple_coords():
 def test_pauli_dimension_with_non_tuple_coords():
     repeats = default_test_repeats_small
     for _ in range(repeats):
-        qubit = random_qubit_non_tuple_coords()
+        qubit = random_qubit(tuple_coords=False)
         letter = random_pauli_letter()
         pauli = Pauli(qubit, letter)
         assert pauli.dimension == 1
 
 
 def test_pauli_inequality_if_qubits_or_letters_differ():
-    repeat = 100
+    repeat = default_test_repeats_medium
     for _ in range(repeat):
         dimension = random.randint(1, 10)
-        qubits = unique_random_qubits_tuple_coords_int(2, dimension)
+        qubits = random_qubits(
+            2, unique=True, dimension=dimension, int_coords=True)
         letters = random_pauli_letters(2)
         qubit_1, qubit_2 = tuple(qubits)
         letter_1, letter_2 = tuple(letters)
@@ -50,10 +50,10 @@ def test_pauli_inequality_if_qubits_or_letters_differ():
 
 
 def test_pauli_inequality_if_one_is_not_a_pauli():
-    repeat = 100
+    repeat = default_test_repeats_medium
     for _ in range(repeat):
         dimension = random.randint(1, 10)
-        qubit = random_qubit_tuple_coords_int(dimension)
+        qubit = random_qubit(int_coords=True, dimension=dimension)
         letter = random_pauli_letter()
         pauli = Pauli(qubit, letter)
         not_a_pauli = NotAPauli(qubit, letter)
@@ -64,7 +64,7 @@ def test_pauli_equality_if_qubit_and_letters_equal():
     repeat = 100
     for _ in range(repeat):
         dimension = random.randint(1, 10)
-        qubit = random_qubit_tuple_coords_int(dimension)
+        qubit = random_qubit(int_coords=True, dimension=dimension)
         letter = random_pauli_letter()
         pauli_1 = Pauli(qubit, letter)
         pauli_2 = Pauli(qubit, letter)
@@ -75,7 +75,7 @@ def test_pauli_repr():
     repeat = 100
     for _ in range(repeat):
         dimension = random.randint(1, 10)
-        qubit = random_qubit_tuple_coords_int(dimension)
+        qubit = random_qubit(int_coords=True, dimension=dimension)
         letter = random_pauli_letter()
         pauli = Pauli(qubit, letter)
         expected = {
