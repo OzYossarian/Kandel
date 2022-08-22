@@ -10,19 +10,16 @@ from main.utils.NiceRepr import NiceRepr
 
 class PauliProduct(NiceRepr):
     def __init__(self, paulis: Collection[Pauli], identities_removed: bool = False):
-        """
-        Class representing a tensor product of Paulis.
+        """Class representing a tensor product of Paulis.
 
         Args:
-            paulis:
-                the Paulis to be tensored together. It's possible to pass in
+            paulis: the Paulis to be tensored together. It's possible to pass in
                 multiple Paulis acting on the same qubit, but note that all
                 Paulis acting on the same qubit will be composed to give a
                 single Pauli. Since Paulis don't necessarily commute, order
                 matters.
 
-            identities_removed:
-                if all the paulis with letter I have signs that multiply to 1,
+            identities_removed: if all the paulis with letter I have signs that multiply to 1,
                 and this flag is set to True, then all such paulis will be
                 removed. Note that this is applied after any composition of
                 Paulis. e.g. if `paulis` contains two Xs on the same qubit,

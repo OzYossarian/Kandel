@@ -5,7 +5,7 @@ from typing import List
 from main.building_blocks.pauli.PauliLetter import PauliLetter
 from main.utils.NiceRepr import NiceRepr
 
-
+# TODO - use stim.PauliString for this
 class PauliWord(NiceRepr):
     def __init__(self, word: str, sign: complex = 1):
         """ PauliWord is more abstract than a PauliProduct, in that it doesn't
