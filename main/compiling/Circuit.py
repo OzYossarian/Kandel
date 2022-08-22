@@ -75,8 +75,8 @@ class Circuit:
             int: Number of occurences of the gate.
         """
         number_of_occurences = 0
-        for instruction_at_tick in self.instructions.values():
-            for instructions_on_qubit_at_tick in instruction_at_tick.values():
+        for instructions_at_tick in self.instructions.values():
+            for instructions_on_qubit_at_tick in instructions_at_tick.values():
                 for instruction in instructions_on_qubit_at_tick:
                     if instruction.name == instruction_name:
                         number_of_occurences += 1
@@ -194,7 +194,7 @@ class Circuit:
         Idling noise is added at every tick to qubits that have been initialized but on which no gate is performed
 
         Args:
-            noise_model (NoiseModel | None): a noise model which contains the noise channel to apply to idling qubits.
+            noise_model (OneQubitNoise | None): Noise channel to apply to idling locations in the circuit.
         """
 
         # Not a good idea to call this method before compression is done.
