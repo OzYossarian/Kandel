@@ -172,12 +172,10 @@ class Measurer:
             self.observable_indexes[observable] = index
         return index
 
-    def reset_triggers(self):
-        # Leave alone information about which measurement instructions
-        # correspond to which checks in which rounds, but remove all info
-        # about what these measurements trigger.
-        self.triggers = defaultdict(list)
+
+    def reset_compilation(self):
+        """
+        """
         self.measurement_numbers = {}
-        self.triggers = defaultdict(list)
         self.detectors_built = defaultdict(bool)
         self.total_measurements = 0
