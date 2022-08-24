@@ -10,11 +10,12 @@ from main.building_blocks.Qubit import Qubit
 from main.compiling.Instruction import Instruction
 from main.compiling.Measurer import Measurer
 from main.compiling.noise.noises import OneQubitNoise
+from main.utils.types import Tick
 
 RepeatBlock = Tuple[int, int, int] | None
 
 
-class Circuit:
+class Circuit(object):
     def __init__(self):
         """Intermediate representation of a quantum circuit. Rather than
         compile directly to a Stim circuit, which is somewhat inflexible, we
@@ -35,7 +36,7 @@ class Circuit:
         # The core of this class is a nested dictionary of instructions,
         # keyed first by tick, then by qubit. Values are then lists of
         # instructions acting on that qubit at that tick.
-        self.instructions: Dict[int, Dict[Qubit, List[Instruction]]] = defaultdict(
+        self.instructions: Dict[Tick, Dict[Qubit, List[Instruction]]] = defaultdict(
             lambda: defaultdict(list)
         )
         # Maintain a set of all the qubits we've come across - used when
@@ -46,7 +47,7 @@ class Circuit:
         # Track at which ticks qubits were initialised and measured, so we
         # say whether a qubit is currently initialised or not.
         self.init_ticks = defaultdict(list)
-        self.measure_ticks = defaultdict(list)
+        self.measure_ticks: Dict[Qubit, List[Tick]] = defaultdict(list)
         self.shift_ticks = []
         # For each tick, note whether it's inside a repeat block.
         self.repeat_blocks: Dict[int, RepeatBlock] = defaultdict(lambda: None)
@@ -69,10 +70,10 @@ class Circuit:
         """Counts the number of times a gate occurs.
 
         Args:
-            instruction_name (str): Name of the gate to count.
+            instruction_name: Name of the gate to count.
 
         Returns:
-            int: Number of occurences of the gate.
+            Number of occurences of the gate.
         """
         number_of_occurences = 0
         for instructions_at_tick in self.instructions.values():
@@ -82,9 +83,15 @@ class Circuit:
                         number_of_occurences += 1
         return number_of_occurences
 
-    def qubit_index(self, qubit: Qubit):
-        # Get the stim index corresponding to this qubit, or create one if
-        # it doesn't yet have one.
+    def qubit_index(self, qubit: Qubit) -> int:
+        """Get the stim index corresponding to this qubit, or create one if it doesn't yet have one.
+
+        Args:
+            qubit: Qubit to get the index of.
+
+        Returns:
+            Integer which is the index of the qubit in stim.
+        """
         if qubit in self.qubit_indexes:
             index = self.qubit_indexes[qubit]
         else:
@@ -92,14 +99,30 @@ class Circuit:
             self.qubit_indexes[qubit] = index
         return index
 
-    def is_initialised(self, tick: int, qubit: Qubit):
-        # At this tick, return whether this qubit has been initialised
-        # but not yet measured
+    def is_initialised(self, tick: Tick, qubit: Qubit) -> bool:
+        """At this tick, return whether this qubit has been initialised but not yet measured
+
+        Args:
+            tick: Tick at which to check if a qubit is initialised
+            qubit: The qubit which is being checked.
+
+        Returns:
+            True if the qubit is initialised and false if not.
+        """
         inits = [t for t in sorted(self.init_ticks[qubit]) if t <= tick]
         measures = [t for t in sorted(self.measure_ticks[qubit]) if t <= tick]
-        return max(inits, default=-1) > max(measures, default=-1)
+        inits_max = inits[-1] if len(inits) > 0 else -1
+        measures_max = measures[-1] if len(measures) > 0 else -1
+        return inits_max > measures_max
 
-    def initialise(self, tick: int, instruction: Instruction):
+    def initialise(self, tick: Tick, instruction: Instruction):
+        """Initialise a qubit at a specific tick
+
+        Args:
+            tick: Tick at which to add the initialization to.
+            instruction: The initialization instruction. It has to apply to a single qubit
+                and its name must start with "R".
+        """
         # Initialise a single qubit..
         assert len(instruction.qubits) == 1
         qubit = instruction.qubits[0]
@@ -112,6 +135,19 @@ class Circuit:
         self.shift_ticks.append(tick)
 
     def measure(self, measurement: Instruction, check: Check, round: int, tick: int):
+        """Adds a measurement instruction to the circuit
+
+        In addition to updating the circuit, the properties of the measurement class are updated such that the detector
+        can be added to the stim circuit when running to_stim()
+
+        Args:
+            measurement: Measurement instruction which can be on one or mulitple qubits.
+            check: The check to which the measurement corresponds. This is used by the measurer class to build 
+                detectors.
+            round: The QEC round in which the measurement takes place. This is used by the measurer class to build
+                detectors.
+            tick: Tick at which the measurement happens.
+        """
         # Measure a qubit (perhaps multiple)
         self.add_instruction(tick, measurement)
         # Record that these qubits have been measured.
@@ -226,13 +262,14 @@ class Circuit:
         """Transforms the circuit to a stim circuit.
 
         Args:
-            idling_noise (OneQubitNoise | None): Noise channel to apply to idling locations in the circuit. Note that using to_stim will only add idling noise.
-            track_coords (bool, optional): Whether to track the coordinates of the qubits and detectors. Defaults to True.
-            track_progress (bool, optional): If this is set to True a progress bar is printed. The progress bar shows how many
-                                             ticks have been translated and the time taken. Defaults to True.
+            idling_noise: Noise channel to apply to idling locations in the circuit. Note that using to_stim will only 
+                add idling noise.
+            track_coords: Whether to track the coordinates of the qubits and detectors. Defaults to True.
+            track_progress: If this is set to True a progress bar is printed. The progress bar shows how many ticks 
+                have been translated and the time taken. Defaults to True.
 
         Returns:
-            stim.Circuit: the resulting stim circuit.
+            The resulting stim circuit.
 
         """
         if track_progress:
@@ -248,12 +285,13 @@ class Circuit:
         """Called by to_stim() to transform the circuit to a stim circuit.
 
         Args:
-            idling_noise (OneQubitNoise | None): Noise channel to apply to idling locations in the circuit. Note that using to_stim will only add idling noise.
-            track_coords (bool): Whether to track the coordinates of the qubits and detectors. Defaults to True.
-            progress_bar (Any): None or an alive progress bar
+            idling_noise: Noise channel to apply to idling locations in the circuit. Note that using to_stim will only 
+                add idling noise.
+            track_coords: Whether to track the coordinates of the qubits and detectors. Defaults to True.
+            progress_bar: None or an alive progress bar
 
         Returns:
-            stim.Circuit: the resulting stim circuit.
+            the resulting stim circuit.
         """
         # Figure out which temporal dimension to shift if tracking coords.
         if track_coords:
@@ -306,8 +344,10 @@ class Circuit:
             # Let the measurer determine if these measurements trigger any
             # further instructions - e.g. building detectors, adding checks
             # into logical observables, etc.
-            further_instructions = self.measurer.measurements_to_stim(
-                measurements, shift_coords
+            further_instructions = (
+                self.measurer.measurement_detectors_and_observables_to_stim(
+                    measurements, shift_coords
+                )
             )
             for instruction in further_instructions:
                 circuit.append(instruction)
@@ -336,6 +376,7 @@ class Circuit:
 
     def instruction_to_stim(self, instruction: Instruction, circuit: stim.Circuit):
         """Adds an individual Instruction to a circuit
+
         Args:
             instruction (Instruction): The instruction to be translated
             circuit (stim.Circuit): A stim circuit to add the instruction to.
@@ -347,12 +388,13 @@ class Circuit:
         circuit.append(instruction.name, targets, instruction.params)
 
     def entered_repeat_block(self, tick: int, last_tick: int):
-        # Return whether we've entered a repeat block between these two ticks.
+        # TODO Return whether we've entered a repeat block between these two ticks.
         last_block = self.repeat_blocks[last_tick]
         this_block = self.repeat_blocks[tick]
         return last_block != this_block and this_block is not None
 
     def left_repeat_block(self, tick: int, last_tick: int):
+        # TODO
         # Return whether we've left a repeat block between these two ticks -
         # if we have, return the number of times the block should be repeated
         last_block = self.repeat_blocks[last_tick]
