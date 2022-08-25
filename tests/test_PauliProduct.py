@@ -1,3 +1,4 @@
+import itertools
 import random
 from functools import reduce
 from operator import mul
@@ -7,10 +8,11 @@ import pytest
 
 from main.building_blocks.Qubit import Qubit
 from main.building_blocks.pauli import Pauli
+from main.building_blocks.pauli.PauliLetter import PauliLetter
 from main.building_blocks.pauli.PauliProduct import PauliProduct
 from main.building_blocks.pauli.PauliWord import PauliWord
 from tests.utils.numbers import default_max_unique_sample_size, default_test_repeats_medium, default_test_repeats_small
-from tests.utils.paulis import random_grouped_paulis, compose_letters, random_paulis, valid_signs
+from tests.utils.paulis import random_grouped_paulis, compose_letters, random_paulis, valid_signs, valid_letters
 
 
 class NotAPauliProduct:
@@ -218,6 +220,61 @@ def test_pauli_product_equal_up_to_sign():
 
             product_2 = PauliProduct(paulis_2)
             assert product_1.equal_up_to_sign(product_2)
+
+
+def test_pauli_product_is_identity():
+    assert PauliProduct([]).is_identity
+
+    for _ in range(default_test_repeats_small):
+        n = random.randint(1, 100)
+        product = PauliProduct(
+            [Pauli(Qubit(i), PauliLetter('I')) for i in range(n)])
+        assert product.is_identity
+
+    for _ in range(default_test_repeats_small):
+        n = random.randint(1, 100)
+        paulis = random_paulis(n, unique_qubits=True, tuple_coords=False)
+        not_identity = \
+            any([pauli.letter.letter != 'I' for pauli in paulis]) or \
+            reduce(mul, [pauli.letter.sign for pauli in paulis]) != 1
+        if not_identity:
+            product = PauliProduct(paulis)
+            assert not product.is_identity
+        product = PauliProduct(
+            [Pauli(Qubit(i), PauliLetter('I')) for i in range(n)])
+        assert product.is_identity
+
+
+def test_pauli_product_is_hermitian_for_composed_pairs():
+    qubit = Qubit(0)
+    for pair in itertools.product(valid_letters, valid_letters):
+        paulis = [
+            Pauli(qubit, PauliLetter(pair[0])),
+            Pauli(qubit, PauliLetter(pair[1]))]
+        product = PauliProduct(paulis)
+        if 'I' in pair or pair[0] == pair[1]:
+            assert product.is_hermitian
+        else:
+            assert not product.is_hermitian
+
+
+def test_pauli_product_is_hermitian_for_sequential_paulis():
+    for _ in range(default_test_repeats_medium):
+        dimension = random.randint(1, 10)
+        max_paulis = random.randint(0, 100)
+        num_paulis = min(max_paulis, default_max_unique_sample_size(dimension))
+        paulis = random_paulis(
+            num_paulis,
+            unique_qubits=True,
+            int_coords=True,
+            dimension=dimension)
+        product = PauliProduct(paulis)
+
+        num_imaginary_signs = len([
+            pauli for pauli in paulis
+            if pauli.letter.sign in [1j, -1j]])
+        expect_hermitian = num_imaginary_signs % 2 == 0
+        assert product.is_hermitian == expect_hermitian
 
 
 def test_pauli_product_repr():

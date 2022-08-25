@@ -10,6 +10,10 @@ class Pauli(NiceRepr):
         self.dimension = qubit.dimension
         super().__init__(['qubit', 'letter'])
 
+    @property
+    def has_tuple_coords(self):
+        return isinstance(self.qubit.coords, tuple)
+
     def __eq__(self, other):
         return \
             type(self) == type(other) and \

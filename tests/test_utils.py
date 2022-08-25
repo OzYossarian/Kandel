@@ -13,7 +13,7 @@ from tests.utils.numbers import default_test_repeats_medium
 def test_modulo_duplicates():
     # Construct some random list of integers, apply the 'mod duplicates'
     # method, and check it worked. Repeat several times.
-    repeat = 100
+    repeat = default_test_repeats_medium
     for i in range(repeat):
         list_range = random.randint(1, 100)
         list_size = random.randint(1, 100)
