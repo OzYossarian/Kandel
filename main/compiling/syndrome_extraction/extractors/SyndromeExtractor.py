@@ -23,6 +23,38 @@ class SyndromeExtractor(ABC):
             initialisation_instructions: Dict[State, List[str]] = None,
             measurement_instructions: Dict[PauliLetter, List[str]] = None,
             parallelize: bool = True):
+        # TODO - this should probably be renamed to AncillaPerCheckExtractor
+        #  or something
+        """
+        Base class for all syndrome extractors that use a single ancilla per
+        check.
+        Args:
+            controlled_gate_orderer:
+                Class that will define the order in which data qubits are
+                'extracted' (i.e. order in which we place controlled gates
+                between data qubits and ancilla qubits).
+                    If `None`, we use the trivial ordering, which is the order
+                in which the Paulis are listed within the check. This may lead
+                to exceptions, either because it means we try to place two
+                gates at the same time on the same qubit, or because we don't
+                actually implement the desired measurement.
+            initialisation_instructions:
+                Names of gates that implement initialisation into the Pauli
+                eigenstates. e.g. initialising into |+> state might be
+                implemented via ['RZ', 'H'] (meaning initialise into |0> then
+                do a Hadamard gate).
+                    If `None`, defaults to the instructions used by the
+                compiler.
+            measurement_instructions:
+                Names of gates that implement measurement in the Pauli bases.
+                e.g. measuring in X basis might be implemented via ['H' 'MZ']
+                (meaning do a Hadamard gate then measure in Z basis).
+                    If `None`, defaults to the instructions used by the
+                compiler.
+            parallelize:
+                Whether to extract all checks' syndromes for a given round in
+                parallel.
+        """
         if controlled_gate_orderer is None:
             controlled_gate_orderer = TrivialOrderer()
         self.controlled_gate_orderer = controlled_gate_orderer
