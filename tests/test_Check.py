@@ -4,9 +4,6 @@ from statistics import mean
 import pytest
 
 from main.building_blocks.Check import Check
-from main.building_blocks.Qubit import Qubit
-from main.building_blocks.pauli import Pauli
-from main.building_blocks.pauli.PauliLetter import PauliY, PauliX, PauliLetter
 from tests.utils.colours import random_colour
 from tests.utils.coordinates import random_coords, random_coordss, coords_length
 from tests.utils.numbers import default_max_unique_sample_size, default_test_repeats_medium, default_test_repeats_small
@@ -38,7 +35,8 @@ def test_check_fails_if_qubit_used_more_than_once():
             num_paulis,
             int_coords=True,
             dimension=dimension,
-            from_signs=[1, -1])
+            from_letters=['X', 'Y', 'Z'],
+            from_signs=[1])
         paulis = [
             pauli
             for _, paulis in grouped_paulis.items()
@@ -48,61 +46,61 @@ def test_check_fails_if_qubit_used_more_than_once():
             _ = Check(paulis)
 
 
-# def test_check_fails_if_not_all_paulis_have_sign_1():
-#     # TODO - allow -1 signs too in future.
-#     invalid_signs = [1j, -1, -1j]
-#     repeats = default_test_repeats_medium
-#     expected_error = "All Paulis in a check must have sign 1"
-#     for _ in range(repeats):
-#         dimension = random.randrange(1, 10)
-#         max_paulis = random.randrange(1, 100)
-#         num_paulis = min(
-#             max_paulis, default_max_unique_sample_size(dimension))
-#         paulis = random_paulis(
-#             num_paulis,
-#             unique_qubits=True,
-#             int_coords=True,
-#             dimension=dimension,
-#             from_letters=['X', 'Y', 'Z'])
-#
-#         # Pick at least one Pauli to put an invalid sign on.
-#         num_invalid_signs = random.randint(1, num_paulis)
-#         sign_change_indexes = random.choices(
-#             range(num_paulis), k=num_invalid_signs)
-#         sign_changes = random.choices(invalid_signs, k=num_invalid_signs)
-#         for index, sign in zip(sign_change_indexes, sign_changes):
-#             paulis[index].letter.sign = sign
-#
-#         with pytest.raises(ValueError, match=expected_error):
-#             _ = Check(paulis)
+def test_check_fails_if_not_all_paulis_have_sign_1():
+    # TODO - allow -1 signs too in future.
+    invalid_signs = [1j, -1, -1j]
+    repeats = default_test_repeats_medium
+    expected_error = "All Paulis in a check must have sign 1"
+    for _ in range(repeats):
+        dimension = random.randrange(1, 10)
+        max_paulis = random.randrange(1, 100)
+        num_paulis = min(
+            max_paulis, default_max_unique_sample_size(dimension))
+        paulis = random_paulis(
+            num_paulis,
+            unique_qubits=True,
+            int_coords=True,
+            dimension=dimension,
+            from_letters=['X', 'Y', 'Z'])
+
+        # Pick at least one Pauli to put an invalid sign on.
+        num_invalid_signs = random.randint(1, num_paulis)
+        sign_change_indexes = random.choices(
+            range(num_paulis), k=num_invalid_signs)
+        sign_changes = random.choices(invalid_signs, k=num_invalid_signs)
+        for index, sign in zip(sign_change_indexes, sign_changes):
+            paulis[index].letter.sign = sign
+
+        with pytest.raises(ValueError, match=expected_error):
+            _ = Check(paulis)
 
 
-# def test_check_fails_if_any_pauli_has_letter_I():
-#     # TODO - remove this in future and make SyndromeExtractor handle it
-#     #  gracefully.
-#     repeats = default_test_repeats_medium
-#     expected_error = "Paulis with letter I aren't allowed in a Check"
-#     for _ in range(repeats):
-#         dimension = random.randrange(1, 10)
-#         max_paulis = random.randrange(1, 100)
-#         num_paulis = min(
-#             max_paulis, default_max_unique_sample_size(dimension))
-#         paulis = random_paulis(
-#             num_paulis,
-#             unique_qubits=True,
-#             int_coords=True,
-#             dimension=dimension,
-#             from_signs=[1, -1])
-#
-#         # Pick at least one Pauli to put an identity letter on.
-#         num_identities = random.randint(1, num_paulis)
-#         identity_indexes = random.choices(
-#             range(num_paulis), k=num_identities)
-#         for i in identity_indexes:
-#             paulis[i].letter.letter = 'I'
-#
-#         with pytest.raises(ValueError, match=expected_error):
-#             _ = Check(paulis)
+def test_check_fails_if_any_pauli_has_letter_I():
+    # TODO - remove this in future and make SyndromeExtractor handle it
+    #  gracefully.
+    repeats = default_test_repeats_medium
+    expected_error = "Paulis with letter I aren't allowed in a Check"
+    for _ in range(repeats):
+        dimension = random.randrange(1, 10)
+        max_paulis = random.randrange(1, 100)
+        num_paulis = min(
+            max_paulis, default_max_unique_sample_size(dimension))
+        paulis = random_paulis(
+            num_paulis,
+            unique_qubits=True,
+            int_coords=True,
+            dimension=dimension,
+            from_signs=[1])
+
+        # Pick at least one Pauli to put an identity letter on.
+        num_identities = random.randint(1, num_paulis)
+        identity_indexes = random.choices(
+            range(num_paulis), k=num_identities)
+        for i in identity_indexes:
+            paulis[i].letter.letter = 'I'
+
+        with pytest.raises(ValueError, match=expected_error):
+            _ = Check(paulis)
 
 
 def test_check_fails_if_pauli_dict_given_but_no_anchor():
@@ -119,7 +117,8 @@ def test_check_fails_if_pauli_dict_given_but_no_anchor():
             unique_qubits=True,
             int_coords=True,
             dimension=dimension,
-            from_signs=[1, -1])
+            from_letters=['X', 'Y', 'Z'],
+            from_signs=[1])
         paulis_dict = {pauli.qubit.coords: pauli for pauli in paulis}
 
         with pytest.raises(ValueError, match=expected_error):
@@ -138,7 +137,8 @@ def test_check_creates_right_offsets_if_coords_tuples():
             unique_qubits=True,
             int_coords=True,
             dimension=dimension,
-            from_signs=[1, -1])
+            from_letters=['X', 'Y', 'Z'],
+            from_signs=[1])
         anchor = random_coords(int_coords=True, dimension=dimension)
         offsets = [
             tuple([a-b for a, b in zip(pauli.qubit.coords, anchor)])
@@ -161,7 +161,8 @@ def test_check_creates_right_offsets_if_coords_non_tuples():
             unique_qubits=True,
             int_coords=True,
             tuple_coords=False,
-            from_signs=[1, -1])
+            from_letters=['X', 'Y', 'Z'],
+            from_signs=[1])
         anchor = random_coords(int_coords=True, tuple_coords=False)
         offsets = [
             pauli.qubit.coords - anchor
@@ -185,7 +186,8 @@ def test_check_defaults_to_right_anchor_when_coords_are_tuples():
             unique_qubits=True,
             int_coords=True,
             dimension=dimension,
-            from_signs=[1, -1])
+            from_letters=['X', 'Y', 'Z'],
+            from_signs=[1])
 
         coords = [pauli.qubit.coords for pauli in paulis]
         midpoint = tuple(map(mean, zip(*coords)))
@@ -205,7 +207,8 @@ def test_check_defaults_to_right_anchor_when_coords_are_non_tuples():
             unique_qubits=True,
             int_coords=True,
             tuple_coords=False,
-            from_signs=[1, -1])
+            from_letters=['X', 'Y', 'Z'],
+            from_signs=[1])
 
         coords = [pauli.qubit.coords for pauli in paulis]
         midpoint = mean(coords)
@@ -227,7 +230,8 @@ def test_check_fails_if_pauli_dimensions_vary():
             unique_qubits=True,
             int_coords=True,
             max_dimension=max_dimension,
-            from_signs=[1, -1])
+            from_letters=['X', 'Y', 'Z'],
+            from_signs=[1])
 
         dimensions = {len(pauli.qubit.coords) for pauli in paulis}
         if len(dimensions) > 1:
@@ -253,7 +257,8 @@ def test_check_fails_if_some_pauli_coords_are_tuples_and_some_are_not():
             unique_qubits=True,
             int_coords=True,
             dimension=1,
-            from_signs=[1, -1])
+            from_letters=['X', 'Y', 'Z'],
+            from_signs=[1])
 
         # Pick at least one but not all the paulis and turn their
         # coordinates into a non-tuple.
@@ -288,7 +293,8 @@ def test_check_fails_if_offsets_dimensions_vary():
             unique_qubits=True,
             int_coords=True,
             dimension=dimension,
-            from_signs=[1, -1])
+            from_letters=['X', 'Y', 'Z'],
+            from_signs=[1])
         offsets = random_coordss(
             num_paulis,
             unique=True,
@@ -315,7 +321,8 @@ def test_check_fails_if_some_offsets_are_tuples_and_some_are_not():
             unique_qubits=True,
             int_coords=True,
             dimension=1,
-            from_signs=[1, -1])
+            from_letters=['X', 'Y', 'Z'],
+            from_signs=[1])
         offsets = random_coordss(
             num_paulis,
             unique=True,
@@ -350,7 +357,8 @@ def test_check_fails_if_anchor_and_pauli_dims_differ():
             unique_qubits=True,
             int_coords=True,
             dimension=pauli_dim,
-            from_signs=[1, -1])
+            from_letters=['X', 'Y', 'Z'],
+            from_signs=[1])
 
         # Test if it fails when passing in a list...
         with pytest.raises(ValueError, match=expected_error):
@@ -374,7 +382,8 @@ def test_check_fails_if_anchor_non_tuple_but_pauli_coords_tuples():
             unique_qubits=True,
             int_coords=True,
             dimension=1,
-            from_signs=[1, -1])
+            from_letters=['X', 'Y', 'Z'],
+            from_signs=[1])
 
         # Test if it fails when passing in a list...
         with pytest.raises(ValueError, match=expected_error):
@@ -398,7 +407,8 @@ def test_check_fails_if_anchor_tuple_but_pauli_coords_non_tuples():
             unique_qubits=True,
             int_coords=True,
             tuple_coords=False,
-            from_signs=[1, -1])
+            from_letters=['X', 'Y', 'Z'],
+            from_signs=[1])
 
         # Test if it fails when passing in a list...
         with pytest.raises(ValueError, match=expected_error):
@@ -422,7 +432,8 @@ def test_check_fails_if_anchor_and_offset_dims_differ():
             unique_qubits=True,
             int_coords=True,
             dimension=anchor_and_pauli_dim,
-            from_signs=[1, -1])
+            from_letters=['X', 'Y', 'Z'],
+            from_signs=[1])
         offsets = random_coordss(
             num_paulis,
             unique=True,
@@ -447,7 +458,8 @@ def test_check_fails_if_anchor_non_tuple_but_offset_coords_tuples():
             unique_qubits=True,
             int_coords=True,
             tuple_coords=False,
-            from_signs=[1, -1])
+            from_letters=['X', 'Y', 'Z'],
+            from_signs=[1])
         offsets = random_coordss(
             num_paulis,
             unique=True,
@@ -472,7 +484,8 @@ def test_check_fails_if_anchor_tuple_but_offset_coords_non_tuples():
             unique_qubits=True,
             int_coords=True,
             dimension=1,
-            from_signs=[1, -1])
+            from_letters=['X', 'Y', 'Z'],
+            from_signs=[1])
         offsets = random_coordss(
             num_paulis,
             unique=True,
@@ -482,29 +495,6 @@ def test_check_fails_if_anchor_tuple_but_offset_coords_non_tuples():
 
         with pytest.raises(ValueError, match=expected_error):
             _ = Check(pauli_dict, anchor)
-
-
-def test_check_fails_if_is_not_hermitian():
-    expected_error = 'The product of all Paulis in a Check must be Hermitian'
-    for _ in range(default_test_repeats_medium):
-        dimension = random.randint(1, 10)
-        max_paulis = random.randint(1, 100)
-        num_paulis = min(max_paulis, default_max_unique_sample_size(dimension))
-        paulis = random_paulis(
-            num_paulis,
-            unique_qubits=True,
-            int_coords=True,
-            dimension=dimension)
-        num_imaginary_signs = len([
-            pauli for pauli in paulis
-            if pauli.letter.sign in [1j, -1j]])
-        expect_non_hermitian = num_imaginary_signs % 2 == 1
-        if expect_non_hermitian:
-            with pytest.raises(ValueError, match=expected_error):
-                _ = Check(paulis)
-        else:
-            # No error should be raised
-            _ = Check(paulis)
 
 
 def test_check_dimension_when_coords_tuples():
@@ -518,7 +508,8 @@ def test_check_dimension_when_coords_tuples():
             unique_qubits=True,
             int_coords=True,
             dimension=dimension,
-            from_signs=[1, -1])
+            from_letters=['X', 'Y', 'Z'],
+            from_signs=[1])
         check = Check(paulis)
         assert check.dimension == dimension
 
@@ -533,7 +524,8 @@ def test_check_dimension_when_coords_non_tuples():
             unique_qubits=True,
             int_coords=True,
             tuple_coords=False,
-            from_signs=[1, -1])
+            from_letters=['X', 'Y', 'Z'],
+            from_signs=[1])
         check = Check(paulis)
         assert check.dimension == 1
 
@@ -549,7 +541,8 @@ def test_check_weight():
             unique_qubits=True,
             int_coords=True,
             dimension=dimension,
-            from_signs=[1, -1])
+            from_letters=['X', 'Y', 'Z'],
+            from_signs=[1])
         check = Check(paulis)
         assert check.weight == num_paulis
 
@@ -565,49 +558,8 @@ def test_check_colour():
             unique_qubits=True,
             int_coords=True,
             dimension=dimension,
-            from_signs=[1, -1])
+            from_letters=['X', 'Y', 'Z'],
+            from_signs=[1])
         colour = random_colour()
         check = Check(paulis, colour=colour)
         assert check.colour == colour
-
-
-def test_check_has_tuple_coords_when_should_be_true():
-    for _ in range(default_test_repeats_small):
-        dimension = random.randint(1, 10)
-        max_paulis = random.randint(1, 100)
-        num_paulis = min(max_paulis, default_max_unique_sample_size(dimension))
-        paulis = random_paulis(
-            num_paulis,
-            unique_qubits=True,
-            int_coords=True,
-            dimension=dimension,
-            from_signs=[1, -1])
-        check = Check(paulis)
-        assert check.has_tuple_coords
-
-
-def test_check_has_tuple_coords_when_should_be_false():
-    for _ in range(default_test_repeats_small):
-        max_paulis = random.randint(1, 100)
-        num_paulis = min(max_paulis, default_max_unique_sample_size(1))
-        paulis = random_paulis(
-            num_paulis,
-            unique_qubits=True,
-            int_coords=True,
-            tuple_coords=False,
-            from_signs=[1, -1])
-        check = Check(paulis)
-        assert not check.has_tuple_coords
-
-
-def test_check_repr():
-    # Explicit example:
-    paulis = [Pauli(Qubit(0), PauliX), Pauli(Qubit(1), PauliY)]
-    check = Check(paulis, anchor=0)
-    expected = {
-        'product.word': {'word': 'XY', 'sign': 1},
-        'anchor': 0,
-        'colour': None,
-        'paulis': {0: paulis[0], 1: paulis[1]}}
-    assert str(check) == str(expected)
-

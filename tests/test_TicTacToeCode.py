@@ -5,6 +5,7 @@ from main.building_blocks.pauli.PauliLetter import PauliZ, PauliY, PauliX
 from main.codes.hexagonal.tic_tac_toe.TicTacToeCode import TicTacToeCode
 from main.codes.hexagonal.tic_tac_toe.utils import random_valid_route, random_valid_route_chunk, all_good_colours, \
     random_good_route
+from tests.utils.numbers import default_test_repeats_medium
 
 colours = [Red, Green, Blue]
 letters = [PauliX, PauliY, PauliZ]
@@ -19,7 +20,7 @@ def test_follows_tic_tac_toe_rules():
         for l in letters)
 
     # Test that valid routes are indeed valid.
-    repeat = 100
+    repeat = default_test_repeats_medium
     for i in range(repeat):
         route_length = random.randint(2, 100)
         route = random_valid_route(route_length)

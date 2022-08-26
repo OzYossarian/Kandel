@@ -61,7 +61,7 @@ def test_pauli_inequality_if_one_is_not_a_pauli():
 
 
 def test_pauli_equality_if_qubit_and_letters_equal():
-    repeat = default_test_repeats_medium
+    repeat = 100
     for _ in range(repeat):
         dimension = random.randint(1, 10)
         qubit = random_qubit(int_coords=True, dimension=dimension)
@@ -72,7 +72,7 @@ def test_pauli_equality_if_qubit_and_letters_equal():
 
 
 def test_pauli_repr():
-    repeat = default_test_repeats_medium
+    repeat = 100
     for _ in range(repeat):
         dimension = random.randint(1, 10)
         qubit = random_qubit(int_coords=True, dimension=dimension)
@@ -82,17 +82,3 @@ def test_pauli_repr():
             'qubit': qubit,
             'letter': letter}
         assert str(pauli) == str(expected)
-
-
-def test_pauli_has_tuple_coords():
-    for _ in range(default_test_repeats_small):
-        dimension = random.randint(1, 10)
-        qubit = random_qubit(dimension=dimension)
-        letter = random_pauli_letter()
-        pauli = Pauli(qubit, letter)
-        assert pauli.has_tuple_coords
-    for _ in range(default_test_repeats_small):
-        qubit = random_qubit(tuple_coords=False)
-        letter = random_pauli_letter()
-        pauli = Pauli(qubit, letter)
-        assert not pauli.has_tuple_coords
