@@ -54,7 +54,7 @@ class Detector(NiceRepr):
         self.start = end + first_check_rounds_ago
         self.end = end
 
-        super().__init__(['product.word', 'end', 'timed_checks'])
+        super().__init__(['product.word', 'timed_checks'])
 
     @staticmethod
     def timed_checks_product(timed_checks: List[TimedCheck]):
