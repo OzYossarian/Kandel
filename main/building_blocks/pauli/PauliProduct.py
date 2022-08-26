@@ -65,7 +65,6 @@ class PauliProduct(NiceRepr):
         repr_keys = ['word', 'paulis']
         super().__init__(repr_keys)
 
-    # TODO - do we actually want to allow this? Answer: YES!
     def equal_up_to_sign(self, other: PauliProduct):
         return \
             self._sorted_qubits == other._sorted_qubits and \

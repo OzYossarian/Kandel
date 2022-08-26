@@ -1,4 +1,5 @@
 import random
+from copy import deepcopy
 from functools import reduce
 from operator import mul
 from typing import Tuple
@@ -7,10 +8,11 @@ import pytest
 
 from main.building_blocks.Qubit import Qubit
 from main.building_blocks.pauli import Pauli
+from main.building_blocks.pauli.PauliLetter import PauliX, PauliY
 from main.building_blocks.pauli.PauliProduct import PauliProduct
 from main.building_blocks.pauli.PauliWord import PauliWord
 from tests.utils.numbers import default_max_unique_sample_size, default_test_repeats_medium, default_test_repeats_small
-from tests.utils.paulis import random_grouped_paulis, compose_letters, random_paulis, valid_signs
+from tests.utils.paulis import random_grouped_paulis, compose_letters, random_paulis, valid_signs, valid_letters
 
 
 class NotAPauliProduct:
@@ -71,8 +73,14 @@ def test_pauli_product_fails_when_pauli_dims_vary():
 
 
 def test_pauli_product_fails_when_some_pauli_coords_are_tuple_and_some_are_not():
-    repeats = default_test_repeats_medium
     expected_error = "Can't mix tuple and non-tuple coordinates"
+    # Explicit tests:
+    tuple_pauli = Pauli(Qubit((0,)), PauliX)
+    non_tuple_pauli = Pauli(Qubit(0), PauliX)
+    with pytest.raises(ValueError, match=expected_error):
+        PauliProduct([tuple_pauli, non_tuple_pauli])
+
+    repeats = default_test_repeats_medium
     for _ in range(repeats):
         # Need at least two paulis here, with tuple coordinates.
         max_paulis = random.randrange(2, 50)
@@ -91,6 +99,7 @@ def test_pauli_product_fails_when_some_pauli_coords_are_tuple_and_some_are_not()
         for i in non_tuple_pauli_indexes:
             paulis[i].qubit.coords = paulis[i].qubit.coords[0]
 
+        # Now assert that this causes the expected error.
         with pytest.raises(ValueError, match=expected_error):
             _ = PauliProduct(paulis)
 
@@ -193,7 +202,18 @@ def test_pauli_product_inequality_when_types_are_different():
         assert product != not_a_product
 
 
-def test_pauli_product_equal_up_to_sign():
+def test_pauli_product_equal_up_to_sign_when_expect_true():
+    # Explicit examples:
+    paulis = [Pauli(Qubit(i), PauliX) for i in range(3)]
+    # Create two identical PauliProducts from these Paulis
+    product_1 = PauliProduct(paulis)
+    product_2 = PauliProduct(paulis)
+    # Change the sign of the second one and check they're equal up to sign
+    for sign in valid_signs:
+        product_2.sign = sign
+        assert product_1.equal_up_to_sign(product_2)
+
+    # Random tests:
     repeats = default_test_repeats_medium
     for _ in range(repeats):
         dimension = random.randint(1, 10)
@@ -210,9 +230,10 @@ def test_pauli_product_equal_up_to_sign():
 
         product_1 = PauliProduct(paulis_1)
 
-        # Make a copy of these paulis
-        paulis_2 = [Pauli(pauli.qubit, pauli.letter) for pauli in paulis_1]
         for _ in range(default_test_repeats_small):
+            # Make a copy of these paulis
+            paulis_2 = deepcopy(paulis_1)
+            # Randomly change some signs in the second list of paulis.
             for pauli in paulis_2:
                 pauli.letter.sign = random.choice(valid_signs)
 
@@ -220,7 +241,59 @@ def test_pauli_product_equal_up_to_sign():
             assert product_1.equal_up_to_sign(product_2)
 
 
+def test_pauli_product_equal_up_to_sign_when_expect_false():
+    # Explicit examples:
+    # Create an XXX and YYY product
+    product_1 = PauliProduct([Pauli(Qubit(i), PauliX) for i in range(3)])
+    product_2 = PauliProduct([Pauli(Qubit(i), PauliY) for i in range(3)])
+    assert not product_1.equal_up_to_sign(product_2)
+
+    # Random tests:
+    repeats = default_test_repeats_medium
+    for _ in range(repeats):
+        dimension = random.randint(1, 10)
+        # Need at least one qubit and Pauli here.
+        max_qubits = random.randint(1, 100)
+        max_qubits = min(max_qubits, default_max_unique_sample_size(dimension))
+        num_paulis = random.randint(1, 3 * max_qubits)
+
+        grouped_paulis_1 = random_grouped_paulis(
+            max_qubits, num_paulis, int_coords=True, dimension=dimension)
+        paulis_1 = [
+            pauli
+            for _, paulis in grouped_paulis_1.items()
+            for pauli in paulis]
+
+        product_1 = PauliProduct(paulis_1)
+
+        # Make a copy of these paulis
+        for _ in range(default_test_repeats_small):
+            paulis_2 = deepcopy(paulis_1)
+            # Pick a random Pauli and change its letter
+            index = random.choice(range(num_paulis))
+            pauli = paulis_2[index]
+            alternatives = [
+                letter for letter in valid_letters
+                if letter != pauli.letter.letter]
+            pauli.letter.letter = random.choice(alternatives)
+
+            product_2 = PauliProduct(paulis_2)
+            # Assert that this makes the two unequal, even up to sign.
+            assert not product_1.equal_up_to_sign(product_2)
+
+
 def test_pauli_product_repr():
+    # Explicit test
+    paulis = [
+        Pauli(Qubit(0), PauliX),
+        Pauli(Qubit(1), PauliY)]
+    product = PauliProduct(paulis)
+    expected = {
+        'word': {'word': 'XY', 'sign': 1},
+        'paulis': paulis}
+    assert str(product) == str(expected)
+
+    # Random tests.
     repeats = default_test_repeats_medium
     for _ in range(repeats):
         dimension = random.randint(1, 10)

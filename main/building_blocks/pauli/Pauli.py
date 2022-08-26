@@ -28,7 +28,6 @@ class Pauli(NiceRepr):
         super().__init__(["qubit", "letter"])
 
     def __eq__(self, other):
-        # ignore dimension because it's mutable
         return (
             type(self) == type(other)
             and self.qubit == other.qubit

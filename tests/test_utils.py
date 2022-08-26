@@ -11,6 +11,17 @@ from tests.utils.numbers import default_test_repeats_medium
 
 
 def test_modulo_duplicates():
+    # Explicit tests:
+    xs = [1, 2, 2, 3, 3, 3, 4, 4, 4, 4, 5, 5, 5, 5, 5]
+    with pytest.raises(ZeroDivisionError):
+        assert modulo_duplicates(xs, 0) == []
+
+    assert modulo_duplicates(xs, 1) == []
+    assert modulo_duplicates(xs, 2) == [1, 3, 5]
+    assert modulo_duplicates(xs, 3) == [1, 2, 2, 4, 5, 5]
+    assert modulo_duplicates(xs, 4) == [1, 2, 2, 3, 3, 3, 5]
+    assert modulo_duplicates(xs, 5) == [1, 2, 2, 3, 3, 3, 4, 4, 4, 4]
+
     # Construct some random list of integers, apply the 'mod duplicates'
     # method, and check it worked. Repeat several times.
     repeat = 100
