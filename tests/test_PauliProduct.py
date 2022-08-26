@@ -1,5 +1,4 @@
 import random
-from copy import deepcopy
 from functools import reduce
 from operator import mul
 from typing import Tuple
@@ -8,7 +7,7 @@ import pytest
 
 from main.building_blocks.Qubit import Qubit
 from main.building_blocks.pauli import Pauli
-from main.building_blocks.pauli.PauliLetter import PauliX, PauliY
+from main.building_blocks.pauli.PauliLetter import PauliX, PauliY, PauliLetter
 from main.building_blocks.pauli.PauliProduct import PauliProduct
 from main.building_blocks.pauli.PauliWord import PauliWord
 from tests.utils.numbers import default_max_unique_sample_size, default_test_repeats_medium, default_test_repeats_small
@@ -232,7 +231,9 @@ def test_pauli_product_equal_up_to_sign_when_expect_true():
 
         for _ in range(default_test_repeats_small):
             # Make a copy of these paulis
-            paulis_2 = deepcopy(paulis_1)
+            paulis_2 = [
+                Pauli(pauli.qubit, PauliLetter(pauli.letter.letter, pauli.letter.sign))
+                for pauli in paulis_1]
             # Randomly change some signs in the second list of paulis.
             for pauli in paulis_2:
                 pauli.letter.sign = random.choice(valid_signs)
@@ -268,7 +269,9 @@ def test_pauli_product_equal_up_to_sign_when_expect_false():
 
         # Make a copy of these paulis
         for _ in range(default_test_repeats_small):
-            paulis_2 = deepcopy(paulis_1)
+            paulis_2 = [
+                Pauli(pauli.qubit, PauliLetter(pauli.letter.letter, pauli.letter.sign))
+                for pauli in paulis_1]
             # Pick a random Pauli and change its letter
             index = random.choice(range(num_paulis))
             pauli = paulis_2[index]

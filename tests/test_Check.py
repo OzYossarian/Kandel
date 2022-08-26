@@ -109,7 +109,7 @@ def test_check_fails_if_pauli_dict_given_but_no_anchor():
         "If dictionary of Paulis is supplied, `anchor` mustn't be None"
     for _ in range(repeats):
         dimension = random.randrange(1, 10)
-        max_paulis = random.randrange(0, 100)
+        max_paulis = random.randrange(1, 100)
         num_paulis = min(
             max_paulis, default_max_unique_sample_size(dimension))
         paulis = random_paulis(
