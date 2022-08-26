@@ -13,7 +13,6 @@ from main.building_blocks.pauli.PauliLetter import PauliX, PauliZ, PauliY, Pauli
 from main.building_blocks.Qubit import Qubit
 from main.building_blocks.pauli.Pauli import Pauli
 from main.compiling.Circuit import Circuit
-from main.compiling.Measurer import Measurer
 from main.compiling.compilers.Determiner import Determiner
 from main.compiling.noise.models.NoNoise import NoNoise
 from main.compiling.noise.models.NoiseModel import NoiseModel
@@ -382,7 +381,7 @@ class Compiler(ABC):
         round = layer * code.schedule_length
         if final_stabilizers is None:
             final_detectors = self.compile_final_detectors_from_measurements(
-                final_checks, round, layer, code
+                final_checks, round, code
             )
         else:
             final_detectors = self.compile_final_detectors_from_stabilizers(
@@ -401,22 +400,22 @@ class Compiler(ABC):
             measurements = [(0, final_checks[qubit]) for qubit in qubits]
             # TODO - some sanity checks here perhaps, that the checks in the
             #  drum's floor actually exist, etc.
-            drum = Drum(stabilizer.lid, measurements, 0, stabilizer.anchor)
+            floor = stabilizer.timed_checks
+            drum = Drum(floor, measurements, 0, stabilizer.anchor)
             final_detectors.append(drum)
         return final_detectors
 
     def compile_final_detectors_from_measurements(
-        self, final_checks: Dict[Qubit, Check], round: int, layer: int, code: Code
-    ):
+            self, final_checks: Dict[Qubit, Check], round: int, code: Code):
         final_detectors = []
         for detector in code.detectors:
             open_lid, checks_measured = detector.has_open_lid(
-                round - 1, layer - 1, code.schedule_length
-            )
+                round - 1, code.schedule_length)
             if open_lid:
                 # This detector can potentially be 'finished off', if our
                 # final data qubit measurements are in the right bases
-                detector_checks = sorted(checks_measured, key=lambda check: -check[0])
+                detector_checks = sorted(
+                    checks_measured, key=lambda timed_check: -timed_check[0])
                 detector_product = PauliProduct(
                     [
                         pauli
