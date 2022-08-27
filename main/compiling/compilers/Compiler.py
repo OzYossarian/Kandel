@@ -13,7 +13,6 @@ from main.building_blocks.pauli.PauliLetter import PauliX, PauliZ, PauliY, Pauli
 from main.building_blocks.Qubit import Qubit
 from main.building_blocks.pauli.Pauli import Pauli
 from main.compiling.Circuit import Circuit
-from main.compiling.Measurer import Measurer
 from main.compiling.compilers.Determiner import Determiner
 from main.compiling.noise.models.NoNoise import NoNoise
 from main.compiling.noise.models.NoiseModel import NoiseModel
@@ -307,11 +306,10 @@ class Compiler(ABC):
 
         # And likewise note down any logical observables that need updating.
         if observables is not None:
-            observable_updates = code.update_logical_qubits(round)
             for observable in observables:
-                circuit.measurer.add_to_logical_observable(
-                    observable_updates[observable], observable, round
-                )
+                checks_to_multiply_in = observable.update(round)
+                circuit.measurer.multiply_logical_observable(
+                    checks_to_multiply_in, observable, round)
 
         circuit.end_round(tick - 2)
 
@@ -461,7 +459,7 @@ class Compiler(ABC):
                     assert list(check.paulis.values())[0].letter == pauli.letter
                     logical_checks.append(check)
                 # Compile to the circuit.
-                circuit.measurer.add_to_logical_observable(
+                circuit.measurer.multiply_logical_observable(
                     logical_checks, observable, round
                 )
 

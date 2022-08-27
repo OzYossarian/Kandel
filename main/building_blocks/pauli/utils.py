@@ -33,21 +33,24 @@ def compose(paulis: Iterable[Pauli], identities_removed: bool = False):
 def remove_identities(paulis: List[Pauli]) -> List[Pauli]:
     identities = [
         pauli for pauli in paulis if pauli.letter.letter == 'I']
+    non_identities = [
+        pauli for pauli in paulis if pauli.letter.letter != 'I']
     identity_sign = reduce(
         operator.mul, [identity.letter.sign for identity in identities], 1)
     if identity_sign == 1:
         # If the identities contribute no sign altogether, remove them.
-        non_identities = [
-            pauli for pauli in paulis if pauli.letter.letter != 'I']
         return non_identities
     else:
-        # Otherwise, keep them. There are other things we might consider
-        # doing here - e.g. if there's some non-identity Paulis, remove all
-        # the identities and transfer their collective sign onto a
-        # non-identity Pauli. Or remove all the individual identities whose
-        # sign is 1 but keep the rest (those with sign j, -1 or -j). But
-        # there's no canonical choice, so to speak, so let's just do nothing.
-        return paulis
+        if len(non_identities) > 0:
+            # Transfer the sign of the identities onto a non-identity Pauli
+            # and then remove the identities.
+            non_identities[0].letter.sign *= identity_sign
+            return non_identities
+        else:
+            raise ValueError(
+                "Can't remove identities - they have a non-trivial sign and "
+                "there's no non-identity Paulis to transfer this sign onto!"
+                f"Given list of Paulis is: {paulis}")
 
 
 stabilizers = {

@@ -7,7 +7,7 @@ from main.utils.NiceRepr import NiceRepr
 from main.utils.utils import modulo_duplicates
 
 
-class DrumBlueprint(NiceRepr):
+class TicTacToeDrumBlueprint(NiceRepr):
     def __init__(
             self, schedule_length: int, learned: int,
             floor: List[Tuple[int, Colour, PauliLetter]],
@@ -57,6 +57,6 @@ class DrumBlueprint(NiceRepr):
         other_checks = modulo_duplicates(other.checks, 2)
 
         return \
-            isinstance(other, DrumBlueprint) and \
+            isinstance(other, TicTacToeDrumBlueprint) and \
             self.learned == other.learned and \
             Counter(these_checks) == Counter(other_checks)

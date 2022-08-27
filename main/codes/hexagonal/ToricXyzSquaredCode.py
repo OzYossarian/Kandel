@@ -66,7 +66,7 @@ class ToricXyzSquaredCode(ToricHexagonalCode):
         support = [(8, 4 * i + 2) for i in range(self.distance_x)]
         paulis = [Pauli(self.data_qubits[coords], PauliX) for coords in support]
         logical_x = LogicalOperator(paulis)
-        logical_qubit = LogicalQubit(logical_x, None)
+        logical_qubit = LogicalQubit(x=logical_x)
         return [logical_qubit]
 
     def get_plus_plus_stabilizers(self):
