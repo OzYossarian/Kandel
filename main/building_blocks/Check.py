@@ -64,13 +64,19 @@ class Check(NiceRepr):
         self.anchor = anchor
         self.colour = colour
         self.weight = len(paulis)
-        self.dimension = coords_length(self.anchor)
-        self.has_tuple_coords = list(paulis.values())[0].has_tuple_coords
 
         # The following properties are set by a compiler.
         self.ancilla = None
 
         super().__init__(['product.word', 'anchor', 'colour', 'paulis'])
+
+    @property
+    def dimension(self):
+        return coords_length(self.anchor)
+
+    @property
+    def has_tuple_coords(self):
+        return isinstance(self.anchor, tuple)
 
     @staticmethod
     def _assert_check_non_empty(
