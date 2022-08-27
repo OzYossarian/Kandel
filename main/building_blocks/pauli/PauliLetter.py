@@ -69,6 +69,9 @@ pauli_colours = {
     'I': Grey}
 
 
+# TODO - these are going to lead to obscure bugs!!!
+#   These mean the same object is being reused multiple times all over
+#   the place. Should instead create a new object every time.
 PauliI = PauliLetter('I')
 PauliX = PauliLetter('X')
 PauliY = PauliLetter('Y')

@@ -221,8 +221,10 @@ def test_check_fails_if_pauli_dimensions_vary():
     repeats = default_test_repeats_medium
     expected_error = "Paulis within a check must all have the same dimension"
     for _ in range(repeats):
-        max_dimension = random.randrange(1, 10)
-        max_paulis = random.randrange(1, 100)
+        # Need at least two dimensions and two checks if the dimensions are
+        # going to differ
+        max_dimension = random.randrange(2, 10)
+        max_paulis = random.randrange(2, 100)
         num_paulis = min(
             max_paulis, default_max_unique_sample_size(max_dimension))
         paulis = random_paulis(
