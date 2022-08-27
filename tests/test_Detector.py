@@ -365,7 +365,8 @@ def test_detector_repr():
     detector = Detector(timed_checks, end=0, anchor=0)
     expected = {
         'product.word': detector.product.word,
-        'timed_checks': detector.timed_checks}
+        'end': 0,
+        'timed_checks': timed_checks}
     assert str(detector) == str(expected)
 
     # Random tests:
@@ -387,23 +388,6 @@ def test_detector_repr():
 
         expected = {
             'product.word': detector.product.word,
-            'timed_checks': detector.timed_checks}
+            'end': end,
+            'timed_checks': timed_checks}
         assert str(detector) == str(expected)
-
-
-# X test all times in timed_checks are non-positive
-# X test fails if no timed_check with first part 0
-# X test fails if empty list of timed_checks
-# X test all check dims equal
-# X test all check coords tuple or all non-tuple
-# X test anchor defaults correctly
-#   X tuple coords
-#   X non-tuple coords
-# ? test fails if product sign not in 1, -1
-# X test timed_checks_product
-# X test every attribute
-#   X start
-#   X end
-#   X final slice
-#   X timed_checks_mod_2
-# test_repr
