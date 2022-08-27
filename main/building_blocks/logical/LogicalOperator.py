@@ -1,7 +1,8 @@
-from typing import List, Iterable
+from typing import List
 
 from main.building_blocks.Check import Check
 from main.building_blocks.pauli.Pauli import Pauli
+from main.building_blocks.pauli.PauliProduct import PauliProduct
 
 
 class LogicalOperator:
@@ -17,6 +18,9 @@ class LogicalOperator:
         """
         self._assert_qubits_unique(paulis)
         self._assert_coords_valid(paulis)
+
+        product = PauliProduct(paulis)
+        self._assert_is_hermitian(product, paulis)
 
         # Shouldn't access _paulis directly; instead, use at_round.
         self._paulis = paulis
@@ -72,3 +76,11 @@ class LogicalOperator:
             raise ValueError(
                 f"Can't mix tuple and non-tuple coordinates! "
                 f"Paulis that make up the operator are: {paulis}")
+
+    @staticmethod
+    def _assert_is_hermitian(
+            product: PauliProduct, paulis: List[Pauli]):
+        if not product.is_hermitian:
+            raise ValueError(
+                f"The product of all Paulis in a logical operator must be "
+                f"Hermitian! Given Paulis are {paulis}.")

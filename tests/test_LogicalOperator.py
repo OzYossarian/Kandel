@@ -33,7 +33,8 @@ def test_logical_operator_fails_if_qubits_not_unique():
             max_qubits,
             num_paulis,
             int_coords=True,
-            dimension=dimension)
+            dimension=dimension,
+            from_signs=[1, -1])
         # Now flatten into a list of Paulis.
         paulis = [
             pauli
@@ -65,7 +66,8 @@ def test_logical_operator_fails_if_coords_dims_unequal():
             num_paulis,
             unique_qubits=True,
             int_coords=True,
-            max_dimension=max_dimension)
+            max_dimension=max_dimension,
+            from_signs=[1, -1])
 
         dimensions = {len(pauli.qubit.coords) for pauli in paulis}
         if len(dimensions) > 1:
@@ -92,7 +94,8 @@ def test_logical_operator_fails_if_coords_types_unequal():
             num_paulis,
             unique_qubits=True,
             int_coords=True,
-            dimension=1)
+            dimension=1,
+            from_signs=[1, -1])
 
         # Pick at least one but not all the paulis and turn their
         # coordinates into a non-tuple.
@@ -103,6 +106,38 @@ def test_logical_operator_fails_if_coords_types_unequal():
             paulis[i].qubit.coords = paulis[i].qubit.coords[0]
 
         with pytest.raises(ValueError, match=expected_error):
+            LogicalOperator(paulis)
+
+
+def test_logical_operator_fails_if_paulis_not_hermitian():
+    expected_error = \
+        "The product of all Paulis in a logical operator must be Hermitian"
+
+    # Explicit test:
+    paulis = [
+        Pauli(Qubit(0), PauliLetter('X', 1j))]
+    with pytest.raises(ValueError, match=expected_error):
+        LogicalOperator(paulis)
+
+    # Random tests:
+    for _ in range(default_test_repeats_medium):
+        dimension = random.randint(1, 10)
+        max_paulis = random.randint(1, 100)
+        num_paulis = min(max_paulis, default_max_unique_sample_size(dimension))
+        paulis = random_paulis(
+            num_paulis,
+            unique_qubits=True,
+            int_coords=True,
+            dimension=dimension)
+        num_imaginary_signs = len([
+            pauli for pauli in paulis
+            if pauli.letter.sign in [1j, -1j]])
+        expect_non_hermitian = num_imaginary_signs % 2 == 1
+        if expect_non_hermitian:
+            with pytest.raises(ValueError, match=expected_error):
+                LogicalOperator(paulis)
+        else:
+            # No error should be raised
             LogicalOperator(paulis)
 
 
@@ -125,12 +160,42 @@ def test_logical_operator_at_round():
             num_paulis,
             unique_qubits=True,
             int_coords=True,
-            dimension=dimension)
+            dimension=dimension,
+            from_signs=[1, -1])
         operator = LogicalOperator(paulis)
 
         rounds = random.sample(range(-100, 100), k=default_test_repeats_small)
         for round in rounds:
             assert operator.at_round(round) == paulis
+
+
+def test_logical_operator_update():
+    # Explicit test:
+    paulis = [
+        Pauli(Qubit(0), PauliLetter('X')),
+        Pauli(Qubit(1), PauliLetter('Y')),
+        Pauli(Qubit(2), PauliLetter('Z'))]
+    operator = LogicalOperator(paulis)
+    for round in range(-10, 10):
+        assert operator.update(round) == []
+
+    # And random tests:
+    for _ in range(default_test_repeats_small):
+        dimension = random.randint(1, 10)
+        max_paulis = random.randint(0, 100)
+        num_paulis = min(max_paulis, default_max_unique_sample_size(dimension))
+        paulis = random_paulis(
+            num_paulis,
+            unique_qubits=True,
+            int_coords=True,
+            dimension=dimension,
+            from_signs=[1, -1])
+        operator = LogicalOperator(paulis)
+
+        rounds = random.sample(range(-100, 100), k=default_test_repeats_small)
+        for round in rounds:
+            assert operator.update(round) == []
+
 
 
 
