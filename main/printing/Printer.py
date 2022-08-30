@@ -17,6 +17,6 @@ class Printer:
             assert isinstance(offset, int)
             return (coords + offset) * self.scale_factor
 
-    def print_qpu(self, qpu: type(QPU), filename: str):
-        pass
+    def print_qpu(self, qpu: QPU, filename: str):
+        raise NotImplementedError
 

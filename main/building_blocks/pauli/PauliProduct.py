@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Collection
+from typing import Any, Collection
 
 from main.building_blocks.pauli.Pauli import Pauli
 from main.building_blocks.pauli.PauliWord import PauliWord
@@ -10,8 +10,7 @@ from main.utils.NiceRepr import NiceRepr
 
 class PauliProduct(NiceRepr):
     def __init__(self, paulis: Collection[Pauli], identities_removed: bool = False):
-        """
-        Class representing a tensor product of Paulis.
+        """Class representing a tensor product of Paulis.
 
         Args:
             paulis:
@@ -70,7 +69,7 @@ class PauliProduct(NiceRepr):
             self._sorted_qubits == other._sorted_qubits and \
             self._sorted_word.word == other._sorted_word.word
 
-    def __eq__(self, other):
+    def __eq__(self, other: Any):
         return \
             type(other) == type(self) and \
             self._sorted_qubits == other._sorted_qubits and \
