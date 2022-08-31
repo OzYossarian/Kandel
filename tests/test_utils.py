@@ -274,3 +274,4 @@ def test_embed_coords_if_hyperplane_is_None():
         expected = tuple(expected)
 
         assert result == expected
+
