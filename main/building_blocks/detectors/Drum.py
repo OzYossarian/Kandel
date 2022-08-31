@@ -9,23 +9,24 @@ class Drum(Detector):
     def __init__(
             self, floor: List[TimedCheck], lid: List[TimedCheck], end: int,
             anchor: Coordinates = None):
-        """
+        """Detector with a drum shape.
+
         Specific type of Detector, where the same Pauli product (up to +/-
         sign) is measured in two different rounds. Comparing these two
         outcomes should thus give a deterministic result.
 
         Args:
-            floor:
-                the timed checks that measure the Pauli product the first
+            floor: 
+                The timed checks that measure the Pauli product the first 
                 time around.
-            lid:
-                the timed checks that measure the Pauli product the second
+            lid: 
+                The timed checks that measure the Pauli product the second
                 time around.
-            end:
-                the first round (modulo schedule length) by which ALL of the
+            end: 
+                The first round (modulo schedule length) by which ALL of the
                 checks in the drum will have been measured.
-            anchor:
-                coordinates at which to 'anchor' this drum. If None, defaults
+            anchor: 
+                Coordinates at which to 'anchor' this drum. If None, defaults 
                 to the midpoint of the anchors of all checks involved.
         """
         self._assert_lid_valid(lid)
@@ -64,7 +65,8 @@ class Drum(Detector):
     def has_open_lid(
             self, round: int, schedule_length: int
     ) -> Tuple[bool, List[TimedCheck]]:
-        """
+        """Checks if checks that make up a drum have been performed.
+
         A drum has an open lid if its floor has been fully measured but its
         lid has not. This method returns whether this drum has an open lid at
         the point immediately AFTER the given round.
@@ -76,13 +78,13 @@ class Drum(Detector):
                 the round just measured. Note this should be absolute rather
                 than relative (i.e. not modulo the schedule length)
             schedule_length:
-                the length of the code's schedule.
+                The length of the code's schedule.
 
         Returns:
             open_lid:
-                whether this drum has an open lid after the given round
+                Whether this drum has an open lid after the given round
             timed_checks:
-                if open_lid is True, then this is all the checks in the drum
+                If open_lid is True, then this is all the checks in the drum
                 that will have been measured at the end of the given round.
                 If open_lid is False, this is None.
         """
@@ -127,10 +129,10 @@ class Drum(Detector):
                 relative or absolute (i.e. modulo the schedule length or
                 not), and we'll just mod it anyway.
             schedule_length:
-                length of the code's schedule.
+                Length of the code's schedule.
 
         Returns:
-            checks of the drum that will be measured at or after the given
+            Checks of the drum that will be measured at or after the given
             round.
         """
         relative_round = round % schedule_length

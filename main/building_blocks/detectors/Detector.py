@@ -11,25 +11,25 @@ TimedCheck = Tuple[int, Check]
 
 
 class Detector(NiceRepr):
+    """A set of checks whose Pauli product should be deterministic in the absence of any noise."""
+    
     def __init__(
             self,
             timed_checks: List[TimedCheck], end: int,
             anchor: Coordinates = None):
-        """
-        A detector is a set of checks whose Pauli product should be
-        deterministic in the absence of any noise.
+        """Detector constructor
 
         Args:
             timed_checks:
                 the set of timed checks that make up the detector. A 'timed
                 check' is an (int, Check) tuple, where the int is the number
                 of rounds before the `end` round this check is measured at.
-                # TODO - link to an example in the documentation.]
+                # TODO - link to an example in the documentation.
             end:
-                the first round (modulo schedule length) by which ALL of the
-                checks in the stabilizer will have been measured.
-            anchor:
-                coordinates at which to 'anchor' this stabilizer. If None,
+                The first round (modulo schedule length) by which ALL of the checks
+                in the stabilizer will have been measured.
+            anchor: 
+                Coordinates at which to 'anchor' this stabilizer. If None,
                 defaults to the midpoint of the anchors of all checks
                 involved.
         """

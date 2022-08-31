@@ -8,27 +8,31 @@ from main.utils.utils import modulo_duplicates
 
 
 class TicTacToeDrumBlueprint(NiceRepr):
+    """Instructions to construct a drum.
+
+    An actual Detector object essentially consists of a set of Check
+    objects. This class instead specifies how to build a particular
+    family of Detector objects.
+    """
     def __init__(
             self, schedule_length: int, learned: int,
             floor: List[Tuple[int, Colour, PauliLetter]],
             lid: List[Tuple[int, Colour, PauliLetter]]):
-        """An actual Detector object essentially consists of a set of Check
-        objects. This class instead specifies how to build a particular
-        family of Detector objects.
+        """Constructs a drum blueprint 
 
         Args:
             schedule_length:
-                length of tic-tac-toe route and thus size of the repeating
+                Length of tic-tac-toe route and thus size of the repeating
                 portion of the code.
             learned:
-                time at which this detector can be fully known, i.e. time
+                Time at which this detector can be fully known, i.e. time
                 at which final checks are measured.
             floor:
-                a list of tuples (t, colour, letter) which specifies which
+                A list of tuples (t, colour, letter) which specifies which
                 check types (colour, letter) consititute the floor of the
                 detector, and when they are measured (t).
             lid:
-                as above, but replace the word floor with lid.
+                As above, but replace the word floor with lid.
         """
 
         # At the moment the t in each (t, colour, letter) denotes when this
@@ -47,7 +51,7 @@ class TicTacToeDrumBlueprint(NiceRepr):
         super().__init__(['learned', 'floor', 'lid'])
 
     def equivalent_to(self, other):
-        """ If another detector contains the same checks as this one, measured
+        """If another detector contains the same checks as this one, measured
         at the same times (regardless of whether they're in the floor or lid)
         then these detectors both tell us exactly the same information.
         """

@@ -12,7 +12,9 @@ class Check(NiceRepr):
     def __init__(
             self, paulis: List[Pauli] | Dict[Coordinates, Pauli],
             anchor: Coordinates = None, colour: Colour = None):
-        """A check is a Pauli operator that is actually measured as part of
+        """A Pauli operator to measure.
+        
+        A check is a Pauli operator that is actually measured as part of
         the code. In some codes the checks are just the stabilizers (e.g.
         surface code, colour code), but this need not be the case (e.g.
         subsystem code, Floquet codes).

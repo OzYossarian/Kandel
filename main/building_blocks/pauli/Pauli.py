@@ -3,8 +3,7 @@ from main.building_blocks.Qubit import Qubit
 from main.utils.NiceRepr import NiceRepr
 
 
-# When we use stim.Paulistring instead of PauliLetter, this will become a wrapper of
-# stim.PauliStringer
+# When we use stim.Paulistring instead of PauliLetter, one of the inputs to the constructor will be stim.Paulistring
 class Pauli(NiceRepr):
     """Class for represting a single Pauli operator on a specific qubit
 

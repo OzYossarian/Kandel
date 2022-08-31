@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Collection, List
+from typing import Collection, List, Any
 
 from main.building_blocks.pauli.Pauli import Pauli
 from main.building_blocks.pauli.PauliWord import PauliWord
@@ -91,7 +91,7 @@ class PauliProduct(NiceRepr):
             self._sorted_qubits == other._sorted_qubits and \
             self._sorted_word.word == other._sorted_word.word
 
-    def __eq__(self, other):
+    def __eq__(self, other: Any):
         return \
             type(other) == type(self) and \
             self._sorted_qubits == other._sorted_qubits and \
