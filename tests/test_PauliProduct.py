@@ -20,7 +20,7 @@ class NotAPauliProduct:
         self._sorted_word = _sorted_word
 
 
-def test_pauli_product_word_and_weight_and_composition():
+def test_pauli_product_init_paulis_and_word_and_weight():
     repeats = default_test_repeats_medium
     for _ in range(repeats):
         dimension = random.randint(1, 10)
