@@ -95,6 +95,8 @@ class LogicalOperator(NiceRepr):
                 f"Can't mix tuple and non-tuple coordinates! "
                 f"Paulis that make up the operator are: {paulis}")
 
+    # TODO - this actually only needs to be Hermitian up to stabilizer -
+    #  should this change anything? Can't see how it could.
     def _assert_is_hermitian(self, product: PauliProduct):
         paulis = self.at_round(-1)
         if not product.is_hermitian:

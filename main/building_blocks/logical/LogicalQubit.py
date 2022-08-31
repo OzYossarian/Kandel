@@ -23,6 +23,11 @@ class LogicalQubit(NiceRepr):
         operators = [x, y, z]
         self._assert_has_an_operator(operators)
         self._assert_operator_coords_valid(operators)
+        # TODO - could check operators satisfy Pauli relations - e.g. XY = iZ,
+        #  etc. But since these only need to hold up to stabilizer, isn't so
+        #  trivial (means checking if an element is in a group, which isn't
+        #  necessarily fast). Also here wouldn't be the place for it - would
+        #  have to be on the Code object.
 
         self.x = x
         self.y = y
