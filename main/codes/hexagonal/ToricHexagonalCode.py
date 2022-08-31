@@ -2,12 +2,15 @@ from collections import defaultdict
 from typing import Tuple, List, Dict
 
 from main.Colour import Colour
-from main.building_blocks.Qubit import Qubit, Coordinates
+from main.building_blocks.Qubit import Qubit
 from main.codes.hexagonal.HexagonalCode import HexagonalCode
 
 
 # TODO - most of this should move to HexagonalCode class, with some extra
 #  logic (e.g removing some data qubits) for the toric version.
+from main.utils.types import Coordinates
+
+
 class ToricHexagonalCode(HexagonalCode):
     def __init__(self, rows: int, columns: int, distance: int = None):
         # Number of columns must be even in order for periodic boundaries

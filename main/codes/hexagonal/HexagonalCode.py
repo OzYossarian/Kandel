@@ -3,8 +3,9 @@ from typing import Dict, List, Tuple
 from main.Colour import Red, Green, Blue
 from main.building_blocks.Check import Check
 from main.building_blocks.pauli.PauliLetter import PauliZ, PauliY, PauliX
-from main.building_blocks.Qubit import Coordinates, Qubit
+from main.building_blocks.Qubit import Qubit
 from main.codes.Code import Code
+from main.utils.types import Coordinates
 
 
 class HexagonalCode(Code):

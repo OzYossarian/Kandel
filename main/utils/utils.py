@@ -1,12 +1,9 @@
-from __future__ import annotations
-
 from collections import defaultdict
 from statistics import mean
-from typing import List, Tuple, Hashable, Iterable, TYPE_CHECKING
+from typing import List, Tuple, Hashable
 from pathlib import Path
 
-if TYPE_CHECKING:
-    from main.building_blocks.Qubit import Coordinates
+from main.utils.types import Coordinates
 
 
 def output_path() -> Path:
@@ -37,10 +34,13 @@ def xor(a: bool, b: bool) -> bool:
 
 def coords_mid(*coords: Coordinates) -> Coordinates:
     lengths = {coords_length(coord) for coord in coords}
-    if len(lengths) != 1:
+    if len(lengths) > 1:
         raise ValueError(
             f"Can't find the midpoint of coordinates of different lengths. "
             f"Coordinates are {list(coords)}.")
+    elif len(lengths) == 0:
+        raise ValueError(
+            f"Can't find the midpoint of an empty sequence of coordinates!")
     if all([isinstance(coord, tuple) for coord in coords]):
         return tuple(map(mean, zip(*coords)))
     else:
@@ -49,10 +49,13 @@ def coords_mid(*coords: Coordinates) -> Coordinates:
 
 def coords_sum(*coords: Coordinates) -> Coordinates:
     lengths = {coords_length(coord) for coord in coords}
-    if len(lengths) != 1:
+    if len(lengths) > 1:
         raise ValueError(
             f"Can't sum over coordinates of different lengths. "
             f"Coordinates are {list(coords)}.")
+    elif len(lengths) == 0:
+        raise ValueError(
+            f"Can't find the sum of an empty sequence of coordinates!")
     if all([isinstance(coord, tuple) for coord in coords]):
         return tuple(map(sum, zip(*coords)))
     else:
@@ -61,9 +64,9 @@ def coords_sum(*coords: Coordinates) -> Coordinates:
 
 def coords_minus(xs: Coordinates, ys: Coordinates):
     lengths = {coords_length(xs), coords_length(ys)}
-    if len(lengths) != 1:
+    if len(lengths) > 1:
         raise ValueError(
-            f"Can't sum over coordinates of different lengths. "
+            f"Can't find difference of coordinates of different lengths. "
             f"Coordinates are {(xs, ys)}.")
     if isinstance(xs, tuple) and isinstance(ys, tuple):
         return tuple(x-y for x, y in zip(xs, ys))

@@ -2,9 +2,9 @@ import itertools
 from typing import Tuple
 
 from main.QPUs.QPU import QPU
-from main.building_blocks.Qubit import Qubit, Coordinates
+from main.building_blocks.Qubit import Qubit
 from main.codes.Code import Code
-from main.enums import State
+from main.utils.types import Coordinates
 from main.utils.utils import coords_length
 
 

@@ -7,13 +7,14 @@ from typing import TYPE_CHECKING
 from main.building_blocks.detectors.Drum import Drum
 from main.building_blocks.logical.LogicalOperator import LogicalOperator
 from main.building_blocks.logical.LogicalQubit import LogicalQubit
+from main.utils.types import Coordinates
 from main.utils.utils import embed_coords
 
 if TYPE_CHECKING:
     from main.QPUs.QPU import QPU
 
 from main.building_blocks.Check import Check
-from main.building_blocks.Qubit import Coordinates, Qubit
+from main.building_blocks.Qubit import Qubit
 
 CodeId = Any
 
@@ -34,7 +35,7 @@ class Code:
         # Assign the code a dimension based on data qubits' dimension.
         qubit_dims = {qubit.dimension for qubit in self.data_qubits.values()}
         self.dimension = max(qubit_dims)
-        if len(qubit_dims) != 1:
+        if len(qubit_dims) > 1:
             raise ValueError(
                 f'All data qubits must have the same dimension! Set of all '
                 f'qubit dimensions is instead {qubit_dims}.')

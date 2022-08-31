@@ -4,8 +4,9 @@ from main.building_blocks.logical.LogicalOperator import LogicalOperator
 from main.building_blocks.logical.LogicalQubit import LogicalQubit
 from main.building_blocks.pauli.Pauli import Pauli
 from main.building_blocks.pauli.PauliLetter import PauliZ, PauliX
-from main.building_blocks.Qubit import Qubit, Coordinates
+from main.building_blocks.Qubit import Qubit
 from main.codes.Code import Code
+from main.utils.types import Coordinates
 
 
 class RotatedSurfaceCode(Code):

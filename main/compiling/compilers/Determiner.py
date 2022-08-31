@@ -2,18 +2,19 @@ from __future__ import annotations
 
 import math
 from collections import defaultdict
-from typing import List, Dict, Tuple, TYPE_CHECKING
+from typing import List, Dict, TYPE_CHECKING
 
 import stim
 
 from main.building_blocks.Check import Check
 from main.building_blocks.Qubit import Qubit
-from main.building_blocks.detectors.Detector import Detector
+from main.building_blocks.detectors.Detector import Detector, TimedCheck
 from main.building_blocks.detectors.Stabilizer import Stabilizer
 from main.building_blocks.pauli.PauliProduct import PauliProduct
 from main.codes.Code import Code
 from main.compiling.Circuit import Circuit
 from main.compiling.Instruction import Instruction
+
 if TYPE_CHECKING:
     from main.compiling.compilers.Compiler import Compiler
 from main.compiling.noise.models.NoNoise import NoNoise
@@ -133,7 +134,7 @@ class Determiner:
         shift = layer * self.code.schedule_length
         round_detectors = []
         for detector in self.code.detector_schedule[relative_round]:
-            assert detector.lid_end == relative_round
+            assert detector.end == relative_round
             if detector.floor_start + shift >= 0:
                 # This detector is always going to be comparing a floor
                 # with a lid, so should always be deterministic.
@@ -184,7 +185,7 @@ class Determiner:
         return tick, circuit
 
     def is_deterministic(
-            self, timed_checks: List[Tuple[int, Check]], circuit: Circuit,
+            self, timed_checks: List[TimedCheck], circuit: Circuit,
             simulator: stim.TableauSimulator):
         timed_checks = sorted(
             timed_checks, key=lambda timed_check: -timed_check[0])

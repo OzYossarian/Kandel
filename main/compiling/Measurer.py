@@ -4,10 +4,10 @@ from typing import List, Iterable, Tuple
 import stim
 
 from main.building_blocks.Check import Check
-from main.building_blocks.Qubit import Coordinates
 from main.building_blocks.detectors.Detector import Detector
 from main.building_blocks.logical.LogicalOperator import LogicalOperator
 from main.compiling.Instruction import Instruction
+from main.utils.types import Coordinates
 
 
 class Measurer:
@@ -115,8 +115,7 @@ class Measurer:
     def detector_to_stim(self, detector: Detector, round: int, track_coords: bool):
         targets = [
             self.measurement_target(check, round + rounds_ago)
-            for rounds_ago, check in detector.checks
-        ]
+            for rounds_ago, check in detector.timed_checks_mod_2]
         # Anchor needs to now be a tuple for Stim to accept it.
         if track_coords and isinstance(detector.anchor, tuple):
             anchor = detector.anchor
@@ -130,22 +129,14 @@ class Measurer:
         # Only build this detector if all the checks in the final slice have
         # actually been measured, and if we haven't already built an
         # equivalent detector (one that compares the exact same measurements).
-        final_slice_measured = all(
-            [
-                (check, round) in self.measurement_numbers
-                for check in detector.final_slice
-            ]
-        )
+        final_slice_measured = all([
+            (check, round) in self.measurement_numbers
+            for check in detector.final_slice])
         if final_slice_measured:
             # First criteria met...
-            measurement_numbers = tuple(
-                sorted(
-                    [
-                        self.measurement_numbers[(check, round + rounds_ago)]
-                        for rounds_ago, check in detector.checks
-                    ]
-                )
-            )
+            measurement_numbers = tuple(sorted([
+                self.measurement_numbers[(check, round + rounds_ago)]
+                for rounds_ago, check in detector.timed_checks_mod_2]))
 
             already_built = self.detectors_built[measurement_numbers]
             if not already_built:

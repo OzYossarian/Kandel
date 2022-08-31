@@ -107,8 +107,7 @@ class Compiler(ABC):
             )
 
         initial_detector_schedules, tick, circuit = self.compile_initialisation(
-            code, initial_states, initial_stabilizers
-        )
+            code, initial_states, initial_stabilizers)
 
         initial_layers = len(initial_detector_schedules)
         # initial_layers is the number of layers in which 'lid-only'
@@ -143,8 +142,7 @@ class Compiler(ABC):
             layer,
             tick,
             circuit,
-            code,
-        )
+            code)
 
         return circuit.to_stim(self.noise_model.idling)
 
@@ -262,13 +260,13 @@ class Compiler(ABC):
         return tick + ticks_needed
 
     def compile_layer(
-        self,
-        layer: int,
-        detector_schedule: List[List[Detector]],
-        observables: List[LogicalOperator] | None,
-        tick: int,
-        circuit: Circuit,
-        code: Code,
+            self,
+            layer: int,
+            detector_schedule: List[List[Detector]],
+            observables: List[LogicalOperator] | None,
+            tick: int,
+            circuit: Circuit,
+            code: Code
     ) -> int:
         for relative_round in range(code.schedule_length):
             # Compile one round of checks, and note down the final tick

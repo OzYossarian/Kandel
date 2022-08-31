@@ -1,31 +1,27 @@
 import random
 
-
-def random_tuple_mixed_int_or_float(size: int, min: int, max: int):
-    return tuple(random_int_or_float(min, max) for _ in range(size))
-
-
-def random_int_or_float(min: int, max: int):
-    number_type = random.randint(0, 1)
-    if number_type == 0:
-        # Return int
-        return random.randint(min, max)
-    else:
-        # Return float
-        return random.uniform(min, max)
+default_min_coord = -10
+default_max_coord = 10
+default_test_repeats_small = 10
+default_test_repeats_medium = 100
+default_test_repeats_large = 1000
 
 
-def random_complex(min: float, max: float):
+def random_complex_number(
+        min: float = default_min_coord, max: float = default_max_coord):
     real = random.uniform(min, max)
     imaginary = random.uniform(min, max)
     return complex(real, imaginary)
 
 
-def random_int_or_float_or_complex(min: int, max: int):
-    # For complex numbers, the (min, max) bound applies to each of the real
-    # and imaginary components individually.
-    number_type = random.randint(0, 2)
-    if number_type < 2:
-        return random_int_or_float(min, max)
-    else:
-        return random_complex(min, max)
+def random_complex_number_int(
+        min: int = default_min_coord, max: int = default_max_coord):
+    real = random.randint(min, max)
+    imaginary = random.randint(min, max)
+    return complex(real, imaginary)
+
+
+def default_max_unique_sample_size(
+        dimension: int,
+        min: int = default_min_coord, max: int = default_max_coord):
+    return ((max - min) ** dimension) // 2

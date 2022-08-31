@@ -9,7 +9,7 @@ from main.building_blocks.logical.LogicalQubit import LogicalQubit
 from main.building_blocks.pauli.Pauli import Pauli
 from main.building_blocks.pauli.PauliLetter import PauliLetter
 from main.codes.hexagonal.ToricHexagonalCode import ToricHexagonalCode
-from main.codes.hexagonal.tic_tac_toe.DetectorBlueprint import DetectorBlueprint
+from main.codes.hexagonal.tic_tac_toe.DrumBlueprint import DrumBlueprint
 from main.utils.utils import coords_mid, xor, coords_minus, embed_coords
 
 TicTacToeRoute = List[Tuple[Colour, PauliLetter]]
@@ -322,7 +322,7 @@ class TicTacToeCode(ToricHexagonalCode):
                     # This is the 'lid' of a detector cell and the
                     # 'bottom' of a potential next detector cell.
                     lid = detector_face
-                    blueprint = DetectorBlueprint(length, t, floor, lid)
+                    blueprint = DrumBlueprint(length, t, floor, lid)
                     detector_blueprints.append(blueprint)
                     floor = detector_face
             t += 1

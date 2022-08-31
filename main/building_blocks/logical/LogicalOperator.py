@@ -23,7 +23,9 @@ class LogicalOperator:
         else:
             # Compose the logical operator with these new paulis, to give
             # a new logical operator. Order matters!
-            paulis = compose(other_paulis + self.at_round(round - 1))
+            paulis = compose(
+                other_paulis + self.at_round(round - 1),
+                identities_removed=True)
             self._at_round[round] = paulis
             self.last_activity = round
 
