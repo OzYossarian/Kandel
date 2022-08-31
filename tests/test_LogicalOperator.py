@@ -10,6 +10,13 @@ from tests.utils.numbers import default_test_repeats_small, default_max_unique_s
 from tests.utils.paulis import random_paulis, random_grouped_paulis
 
 
+def test_logical_operator_fails_if_no_paulis():
+    expected_error = \
+        "Can't create a logical operator from an empty list of Paulis"
+    with pytest.raises(ValueError, match=expected_error):
+        LogicalOperator([])
+
+
 def test_logical_operator_fails_if_qubits_not_unique():
     expected_error = "Can't include the same qubit more than once"
 
@@ -154,7 +161,7 @@ def test_logical_operator_at_round():
     # And random tests:
     for _ in range(default_test_repeats_small):
         dimension = random.randint(1, 10)
-        max_paulis = random.randint(0, 100)
+        max_paulis = random.randint(1, 100)
         num_paulis = min(max_paulis, default_max_unique_sample_size(dimension))
         paulis = random_paulis(
             num_paulis,
@@ -182,7 +189,7 @@ def test_logical_operator_update():
     # And random tests:
     for _ in range(default_test_repeats_small):
         dimension = random.randint(1, 10)
-        max_paulis = random.randint(0, 100)
+        max_paulis = random.randint(1, 100)
         num_paulis = min(max_paulis, default_max_unique_sample_size(dimension))
         paulis = random_paulis(
             num_paulis,
@@ -197,5 +204,51 @@ def test_logical_operator_update():
             assert operator.update(round) == []
 
 
+def test_logical_operator_dimension_and_has_tuple_coordinates_if_has_tuple_coordinates():
+    # Explicit test:
+    paulis = [
+        Pauli(Qubit((0, 0)), PauliLetter('X')),
+        Pauli(Qubit((1, 1)), PauliLetter('X'))]
+    operator = LogicalOperator(paulis)
+    assert operator.dimension == 2
+    assert operator.has_tuple_coords
 
+    # Random tests:
+    for _ in range(default_test_repeats_small):
+        dimension = random.randint(1, 10)
+        max_paulis = random.randint(1, 100)
+        num_paulis = min(max_paulis, default_max_unique_sample_size(dimension))
+        paulis = random_paulis(
+            num_paulis,
+            unique_qubits=True,
+            int_coords=True,
+            dimension=dimension,
+            from_signs=[1, -1])
+        operator = LogicalOperator(paulis)
+        assert operator.has_tuple_coords
+        assert operator.dimension == dimension
+
+
+def test_logical_operator_dimension_and_has_tuple_coordinates_if_has_non_tuple_coordinates():
+    # Explicit test:
+    paulis = [
+        Pauli(Qubit(0), PauliLetter('X')),
+        Pauli(Qubit(1), PauliLetter('X'))]
+    operator = LogicalOperator(paulis)
+    assert operator.dimension == 1
+    assert not operator.has_tuple_coords
+
+    # Random tests:
+    for _ in range(default_test_repeats_small):
+        max_paulis = random.randint(1, 100)
+        num_paulis = min(max_paulis, default_max_unique_sample_size(1))
+        paulis = random_paulis(
+            num_paulis,
+            unique_qubits=True,
+            int_coords=True,
+            tuple_coords=False,
+            from_signs=[1, -1])
+        operator = LogicalOperator(paulis)
+        assert operator.dimension == 1
+        assert not operator.has_tuple_coords
 
