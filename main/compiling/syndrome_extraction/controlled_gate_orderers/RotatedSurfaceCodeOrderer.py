@@ -18,7 +18,7 @@ class RotatedSurfaceCodeOrderer(ControlledGateOrderer):
     """
     def __init__(self):
         super().__init__()
-        self.gate_order = {
+        self.ordering = {
             (PauliX, (1, 0)): 0,
             (PauliX, (0, 1)): 2,
             (PauliX, (0, -1)): 1,
@@ -34,23 +34,23 @@ class RotatedSurfaceCodeOrderer(ControlledGateOrderer):
         if check.product.word.word not in ['XXXX', 'ZZZZ', 'XX', 'ZZ']:
             self.unexpected_word_error(check)
         ordered = [None, None, None, None]
-        for relative_coords, pauli in check.paulis.items():
-            key = (pauli.letter, relative_coords)
-            if key in self.gate_order:
-                order = self.gate_order[key]
+        for offset, pauli in check.paulis.items():
+            key = (pauli.letter, offset)
+            if key in self.ordering:
+                order = self.ordering[key]
                 ordered[order] = pauli
             else:
-                self.unexpected_pauli_error(check, pauli, relative_coords)
+                self.unexpected_pauli_error(check, pauli, offset)
         return ordered
 
     def unexpected_pauli_error(
-            self, check: Check, pauli: Pauli, relative_coords: Coordinates):
+            self, check: Check, pauli: Pauli, offset: Coordinates):
         raise ValueError(
             f"Check contains an unexpected Pauli! "
-            f"Found a Pauli {pauli} with coords {relative_coords} "
+            f"Found a Pauli {pauli} with coords {offset} "
             f"relative to check anchor {check.anchor}. "
             f"Expected only the following Pauli letters and relative "
-            f"coordinates: {self.gate_order}")
+            f"coordinates: {self.ordering}")
 
     def unexpected_weight_error(self, check: Check):
         raise ValueError(
