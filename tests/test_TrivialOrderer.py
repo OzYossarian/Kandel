@@ -11,10 +11,9 @@ from tests.utils.numbers import default_test_repeats_medium, default_max_unique_
 
 def test_trivial_orderer_order():
     # Should just give back whatever we give it.
-    # Should never throw an exception.
+    orderer = TrivialOrderer()
 
     # Explicit test:
-    orderer = TrivialOrderer()
     paulis = [
         Pauli(Qubit(0), PauliLetter('X')),
         Pauli(Qubit(1), PauliLetter('X')),
