@@ -19,8 +19,7 @@ class RotatedSurfaceCodeOrderer(ControlledGateOrderer):
             (PauliZ, (1, 0)): 0,
             (PauliZ, (0, 1)): 1,
             (PauliZ, (0, -1)): 2,
-            (PauliZ, (-1, 0)): 3,
-        }
+            (PauliZ, (-1, 0)): 3}
 
     def order(self, check: Check) -> List[Pauli | None]:
         ordered = [None, None, None, None]
