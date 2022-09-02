@@ -1,27 +1,6 @@
-from typing import Tuple
-
 from main.building_blocks.Qubit import Qubit
 from main.compiling.noise.noises import OneQubitNoise
-from main.compiling.noise.noises.Noise import Noise
-
-
-class MockNoise(Noise):
-    def __init__(self, name: str, params: Tuple[float, ...]):
-        self._name = name
-        self._params = params
-        super().__init__()
-
-    @classmethod
-    def uniform(cls, p: float):
-        raise NotImplementedError()
-
-    @property
-    def name(self) -> str:
-        return self._name
-
-    @property
-    def params(self) -> Tuple[float, ...]:
-        return self._params
+from tests.utils.noise import MockNoise
 
 
 def test_noise_unequal_if_types_differ():
