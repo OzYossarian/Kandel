@@ -1,6 +1,4 @@
 from collections import defaultdict
-import random
-import string
 import stim
 from main.building_blocks.Qubit import Qubit
 from main.building_blocks.pauli.Pauli import Pauli
@@ -10,15 +8,12 @@ from main.compiling.Circuit import Circuit
 from main.compiling.Instruction import Instruction
 from main.compiling.compilers.AncillaPerCheckCompiler import AncillaPerCheckCompiler
 from main.compiling.noise.models import CodeCapacityBitFlipNoise
-from main.compiling.noise.models.NoNoise import NoNoise
 from main.compiling.noise.noises.OneQubitNoise import OneQubitNoise
 
 from main.compiling.syndrome_extraction.controlled_gate_orderers.RotatedSurfaceCodeOrderer import (
     RotatedSurfaceCodeOrderer,
 )
-from main.compiling.syndrome_extraction.extractors.mixed.CxCyCzExtractor import (
-    CxCyCzExtractor,
-)
+from main.compiling.syndrome_extraction.extractors.ancilla_per_check.mixed.CxCyCzExtractor import CxCyCzExtractor
 from main.enums import State
 
 single_qubit_circuit = Circuit()

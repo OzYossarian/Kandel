@@ -5,7 +5,7 @@ from main.codes.hexagonal.tic_tac_toe.utils import random_good_route
 from main.compiling.compilers.AncillaPerCheckCompiler import AncillaPerCheckCompiler
 from main.compiling.noise.models.PhenomenologicalNoise import PhenomenologicalNoise
 from main.compiling.syndrome_extraction.controlled_gate_orderers.TrivialOrderer import TrivialOrderer
-from main.compiling.syndrome_extraction.extractors.mixed.CxCyCzExtractor import CxCyCzExtractor
+from main.compiling.syndrome_extraction.extractors.ancilla_per_check.mixed import CxCyCzExtractor
 
 distance = 4
 pseudo_layer_size = 3

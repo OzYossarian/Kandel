@@ -5,7 +5,7 @@ from main.building_blocks.pauli.PauliLetter import PauliLetter
 from main.codes.Code import Code
 from main.compiling.compilers.Compiler import Compiler
 from main.compiling.noise.models.NoiseModel import NoiseModel
-from main.compiling.syndrome_extraction.extractors.AncillaPerCheckExtractor import AncillaPerCheckExtractor
+from main.compiling.syndrome_extraction.extractors.ancilla_per_check.AncillaPerCheckExtractor import AncillaPerCheckExtractor
 from main.enums import State
 
 

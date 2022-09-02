@@ -2,8 +2,8 @@ from typing import Dict, List
 
 from main.building_blocks.pauli.PauliLetter import PauliX, PauliZ, PauliLetter
 from main.compiling.syndrome_extraction.controlled_gate_orderers.ControlledGateOrderer import ControlledGateOrderer
-from main.compiling.syndrome_extraction.extractors.PauliExtractor import PauliExtractor
-from main.compiling.syndrome_extraction.extractors.pure.PurePauliWordExtractor import PurePauliWordExtractor
+from main.compiling.syndrome_extraction.extractors.ancilla_per_check.PauliExtractor import PauliExtractor
+from main.compiling.syndrome_extraction.extractors.ancilla_per_check.pure.PurePauliWordExtractor import PurePauliWordExtractor
 from main.enums import State
 
 
