@@ -5,14 +5,14 @@ from typing import List, Dict
 from main.building_blocks.Check import Check
 from main.building_blocks.pauli.Pauli import Pauli
 from main.building_blocks.pauli.PauliLetter import PauliZ, PauliX, PauliY, PauliLetter
+from main.compiling.syndrome_extraction.extractors.AncillaPerCheckExtractor import AncillaPerCheckExtractor
 from main.compiling.syndrome_extraction.extractors.PauliExtractor import PauliExtractor
-from main.compiling.syndrome_extraction.extractors.SyndromeExtractor import SyndromeExtractor
 from main.compiling.Instruction import Instruction
 from main.compiling.syndrome_extraction.controlled_gate_orderers.ControlledGateOrderer import ControlledGateOrderer
 from main.enums import State
 
 
-class UniformAncillaBasisExtractor(SyndromeExtractor):
+class UniformAncillaBasisExtractor(AncillaPerCheckExtractor):
     def __init__(
             self, ancilla_basis: PauliLetter = None,
             pauli_x_extractor: PauliExtractor = None,
