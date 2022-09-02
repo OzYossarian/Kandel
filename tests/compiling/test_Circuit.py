@@ -86,8 +86,8 @@ def test_qubit_index():
 
 
 def test_is_initialised():
-    assert single_qubit_circuit.is_initialised(1, qubit) is True
-    assert single_qubit_circuit.is_initialised(0, qubit_1) is False
+    assert single_qubit_circuit.is_initialised(1, qubit)
+    assert single_qubit_circuit.is_initialised(0, qubit_1)
 
 
 def test_initialise():
@@ -95,9 +95,9 @@ def test_initialise():
     q_1 = Qubit(1)
     q_2 = Qubit(2)
     q_3 = Qubit(3)
-    with pytest.raises(Exception):
+    with pytest.raises(Exception, match='The instruction has to act on 1 qubit'):
         three_qubit_circuit.initialise(0, Instruction([q_1, q_2], "R"))
-    with pytest.raises(Exception):
+    with pytest.raises(Exception, match='The instruction has to be an initialize instruction starting with \"R\"'):
         three_qubit_circuit.initialise(0, Instruction([q_1], "X"))
 
     three_qubit_circuit.initialise(0, Instruction([q_1], "R"))
@@ -145,7 +145,7 @@ def test_measure():
     m_instruction.params = ()
     check = Check([Pauli(qubit_1, PauliZ), Pauli(qubit_2, PauliZ)])
     two_measurements_circuit.measure(m_instruction, check, round=0, tick=6)
-    correct_dict = defaultdict(list)
+    correct_dict = {}
     correct_dict[qubit_2] = [m_instruction]
     correct_dict[qubit_1] = [m_instruction]
     # test if the circuit is correctly updated

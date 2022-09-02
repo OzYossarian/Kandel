@@ -1,4 +1,5 @@
 from collections import defaultdict
+from multiprocessing.sharedctypes import Value
 from typing import List, Dict, Tuple, Any
 
 import stim
@@ -15,7 +16,7 @@ from main.utils.types import Tick
 RepeatBlock = Tuple[int, int, int] | None
 
 
-class Circuit(object):
+class Circuit():
     def __init__(self):
         """Intermediate representation of a quantum circuit. Rather than
         compile directly to a Stim circuit, which is somewhat inflexible, we
@@ -46,7 +47,7 @@ class Circuit(object):
         self.qubit_indexes = {}
         # Track at which ticks qubits were initialised and measured, so we
         # say whether a qubit is currently initialised or not.
-        self.init_ticks = defaultdict(list)
+        self.init_ticks: Dict[Qubit, List[Tick]] = defaultdict(list)
         self.measure_ticks: Dict[Qubit, List[Tick]] = defaultdict(list)
         self.shift_ticks = []
         # For each tick, note whether it's inside a repeat block.
@@ -124,9 +125,11 @@ class Circuit(object):
                 and its name must start with "R".
         """
         # Initialise a single qubit..
-        assert len(instruction.qubits) == 1
+        if len(instruction.qubits) != 1:
+            raise ValueError("The instruction has to act on 1 qubit")        
         qubit = instruction.qubits[0]
-        assert instruction.name[0] == "R"
+        if instruction.name[0] != "R":
+            raise ValueError("The instruction has to be an initialize instruction starting with \"R\"")
         self.add_instruction(tick, instruction)
         # Note down at which tick this qubit is considered initialised.
         self.init_ticks[qubit].append(tick)
@@ -262,10 +265,10 @@ class Circuit(object):
         """Transforms the circuit to a stim circuit.
 
         Args:
-            idling_noise: Noise channel to apply to idling locations in the circuit. Note that using to_stim will only 
+            idling_noise: Noise channel to apply to idling locations in the circuit. Note that using to_stim will only
                 add idling noise.
             track_coords: Whether to track the coordinates of the qubits and detectors. Defaults to True.
-            track_progress: If this is set to True a progress bar is printed. The progress bar shows how many ticks 
+            track_progress: If this is set to True a progress bar is printed. The progress bar shows how many ticks
                 have been translated and the time taken. Defaults to True.
 
         Returns:
@@ -345,7 +348,7 @@ class Circuit(object):
             # further instructions - e.g. building detectors, adding checks
             # into logical observables, etc.
             further_instructions = (
-                self.measurer.measurement_detectors_and_observables_to_stim(
+                self.measurer.measurement_triggers_to_stim(
                     measurements, shift_coords
                 )
             )
