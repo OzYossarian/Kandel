@@ -87,7 +87,7 @@ def test_qubit_index():
 
 def test_is_initialised():
     assert single_qubit_circuit.is_initialised(1, qubit)
-    assert single_qubit_circuit.is_initialised(0, qubit_1)
+    assert not single_qubit_circuit.is_initialised(0, qubit_1)
 
 
 def test_initialise():
