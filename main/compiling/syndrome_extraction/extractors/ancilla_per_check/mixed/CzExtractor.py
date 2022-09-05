@@ -18,11 +18,13 @@ class CzExtractor(UniformAncillaBasisExtractor):
         pauli_x_extractor = PauliExtractor(['H'], 'CZ', False, ['H'])
         pauli_y_extractor = PauliExtractor(['H_YZ'], 'CZ', False, ['H_YZ'])
         pauli_z_extractor = PauliExtractor([], 'CZ', False, [])
+        pauli_extractors = {
+            PauliLetter('X'): pauli_x_extractor,
+            PauliLetter('Y'): pauli_y_extractor,
+            PauliLetter('Z'): pauli_z_extractor}
         super().__init__(
             ancilla_basis,
-            pauli_x_extractor,
-            pauli_y_extractor,
-            pauli_z_extractor,
+            pauli_extractors,
             controlled_gate_orderer,
             initialisation_instructions,
             measurement_instructions,

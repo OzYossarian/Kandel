@@ -14,10 +14,8 @@ from main.enums import State
 
 class UniformAncillaBasisExtractor(AncillaPerCheckExtractor):
     def __init__(
-            self, ancilla_basis: PauliLetter = None,
-            pauli_x_extractor: PauliExtractor = None,
-            pauli_y_extractor: PauliExtractor = None,
-            pauli_z_extractor: PauliExtractor = None,
+            self, ancilla_basis: PauliLetter,
+            pauli_extractors: Dict[PauliLetter, PauliExtractor | None],
             controlled_gate_orderer: ControlledGateOrderer = None,
             initialisation_instructions: Dict[State, List[str]] = None,
             measurement_instructions: Dict[PauliLetter, List[str]] = None,
@@ -28,15 +26,15 @@ class UniformAncillaBasisExtractor(AncillaPerCheckExtractor):
         Args:
             ancilla_basis:
                 The basis in which to initialise and measure all ancilla qubits
-            pauli_x_extractor:
-                Data concerning how to extract a Pauli X within a larger Pauli
-                word - e.g. how to extract an X within XYZXYZ.
-            pauli_y_extractor:
-                Data concerning how to extract a Pauli Y within a larger Pauli
-                word - e.g. how to extract a Y within XYZXYZ.
-            pauli_z_extractor:
-                Data concerning how to extract a Pauli Z within a larger Pauli
-                word - e.g. how to extract a Z within XYZXYZ.
+            pauli_extractors:
+                Specifies how to extract a Pauli with a given letter within
+                a larger Pauli word, e.g. how to extract an X within XYZXYZ.
+                Each key is a PauliLetter, and each value is a PauliExtractor;
+                the latter is just a container for the data specifying how
+                to extract the key. To specify that nothing needs to be done
+                for a given PauliLetter, add it as a key whose value is None.
+                By default, this is the behaviour of PauliLetter('I'), unless
+                something different is passed in.
             controlled_gate_orderer:
                 Class that will define the order in which data qubits are
                 'extracted' (i.e. order in which we place controlled gates
@@ -79,10 +77,9 @@ class UniformAncillaBasisExtractor(AncillaPerCheckExtractor):
         # (XX..X, YY...Y and ZZ...Z). Instead, we raise an error in the
         # get_ancilla_basis method if necessary.
         self.ancilla_basis = ancilla_basis
-        self.pauli_extractors = {
-            PauliX: pauli_x_extractor,
-            PauliY: pauli_y_extractor,
-            PauliZ: pauli_z_extractor}
+        self.pauli_extractors = pauli_extractors
+        if PauliLetter('I') not in self.pauli_extractors:
+            self.pauli_extractors[PauliLetter('I')] = None
 
     def get_ancilla_basis(self, check: Check) -> PauliLetter:
         if self.ancilla_basis is not None:
@@ -94,31 +91,41 @@ class UniformAncillaBasisExtractor(AncillaPerCheckExtractor):
 
     def get_pre_rotations(
             self, pauli: Pauli, check: Check) -> List[Instruction]:
-        extractor = self.pauli_extractors[pauli.letter]
-        if extractor is not None:
-            return [
-                Instruction([pauli.qubit], name)
-                for name in extractor.pre_rotations]
+        if pauli.letter in self.pauli_extractors:
+            extractor = self.pauli_extractors[pauli.letter]
+            if extractor is not None:
+                return [
+                    Instruction([pauli.qubit], name)
+                    for name in extractor.pre_rotations]
+            else:
+                return []
         else:
             self._no_extraction_method_error(pauli, check)
 
     def get_post_rotations(
             self, pauli: Pauli, check: Check) -> List[Instruction]:
-        extractor = self.pauli_extractors[pauli.letter]
-        if extractor is not None:
-            return [
-                Instruction([pauli.qubit], name)
-                for name in extractor.post_rotations]
+        if pauli.letter in self.pauli_extractors:
+            extractor = self.pauli_extractors[pauli.letter]
+            if extractor is not None:
+                return [
+                    Instruction([pauli.qubit], name)
+                    for name in extractor.post_rotations]
+            else:
+                return []
         else:
             self._no_extraction_method_error(pauli, check)
 
-    def get_control_gate(self, pauli: Pauli, check: Check) -> Instruction:
-        extractor = self.pauli_extractors[pauli.letter]
-        if extractor is not None:
-            qubits = [check.ancilla, pauli.qubit] \
-                if extractor.ancilla_is_control \
-                else [pauli.qubit, check.ancilla]
-            return Instruction(qubits, extractor.controlled_gate)
+    def get_controlled_gate(
+            self, pauli: Pauli, check: Check) -> Instruction | None:
+        if pauli.letter in self.pauli_extractors:
+            extractor = self.pauli_extractors[pauli.letter]
+            if extractor is not None:
+                qubits = [check.ancilla, pauli.qubit] \
+                    if extractor.ancilla_is_control \
+                    else [pauli.qubit, check.ancilla]
+                return Instruction(qubits, extractor.controlled_gate)
+            else:
+                return None
         else:
             self._no_extraction_method_error(pauli, check)
 

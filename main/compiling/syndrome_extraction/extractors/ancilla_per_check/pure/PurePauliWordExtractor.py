@@ -24,10 +24,12 @@ class PurePauliWordExtractor(UniformAncillaBasisExtractor):
             parallelize: bool = True):
         """
         This extractor is optimised for codes where every check is a 'pure'
-        Pauli word - i.e. just one repeated letter, e.g. surface code (always
-        XX...X or ZZ...Z), repetition code (always ZZ) or tic-tac-toe code
-        (always XX, YY or ZZ). It allows ancillas of different check types to
-        be initialised (and measured) in different bases to one another.
+        Pauli word - i.e. either XX...X, ZZ...Z or YY...Y. Such codes include
+        the surface code (always XX...X or ZZ...Z), repetition code (always
+        ZZ) and tic-tac-toe codes (always XX, YY or ZZ). It allows ancillas
+        of different check types to be initialised (and measured) in
+        different bases to one another.
+
         Args:
             x_word_ancilla_basis:
                 The basis in which to initialise and measure the ancilla
@@ -71,14 +73,18 @@ class PurePauliWordExtractor(UniformAncillaBasisExtractor):
                 parallel.
         """
 
+        pauli_extractors = {
+            PauliLetter('X'): pauli_x_extractor,
+            PauliLetter('Y'): pauli_y_extractor,
+            PauliLetter('Z'): pauli_z_extractor}
+
         super().__init__(
-            pauli_x_extractor=pauli_x_extractor,
-            pauli_y_extractor=pauli_y_extractor,
-            pauli_z_extractor=pauli_z_extractor,
-            controlled_gate_orderer=controlled_gate_orderer,
-            initialisation_instructions=initialisation_instructions,
-            measurement_instructions=measurement_instructions,
-            parallelize=parallelize)
+            None,
+            pauli_extractors,
+            controlled_gate_orderer,
+            initialisation_instructions,
+            measurement_instructions,
+            parallelize)
 
         self.x_word_ancilla_basis = x_word_ancilla_basis
         self.y_word_ancilla_basis = y_word_ancilla_basis
@@ -100,8 +106,8 @@ class PurePauliWordExtractor(UniformAncillaBasisExtractor):
         else:
             raise ValueError(
                 f"Can't use a PurePauliWordExtractor to extract syndrome of "
-                f"a check whose product is a mixed Pauli word! The relevant "
-                f"check is: {check}.")
+                f"a check whose product is not XX...X, YY...Y or ZZ...Z! "
+                f"The relevant check is: {check}.")
 
     @staticmethod
     def _no_ancilla_basis_error(check: Check, word: str):

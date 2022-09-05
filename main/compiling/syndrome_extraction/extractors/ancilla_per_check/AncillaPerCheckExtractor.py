@@ -134,9 +134,9 @@ class AncillaPerCheckExtractor(SyndromeExtractor):
                 step, checks, ordered_paulis, tick, circuit, compiler)
 
         # Finally, measure the ancilla qubits.
-        paulis = (
+        paulis = [
             Pauli(check.ancilla, basis)
-            for check, basis in zip(checks, ancilla_bases))
+            for check, basis in zip(checks, ancilla_bases)]
         tick = compiler.measure_qubits(
             paulis, checks, round, tick, circuit, measurement_instructions)
 
@@ -183,7 +183,7 @@ class AncillaPerCheckExtractor(SyndromeExtractor):
 
         # Next, do the controlled gate between the data and ancilla qubits.
         for check, pauli in zip(checks, paulis):
-            self.do_control_gate(pauli, check, tick, circuit, compiler)
+            self.do_controlled_gate(pauli, check, tick, circuit, compiler)
         # Controlled gates are guaranteed to only take two ticks.
         tick += 2
 
@@ -233,7 +233,7 @@ class AncillaPerCheckExtractor(SyndromeExtractor):
             pre_rotations, tick, circuit)
         return tick
 
-    def do_control_gate(
+    def do_controlled_gate(
             self,
             pauli: Pauli | None,
             check: Check,
@@ -242,8 +242,10 @@ class AncillaPerCheckExtractor(SyndromeExtractor):
             compiler: Compiler):
         # Only something to do if the Pauli at this step is not None.
         if pauli is not None:
-            control_gate = self.get_control_gate(pauli, check)
-            compiler.compile_two_qubit_gates([control_gate], tick, circuit)
+            controlled_gate = self.get_controlled_gate(pauli, check)
+            if controlled_gate is not None:
+                compiler.compile_two_qubit_gates(
+                    [controlled_gate], tick, circuit)
 
     @abstractmethod
     def get_ancilla_basis(self, check: Check) -> PauliLetter:
@@ -260,5 +262,5 @@ class AncillaPerCheckExtractor(SyndromeExtractor):
         raise NotImplementedError("Must be overridden in a subclass!")
 
     @abstractmethod
-    def get_control_gate(self, pauli: Pauli, check: Check) -> Instruction:
+    def get_controlled_gate(self, pauli: Pauli, check: Check) -> Instruction:
         raise NotImplementedError("Must be overridden in a subclass!")
