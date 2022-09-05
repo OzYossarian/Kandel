@@ -615,13 +615,3 @@ def test_ancilla_per_check_extractor_extract_checks_in_sequence(mocker: MockerFi
         expected_measure_qubits_calls, any_order=True)
 
     assert next_tick == 52
-
-
-# X Test orderer defaults to trivial one
-# X Test init and measurement instructions default to compiler ones
-# X Test all methods
-
-
-
-
-
