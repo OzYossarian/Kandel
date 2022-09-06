@@ -1,4 +1,4 @@
-from typing import List, Tuple
+from typing import List, Tuple, Any
 
 import stim
 
@@ -68,3 +68,24 @@ class Instruction(NiceRepr):
                 f"instruction! Qubits given are: {qubits}")
         # TODO - also check dimensions are all the same?
         #  And either all have tuple coords or all have non-tuple coords?
+
+    def __eq__(self, other: Any):
+        # Order within the lists of qubits matters here, so for once we
+        # really should use list comparison in this equality function.
+        return \
+            type(self) == type(other) and \
+            self.qubits == other.qubits and \
+            self.name == other.name and \
+            self.params == other.params and \
+            self.is_measurement == other.is_measurement and \
+            self.is_noise == other.is_noise and \
+            self.targets == other.targets
+
+    def __hash__(self):
+        return hash((
+            tuple(self.qubits),
+            self.name,
+            self.params,
+            self.is_measurement,
+            self.is_noise,
+            tuple(self.targets)))
