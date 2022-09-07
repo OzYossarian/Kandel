@@ -469,7 +469,7 @@ class Compiler(ABC):
         paulis: Iterable[Pauli],
         checks: Iterable[Check],
         round: int,
-        tick: int,
+        tick: Tick,
         circuit: Circuit,
         measurement_instructions: Dict[PauliLetter, List[str]] = None,
     ):
@@ -504,7 +504,7 @@ class Compiler(ABC):
         return tick + ticks_needed
 
     def compile_one_qubit_gates(
-        self, gates: List[Instruction], tick: int, circuit: Circuit
+        self, gates: List[Instruction], tick: Tick, circuit: Circuit
     ) -> Tick:
         return self._compile_gates(
             gates, self.noise_model.one_qubit_gate, 1, tick, circuit
