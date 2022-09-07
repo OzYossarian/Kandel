@@ -5,7 +5,7 @@ from main.compiling.syndrome_extraction.controlled_gate_orderers.ControlledGateO
 from main.compiling.syndrome_extraction.extractors.ancilla_per_check.PauliExtractor import PauliExtractor
 from main.compiling.syndrome_extraction.extractors.ancilla_per_check.mixed.UniformAncillaBasisExtractor import \
     UniformAncillaBasisExtractor
-from main.enums import State
+from main.utils.enums import State
 
 
 class CzExtractor(UniformAncillaBasisExtractor):

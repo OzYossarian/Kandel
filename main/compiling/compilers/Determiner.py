@@ -18,7 +18,7 @@ from main.compiling.Instruction import Instruction
 if TYPE_CHECKING:
     from main.compiling.compilers.Compiler import Compiler
 from main.compiling.noise.models.NoNoise import NoNoise
-from main.enums import State
+from main.utils.enums import State
 
 
 class Determiner:

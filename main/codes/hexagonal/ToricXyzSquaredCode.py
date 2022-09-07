@@ -1,6 +1,6 @@
 from typing import List
 
-from main.Colour import Blue, Green, Red
+from main.utils.Colour import Blue, Green, Red
 from main.building_blocks.Check import Check
 from main.building_blocks.detectors.Stabilizer import Stabilizer
 from main.building_blocks.logical.LogicalOperator import LogicalOperator

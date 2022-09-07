@@ -26,7 +26,7 @@ from main.compiling.syndrome_extraction.extractors.SyndromeExtractor import (
 from main.compiling.syndrome_extraction.extractors.ancilla_per_check.mixed.CnotExtractor import (
     CnotExtractor,
 )
-from main.enums import State
+from main.utils.enums import State
 from main.utils.types import Tick
 from main.utils.utils import xor
 import stim

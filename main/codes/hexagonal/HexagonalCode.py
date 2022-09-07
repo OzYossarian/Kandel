@@ -1,6 +1,6 @@
 from typing import Dict, List, Tuple
 
-from main.Colour import Red, Green, Blue
+from main.utils.Colour import Red, Green, Blue
 from main.building_blocks.Check import Check
 from main.building_blocks.pauli.PauliLetter import PauliZ, PauliY, PauliX
 from main.building_blocks.Qubit import Qubit

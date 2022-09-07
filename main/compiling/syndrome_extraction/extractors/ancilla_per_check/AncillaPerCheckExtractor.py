@@ -15,7 +15,7 @@ if TYPE_CHECKING:
     from main.compiling.compilers.Compiler import Compiler
 from main.compiling.syndrome_extraction.controlled_gate_orderers.ControlledGateOrderer import ControlledGateOrderer
 from main.compiling.syndrome_extraction.controlled_gate_orderers.TrivialOrderer import TrivialOrderer
-from main.enums import State
+from main.utils.enums import State
 from main.utils.types import Tick
 
 
