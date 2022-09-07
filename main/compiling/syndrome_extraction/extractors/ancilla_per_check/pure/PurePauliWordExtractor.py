@@ -91,15 +91,15 @@ class PurePauliWordExtractor(UniformAncillaBasisExtractor):
         self.z_word_ancilla_basis = z_word_ancilla_basis
 
     def get_ancilla_basis(self, check: Check) -> PauliLetter:
-        if check.product.word.word == 'X' * check.weight:
+        if self.is_pure(check, PauliLetter('X')):
             return self.x_word_ancilla_basis \
                 if self.x_word_ancilla_basis is not None \
                 else self._no_ancilla_basis_error(check, 'XX...X')
-        elif check.product.word.word == 'Y' * check.weight:
+        elif self.is_pure(check, PauliLetter('Y')):
             return self.y_word_ancilla_basis \
                 if self.y_word_ancilla_basis is not None \
                 else self._no_ancilla_basis_error(check, 'YY...Y')
-        elif check.product.word.word == 'Z' * check.weight:
+        elif self.is_pure(check, PauliLetter('Z')):
             return self.z_word_ancilla_basis \
                 if self.z_word_ancilla_basis is not None \
                 else self._no_ancilla_basis_error(check, 'ZZ...Z')
@@ -108,6 +108,12 @@ class PurePauliWordExtractor(UniformAncillaBasisExtractor):
                 f"Can't use a PurePauliWordExtractor to extract syndrome of "
                 f"a check whose product is not XX...X, YY...Y or ZZ...Z! "
                 f"The relevant check is: {check}.")
+
+    @staticmethod
+    def is_pure(check: Check, letter: PauliLetter):
+        return all([
+            pauli.letter == letter
+            for pauli in check.paulis.values()])
 
     @staticmethod
     def _no_ancilla_basis_error(check: Check, word: str):

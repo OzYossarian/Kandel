@@ -101,10 +101,12 @@ def test_uniform_ancilla_basis_extractor_get_pre_rotations_returns_expected_inst
 
     check = mocker.Mock(spec=Check)
     result = extractor.get_pre_rotations(pauli, check)
-    expected = [
-        Instruction([pauli.qubit], pre_rotation)
-        for pre_rotation in pre_rotations]
-    assert result == expected
+    assert len(result) == len(pre_rotations)
+    for i in range(len(result)):
+        instruction = result[i]
+        assert instruction.qubits == [pauli.qubit]
+        assert instruction.name == pre_rotations[i]
+
 
 
 def test_uniform_ancilla_basis_extractor_get_post_rotations_fails_if_no_extractor(mocker: MockerFixture):
@@ -150,10 +152,11 @@ def test_uniform_ancilla_basis_extractor_get_post_rotations_returns_expected_ins
 
     check = mocker.Mock(spec=Check)
     result = extractor.get_post_rotations(pauli, check)
-    expected = [
-        Instruction([pauli.qubit], post_rotation)
-        for post_rotation in post_rotations]
-    assert result == expected
+    assert len(result) == len(post_rotations)
+    for i in range(len(result)):
+        instruction = result[i]
+        assert instruction.qubits == [pauli.qubit]
+        assert instruction.name == post_rotations[i]
 
 
 def test_uniform_ancilla_basis_extractor_get_controlled_gate_fails_if_no_extractor(mocker: MockerFixture):
@@ -202,9 +205,8 @@ def test_uniform_ancilla_basis_extractor_get_controlled_gate_returns_expected_in
     check = mocker.Mock(spec=Check)
     check.ancilla = mocker.Mock(spec=Qubit)
     result = extractor.get_controlled_gate(pauli, check)
-    expected = Instruction([check.ancilla, pauli.qubit], controlled_gate)
-    assert result == expected
-
+    assert result.qubits == [check.ancilla, pauli.qubit]
+    assert result.name == controlled_gate
 
 
 def test_uniform_ancilla_basis_extractor_get_controlled_gate_returns_expected_instruction_when_ancilla_not_control(
@@ -225,5 +227,5 @@ def test_uniform_ancilla_basis_extractor_get_controlled_gate_returns_expected_in
     check = mocker.Mock(spec=Check)
     check.ancilla = mocker.Mock(spec=Qubit)
     result = extractor.get_controlled_gate(pauli, check)
-    expected = Instruction([pauli.qubit, check.ancilla], controlled_gate)
-    assert result == expected
+    assert result.qubits == [pauli.qubit, check.ancilla]
+    assert result.name == controlled_gate
