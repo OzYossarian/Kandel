@@ -10,7 +10,7 @@ from main.enums import State
 
 class CxCyCzExtractor(UniformAncillaBasisExtractor):
     def __init__(
-            self, controlled_gate_orderer: ControlledGateOrderer,
+            self, controlled_gate_orderer: ControlledGateOrderer = None,
             initialisation_instructions: Dict[State, List[str]] = None,
             measurement_instructions: Dict[PauliLetter, List[str]] = None,
             parallelize: bool = True):

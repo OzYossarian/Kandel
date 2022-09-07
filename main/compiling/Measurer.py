@@ -1,5 +1,5 @@
 from collections import defaultdict
-from typing import List, Iterable, Tuple
+from typing import List, Iterable, Tuple, Dict
 
 import stim
 
@@ -34,11 +34,11 @@ class Measurer:
 
         # Note which instructions correspond to the measurement of which
         # checks and in which rounds. Keys are Instructions, values are
-        # (check, round, relative_round) pairs.
-        self.measurement_checks = {}
+        # (check, round) pairs.
+        self.measurement_checks: Dict[Instruction, Tuple[Check, int]] = {}
         # Track the numbers stim assigns to the measurement of a given check
         # in a given round. Keys are (check, round) pairs.
-        self.measurement_numbers = {}
+        self.measurement_numbers: Dict[Tuple[Check, int], int] = {}
 
         # Map observables to their index in Stim
         self.observable_indexes = {}
