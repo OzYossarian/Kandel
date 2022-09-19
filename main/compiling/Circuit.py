@@ -143,21 +143,22 @@ class Circuit():
         can be added to the stim circuit when running to_stim()
 
         Args:
-            measurement: Measurement instruction which can be on one or mulitple qubits.
-            check: The check to which the measurement corresponds. This is used by the measurer class to build 
+            measurement: Measurement instruction which can be on one or multiple qubits.
+            check: The check to which the measurement corresponds. This is used by the measurer class to compile
                 detectors.
-            round: The QEC round in which the measurement takes place. This is used by the measurer class to build
+            round: The QEC round in which the measurement takes place. This is used by the measurer class to compile
                 detectors.
             tick: Tick at which the measurement happens.
         """
+        # TODO - raise error if measurement.is_measurement is False?
         # Measure a qubit (perhaps multiple)
         self.add_instruction(tick, measurement)
         # Record that these qubits have been measured.
         for qubit in measurement.qubits:
             self.measure_ticks[qubit].append(tick)
-        # Note down that this gate corresponds to the measurement of a
+        # Note down that this instruction corresponds to the measurement of a
         # particular check in a particular round. This info is used when
-        # building detectors later.
+        # compiling detectors later.
         self.measurer.add_measurement(measurement, check, round)
 
     def add_instruction(self, tick: int, instruction: Instruction):
@@ -344,7 +345,7 @@ class Circuit():
                         compiled[instruction] = True
 
             # Let the measurer determine if these measurements trigger any
-            # further instructions - e.g. building detectors, adding checks
+            # further instructions - e.g. compiling detectors, adding checks
             # into logical observables, etc.
             further_instructions = (
                 self.measurer.measurement_triggers_to_stim(

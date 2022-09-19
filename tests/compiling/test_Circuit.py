@@ -186,7 +186,7 @@ def test__to_stim():
 
     # testing if the properties of the measurer class are reset
     assert rsc_circuit_one_layer.measurer.measurement_numbers == {}
-    assert rsc_circuit_one_layer.measurer.detectors_built == defaultdict(bool)
+    assert rsc_circuit_one_layer.measurer.detectors_compiled == defaultdict(bool)
     assert rsc_circuit_one_layer.measurer.total_measurements == 0
 
     # test number of measurements

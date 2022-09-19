@@ -95,7 +95,7 @@ def random_checks(
         a list of `num` randomly generated checks.
 
     """
-    validate_arguments(
+    validate_random_checks_arguments(
         tuple_coords,
         weight,
         max_weight,
@@ -151,10 +151,10 @@ def random_checks(
             colour = None
 
         check = random_check(
-            int_coords,
-            tuple_coords,
             check_weight,
             check_dimension,
+            int_coords,
+            tuple_coords,
             from_letters,
             from_signs,
             anchor,
@@ -167,10 +167,10 @@ def random_checks(
 
 
 def random_check(
+        weight: int,
+        dimension: int = None,
         int_coords: bool = False,
         tuple_coords: bool = True,
-        weight: int = None,
-        dimension: int = None,
         from_letters: List[str] = None,
         from_signs: List[str] = None,
         anchor: Coordinates = None,
@@ -178,6 +178,10 @@ def random_check(
         min_coord: float | int = default_min_coord,
         max_coord: float | int = default_max_coord
 ):
+    validate_random_check_arguments(weight, dimension, tuple_coords)
+
+    if not tuple_coords:
+        dimension = 1
     if from_signs is None:
         from_signs = hermitian_signs
 
@@ -202,7 +206,14 @@ def random_check(
     return check
 
 
-def validate_arguments(
+def specific_check(letters: List[str]):
+    paulis = [
+        Pauli(Qubit(i), PauliLetter(letter))
+        for i, letter in enumerate(letters)]
+    return Check(paulis)
+
+
+def validate_random_checks_arguments(
         tuple_coords: bool,
         weight: int,
         max_weight: int,
@@ -213,16 +224,9 @@ def validate_arguments(
         from_colours: List[Colour]
 ):
     assert xor(weight is None, max_weight is None)
-    weight_arg = weight if weight is not None else max_weight
-    assert weight_arg > 0
 
     if tuple_coords:
         assert xor(dimension is None, max_dimension is None)
-        dim_arg = dimension if dimension is not None else max_dimension
-        assert dim_arg > 0
-    else:
-        assert dimension in [None, 1]
-        assert max_dimension in [None, 1]
 
     assert zero_anchors is False or random_anchors is False
     # Here we allow both to be False - this just means anchors will be set
@@ -233,8 +237,12 @@ def validate_arguments(
         assert from_colours != []
 
 
-def create_check(letters: List[str]):
-    paulis = [
-        Pauli(Qubit(i), PauliLetter(letter))
-        for i, letter in enumerate(letters)]
-    return Check(paulis)
+def validate_random_check_arguments(
+        weight: int,
+        dimension: int,
+        tuple_coords: bool):
+    assert weight > 0
+    if tuple_coords:
+        assert dimension > 0
+    else:
+        assert dimension in [None, 1]

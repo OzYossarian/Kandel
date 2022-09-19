@@ -10,11 +10,14 @@ from main.compiling.Instruction import Instruction
 from main.utils.types import Coordinates
 
 
+Trigger = Detector | LogicalOperator
+
+
 class Measurer:
     def __init__(self):
         """A separate class for handling measurement logic in stim circuits.
         Stim assigns numbers to each measurement, which are then used when
-        building detectors and measuring logical operators. This class tracks
+        compiling detectors and measuring logical operators. This class tracks
         all of this. A Measurer should be associated to a single circuit -
         e.g. can't use the same Measurer across several circuits.
 
@@ -25,7 +28,7 @@ class Measurer:
         This is why we do things in what might seem initially to be a
         convoluted way - we note down which measurements correspond to which
         checks in which rounds, then later on, when actually compiling to a
-        Stim circuit, we dig up this information again and build detectors
+        Stim circuit, we dig up this information again and compile detectors
         and update observables accordingly.
         """
         # Note total number of measurements made. Used for calculating stim
@@ -41,23 +44,24 @@ class Measurer:
         self.measurement_numbers: Dict[Tuple[Check, int], int] = {}
 
         # Map observables to their index in Stim
-        self.observable_indexes = {}
+        self._observable_indexes = {}
 
-        # A measurement can lead to a detector being built or an observable
+        # A measurement can lead to a detector being compiled or an observable
         # being updated - we track which measurements trigger what.
         # Keys are (check, round) pairs, and values are lists whose elements
         # are detectors or observables.
-        self.triggers = defaultdict(list)
-        # To prevent duplicate detectors being built, track those that we've
+        self.triggers: Dict[Tuple[Check, int], List[Trigger]] = \
+            defaultdict(list)
+        # To prevent duplicate detectors being compiled, track those that we've
         # already made.
-        self.detectors_built = defaultdict(bool)
+        self.detectors_compiled: Dict[Tuple[int], bool] = defaultdict(bool)
 
     def add_measurement(self, measurement: Instruction, check: Check, round: int):
         self.measurement_checks[measurement] = (check, round)
 
     def add_detectors(self, detectors: Iterable[Detector], round: int):
         for detector in detectors:
-            for check in detector.final_slice:
+            for check in detector.final_checks:
                 self.triggers[(check, round)].append(detector)
 
     def multiply_logical_observable(
@@ -69,10 +73,19 @@ class Measurer:
     def measurement_triggers_to_stim(
         self, measurements: List[Instruction], shift_coords: Tuple[Coordinates] | None
     ):
-        # Measurements can potentially trigger detectors being built or
+        # TODO - have just realised that everything triggered by measurements
+        #  (detectors, observable updates, shift coords) can probably all be
+        #  Instructions, which would simplify things a bit. The reason I wrote
+        #  it the way it is now is because I wanted these things to cope with
+        #  circuit compression - e.g. if a detector consists of a set of
+        #  measurements, but some measurements are moved to different ticks
+        #  during compression, I wanted the detector to still compile
+        #  correctly. But I think this can still be done if these triggers
+        #  are Instructions.
+        # Measurements can potentially trigger detectors being compiled or
         # observables being updated.
         detectors = []
-        observable_updates = defaultdict(list)
+        observable_multipliers = defaultdict(list)
         track_coords = shift_coords is not None
 
         for measurement in measurements:
@@ -86,7 +99,7 @@ class Measurer:
                 if isinstance(trigger, Detector):
                     # This check (amongst others) triggers a detector.
                     detector = trigger
-                    if self.can_build_detector(detector, round):
+                    if self.can_compile_detector(detector, round):
                         # Must wait til all measurement numbers have been
                         # assigned (at the end of the outer for loop we're in)
                         # before turning this detector into a Stim instruction
@@ -97,13 +110,13 @@ class Measurer:
                     observable = trigger
                     # Again, must wait til all measurement numbers have been
                     # assigned before turning this into a Stim instruction.
-                    observable_updates[observable].append((check, round))
+                    observable_multipliers[observable].append((check, round))
 
         # Can now actually create corresponding Stim instructions.
         instructions = []
         for detector, round in detectors:
             instructions.append(self.detector_to_stim(detector, round, track_coords))
-        for observable, checks in observable_updates.items():
+        for observable, checks in observable_multipliers.items():
             targets = [self.measurement_target(check, round) for check, round in checks]
             index = self.observable_index(observable)
             instructions.append(
@@ -125,25 +138,23 @@ class Measurer:
             anchor = ()
         return stim.CircuitInstruction("DETECTOR", targets, anchor)
 
-    def can_build_detector(self, detector: Detector, round: int):
-        # Only build this detector if all the checks in the final slice have
-        # actually been measured, and if we haven't already built an
+    def can_compile_detector(self, detector: Detector, round: int):
+        # Only compile this detector if all the final checks have
+        # actually been measured, and if we haven't already compiled an
         # equivalent detector (one that compares the exact same measurements).
-        final_slice_measured = all([
+        final_checks_measured = all([
             (check, round) in self.measurement_numbers
-            for check in detector.final_slice])
-        if final_slice_measured:
+            for check in detector.final_checks])
+        if final_checks_measured:
             # First criteria met...
             measurement_numbers = tuple(sorted([
                 self.measurement_numbers[(check, round + rounds_ago)]
                 for rounds_ago, check in detector.timed_checks_mod_2]))
 
-            already_built = self.detectors_built[measurement_numbers]
-            if not already_built:
-                # Second criteria met - can build this detector!
-                # Update the detectors_built dictionary while we have the
-                # measurement numbers to hand.
-                self.detectors_built[measurement_numbers] = True
+            already_compiled = self.detectors_compiled[measurement_numbers]
+            if not already_compiled:
+                # Second criteria met - can compile this detector!
+                self.detectors_compiled[measurement_numbers] = True
                 return True
         return False
 
@@ -156,16 +167,16 @@ class Measurer:
     def observable_index(self, observable: LogicalOperator):
         # Get the stim index corresponding to this observable, or create one
         # if it doesn't yet have one.
-        if observable in self.observable_indexes:
-            index = self.observable_indexes[observable]
+        if observable in self._observable_indexes:
+            index = self._observable_indexes[observable]
         else:
-            index = len(self.observable_indexes)
-            self.observable_indexes[observable] = index
+            index = len(self._observable_indexes)
+            self._observable_indexes[observable] = index
         return index
 
     def reset_compilation(self):
         """
         """
         self.measurement_numbers = {}
-        self.detectors_built = defaultdict(bool)
+        self.detectors_compiled = defaultdict(bool)
         self.total_measurements = 0

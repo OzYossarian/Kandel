@@ -36,7 +36,7 @@ class Detector(NiceRepr):
         self._assert_timed_checks_valid(timed_checks)
 
         self.timed_checks = timed_checks
-        self.final_slice = [check for t, check in self.timed_checks if t == 0]
+        self.final_checks = [check for t, check in self.timed_checks if t == 0]
         self.product = self.timed_checks_product(self.timed_checks)
 
         if anchor is None:

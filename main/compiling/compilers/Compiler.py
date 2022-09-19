@@ -300,7 +300,7 @@ class Compiler(ABC):
             checks, round, tick, circuit, self
         )
 
-        # Next note down any detectors we'll need to build at this round.
+        # Next note down any detectors we'll need to compile at this round.
         detectors = detector_schedule[relative_round]
         circuit.measurer.add_detectors(detectors, round)
 
