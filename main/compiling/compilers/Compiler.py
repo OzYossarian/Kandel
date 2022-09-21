@@ -13,7 +13,7 @@ from main.building_blocks.pauli.PauliLetter import PauliX, PauliZ, PauliY, Pauli
 from main.building_blocks.Qubit import Qubit
 from main.building_blocks.pauli.Pauli import Pauli
 from main.compiling.Circuit import Circuit
-from main.compiling.compilers.Determiner import Determiner
+from main.compiling.compilers.DetectorInitialiser import DetectorInitialiser
 from main.compiling.noise.models.NoNoise import NoNoise
 from main.compiling.noise.models.NoiseModel import NoiseModel
 from main.compiling.noise.noises.Noise import Noise
@@ -178,10 +178,9 @@ class Compiler(ABC):
         # In the first few rounds (or even layers), there might be some
         # non-deterministic detectors that need removing.
 
-        determiner = Determiner(code, self)
-        initial_detector_schedules = determiner.get_initial_detectors(
-            initial_states, initial_stabilizers
-        )
+        detector_initialiser = DetectorInitialiser(code, self)
+        initial_detector_schedules = detector_initialiser.get_initial_detectors(
+            initial_states, initial_stabilizers)
 
         return initial_detector_schedules, tick, circuit
 

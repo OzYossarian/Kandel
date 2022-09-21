@@ -11,7 +11,6 @@ from tests.building_blocks.utils_qubits import random_qubits
 
 valid_letters = ['I', 'X', 'Y', 'Z']
 valid_signs = [1, 0+1j, -1, 0-1j]
-xyz = ['X', 'Y', 'Z']
 
 
 def check_arguments(letters, signs):
@@ -93,6 +92,29 @@ def random_paulis(
         for qubit, letter in zip(qubits, letters)]
 
     return paulis
+
+
+def random_pauli(
+        int_coords: bool = False,
+        tuple_coords: bool = True,
+        dimension: int = None,
+        max_dimension: int = None,
+        from_letters: List[str] = None,
+        from_signs: List[complex] = None,
+        min_coord: int | float = default_min_coord,
+        max_coord: int | float = default_max_coord,
+) -> Pauli:
+    return random_paulis(
+        num=1,
+        unique_qubits=False,
+        int_coords=int_coords,
+        tuple_coords=tuple_coords,
+        dimension=dimension,
+        max_dimension=max_dimension,
+        from_letters=from_letters,
+        from_signs=from_signs,
+        min_coord=min_coord,
+        max_coord=max_coord)[0]
 
 
 def random_grouped_paulis(

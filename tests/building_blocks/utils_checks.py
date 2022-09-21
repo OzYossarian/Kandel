@@ -11,8 +11,7 @@ from main.utils.utils import xor
 from tests.utils.utils_colours import random_colour
 from tests.utils.utils_coordinates import random_coords
 from tests.utils.utils_numbers import default_max_unique_sample_size, default_min_coord, default_max_coord
-from tests.building_blocks.pauli.utils_paulis import random_paulis
-
+from tests.building_blocks.pauli.utils_paulis import random_paulis, random_pauli_letter, valid_letters
 
 # If all signs of all Paulis in a Check are 1 or -1, we're guaranteed that the
 # product is Hermitian.
@@ -178,12 +177,15 @@ def random_check(
         min_coord: float | int = default_min_coord,
         max_coord: float | int = default_max_coord
 ):
-    validate_random_check_arguments(weight, dimension, tuple_coords)
+    validate_random_check_arguments(
+        weight, dimension, tuple_coords, from_letters)
 
     if not tuple_coords:
         dimension = 1
     if from_signs is None:
         from_signs = hermitian_signs
+    if from_letters is None:
+        from_letters = valid_letters
 
     # All qubits within a check must be unique
     unique_qubits = True
@@ -201,6 +203,12 @@ def random_check(
         from_signs,
         min_coord,
         max_coord)
+
+    # Can't have all paulis be I up to sign, so change the final one.
+    last_from_letters = [
+        letter for letter in from_letters
+        if letter in ['X', 'Y', 'Z']]
+    paulis[-1].letter = random_pauli_letter(last_from_letters, from_signs)
 
     check = Check(paulis, anchor, colour)
     return check
@@ -240,9 +248,12 @@ def validate_random_checks_arguments(
 def validate_random_check_arguments(
         weight: int,
         dimension: int,
-        tuple_coords: bool):
+        tuple_coords: bool,
+        from_letters: List[str]):
     assert weight > 0
     if tuple_coords:
         assert dimension > 0
     else:
         assert dimension in [None, 1]
+    # Can't have all paulis be I up to sign
+    assert from_letters != ['I']

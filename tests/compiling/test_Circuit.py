@@ -70,10 +70,10 @@ def test_to_circ_string():
 
 
 def test_get_number_of_occurences_gates():
-    n_R_gates = single_qubit_circuit.get_number_of_occurences_of_gate("R")
+    n_R_gates = single_qubit_circuit.get_number_of_occurrences_of_gate("R")
     assert n_R_gates == 1
 
-    n_X_gates = single_qubit_circuit.get_number_of_occurences_of_gate("X")
+    n_X_gates = single_qubit_circuit.get_number_of_occurrences_of_gate("X")
     assert n_X_gates == 0
 
 
@@ -196,14 +196,14 @@ def test__to_stim():
 
 def add_iddle_noise():
     # test if no noise is added
-    single_qubit_circuit.add_idle_noise(None)
-    n_idling_gates = single_qubit_circuit.get_number_of_occurences_of_gate(
+    single_qubit_circuit.add_idling_noise(None)
+    n_idling_gates = single_qubit_circuit.get_number_of_occurrences_of_gate(
         "PAULI_CHANNEL_I"
     )
     assert n_idling_gates == 0
 
-    two_qubit_circuit.add_idle_noise(OneQubitNoise(0.1, 0.1, 0.1))
-    n_idling_errors = two_qubit_circuit.get_number_of_occurences_of_gate(
+    two_qubit_circuit.add_idling_noise(OneQubitNoise(0.1, 0.1, 0.1))
+    n_idling_errors = two_qubit_circuit.get_number_of_occurrences_of_gate(
         "PAULI_CHANNEL_1"
     )
     assert n_idling_errors == 1

@@ -61,6 +61,7 @@ class Check(NiceRepr):
 
         self.product = PauliProduct(list(paulis.values()))
         self._assert_is_hermitian(self.product, paulis)
+        self._assert_is_not_identity_up_to_sign(self.product, paulis)
 
         self.paulis = paulis
         self.anchor = anchor
@@ -183,3 +184,14 @@ class Check(NiceRepr):
             raise ValueError(
                 f"The product of all Paulis in a Check must be Hermitian! "
                 f"Given Paulis are {paulis}.")
+
+    @staticmethod
+    def _assert_is_not_identity_up_to_sign(
+            product: PauliProduct, paulis: Dict[Coordinates, Pauli]):
+        # Stim's Pauli product measurement command 'MPP' has no syntax for
+        # such measurements. Since they're pointless, we may as well outlaw
+        # them from the outset.
+        if all(letter == 'I' for letter in product.word.word):
+            raise ValueError(f"""
+                Can't have a check in which every Pauli is either I or -I. 
+                Given Paulis are {paulis}.""")
