@@ -11,7 +11,7 @@ class Instruction(NiceRepr):
             self, qubits: List[Qubit], name: str,
             params: Tuple[float, ...] = (), is_measurement: bool = False,
             is_noise: bool = False, targets: List[stim.GateTarget] = None):
-        """
+        """Represents an instruction acting on qubits.
 
         Args:
             qubits:
