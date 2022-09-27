@@ -10,9 +10,7 @@ class LogicalQubit(NiceRepr):
             x: LogicalOperator = None,
             y: LogicalOperator = None,
             z: LogicalOperator = None):
-        """Class representing a logical qubit using it's logical operators.
-        
-        This class simply defines logical operators by its Pauli operators X, Y and Z.
+        """Class representing a logical qubit using its logical operators X, Y and Z.
         These can be left as None if one isn't interested in any particular one of them.
 
         Args:

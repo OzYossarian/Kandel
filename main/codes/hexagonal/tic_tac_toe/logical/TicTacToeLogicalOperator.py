@@ -20,7 +20,7 @@ class TicTacToeLogicalOperator(LogicalOperator):
             logical_qubit: TicTacToeLogicalQubit):
         """A logical operator specifically for a TicTacToeCode.
         
-        Here thelogical operator may move around without repeating, so we
+        Here the logical operator may move around without repeating, so we
         won't generate its constituent Paulis at every round upfront. Instead,
         we'll build a dict of its values at different rounds as we go.
 
