@@ -62,9 +62,18 @@ class Printer2D(Printer):
             self._print_qubit(qubit, printout, self.scale_factor/3, Grey)
 
         # Finally, print the logical operators.
-        for logical_qubit in code.logical_qubits:
-            for operator in logical_qubit.operators:
-                self._print_operator(operator, round, printout)
+        logical_operators = [
+            logical_operator
+            for logical_qubit in code.logical_qubits
+            for logical_operator in logical_qubit.operators
+            if logical_operator is not None]
+        max_diameter = self.scale_factor
+        min_diameter = self.scale_factor // 2
+        decrease_per_operator = \
+            (max_diameter - min_diameter) / len(logical_operators)
+        for i, logical_operator in enumerate(logical_operators):
+            diameter = max_diameter - i * decrease_per_operator
+            self._print_operator(logical_operator, round, printout, diameter)
 
     def _print_check(self, check: Check, printout: Printout):
         # Qubits in the check must be given in 'polygonal order' - that is,
@@ -143,12 +152,11 @@ class Printer2D(Printer):
         printout.draw.ellipse((min, max), colour.rgb)
 
     def _print_operator(
-            self, operator: LogicalOperator, round: int, printout: Printout):
+            self, operator: LogicalOperator, round: int, printout: Printout, diameter: float):
         if operator is not None:
             paulis = operator.at_round(round)
             for pauli in paulis:
                 colour = self.operator_colours[pauli.letter.letter]
-                diameter = self.scale_factor
                 self._print_qubit(pauli.qubit, printout, diameter, colour)
 
     def get_printouts(
