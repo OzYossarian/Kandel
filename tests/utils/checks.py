@@ -38,27 +38,27 @@ def random_checks(
 
     Args:
         num:
-            how many checks to generate.
+            How many checks to generate.
         int_coords:
             whether the coordinates should be strictly integers
         tuple_coords:
             whether the coordinates should be tuples
         weight:
-            the weight of all the checks, if all the same. Leave as None if
+            The weight of all the checks, if all the same. Leave as None if
             weights are allowed to vary
         max_weight:
-            the max weight of all the checks, if weight can vary. Leave as
+            The max weight of all the checks, if weight can vary. Leave as
             None if weights are all the same
         dimension:
-            the dimension of all the checks, if all the same. Leave as None if
+            The dimension of all the checks, if all the same. Leave as None if
             dimensions are allowed to vary, or if non-tuple coordinates are
             requested (since then dimension must be 1).
         max_dimension:
-            the max dimension of all the checks, if dimension can vary. Leave
+            The max dimension of all the checks, if dimension can vary. Leave
             as None if dimensions are fixed, or if non-tuple coordinates are
             requested (since then dimension must be 1).
         zero_anchors:
-            if True, all checks' anchors are set to the zero vector in the
+            If True, all checks' anchors are set to the zero vector in the
             appropriate dimension (or just 0, if non-tuple coords used).
             Defaults to False.
         random_anchors:
@@ -228,6 +228,3 @@ def validate_arguments(
 
     if from_colours is not None:
         assert from_colours != []
-
-
-

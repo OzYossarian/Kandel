@@ -18,23 +18,23 @@ class TicTacToeLogicalOperator(LogicalOperator):
             is_vertical: bool,
             logical_letter: PauliLetter,
             logical_qubit: TicTacToeLogicalQubit):
-        """
-        A logical operator specifically for a TicTacToeCode. Here the
-        logical operator may move around without repeating, so we won't
-        generate its constituent Paulis at every round upfront. Instead,
+        """A logical operator specifically for a TicTacToeCode.
+        
+        Here thelogical operator may move around without repeating, so we
+        won't generate its constituent Paulis at every round upfront. Instead,
         we'll build a dict of its values at different rounds as we go.
 
         Args:
             initial_paulis:
-                the Paulis that make up the operator before any checks have
-                been measured ("at round -1")
+                The Paulis that make up the operator before any checks have
+                been measured ("at round -1").
             is_vertical:
-                whether this operator runs vertically across our square
+                Whether this operator runs vertically across our square
                 tic-tac-toe code or not.
             logical_letter:
-                which operator this represents - either PauliX or PauliZ
+                Which operator this represents - either PauliX or PauliZ.
             logical_qubit:
-                the logical qubit this operator is part of.
+                The logical qubit this operator is part of.
         """
         assert logical_letter in [PauliX, PauliZ]
 

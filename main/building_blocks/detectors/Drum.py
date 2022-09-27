@@ -16,17 +16,17 @@ class Drum(Detector):
         outcomes should thus give a deterministic result.
 
         Args:
-            floor: 
-                The timed checks that measure the Pauli product the first 
+            floor:
+                The timed checks that measure the Pauli product the first
                 time around.
-            lid: 
+            lid:
                 The timed checks that measure the Pauli product the second
                 time around.
-            end: 
+            end:
                 The first round (modulo schedule length) by which ALL of the
                 checks in the drum will have been measured.
-            anchor: 
-                Coordinates at which to 'anchor' this drum. If None, defaults 
+            anchor:
+                Coordinates at which to 'anchor' this drum. If None, defaults
                 to the midpoint of the anchors of all checks involved.
         """
         self._assert_lid_valid(lid)
@@ -75,7 +75,7 @@ class Drum(Detector):
 
         Args:
             round:
-                the round just measured. Note this should be absolute rather
+                The round just measured. Note this should be absolute rather
                 than relative (i.e. not modulo the schedule length)
             schedule_length:
                 The length of the code's schedule.

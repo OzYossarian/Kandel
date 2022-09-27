@@ -21,7 +21,7 @@ class Detector(NiceRepr):
 
         Args:
             timed_checks:
-                the set of timed checks that make up the detector. A 'timed
+                The set of timed checks that make up the detector. A 'timed
                 check' is an (int, Check) tuple, where the int is the number
                 of rounds before the `end` round this check is measured at.
                 # TODO - link to an example in the documentation.

@@ -12,10 +12,11 @@ class LogicalOperator(NiceRepr):
         Class representing a logical operator. This base class assumes it's
         'static' (defined by the same Paulis at all times). A 'dynamic'
         logical operator (one defined by different Paulis at different times)
-        should subclass this.
+        should subclass this. For an example of a dynamic logical operator see
+        TicTacToeLogicalOperator.
 
         Args:
-            paulis: the Paulis that constitute the operator.
+            paulis: The Paulis that constitute the operator.
         """
         # Shouldn't access _paulis directly; instead, use at_round.
         self._paulis = paulis
@@ -46,20 +47,20 @@ class LogicalOperator(NiceRepr):
         changes at each round.
 
         Args:
-            round: the round that has just happened
+            round: The round that has just happened.
 
         Returns:
-            a list of any checks that need multiplying into the observable
+            A list of any checks that need multiplying into the observable.
         """
         return []
 
     def at_round(self, round: int) -> List[Pauli]:
         """
         Args:
-            round: the round that has just happened
+            round: The round that has just happened.
 
         Returns:
-            the Paulis that constitute the logical operator at this round
+            The Paulis that constitute the logical operator at this round
         """
         return self._paulis
 

@@ -292,6 +292,7 @@ class Compiler(ABC):
         circuit: Circuit,
         code: Code,
     ):
+        
         self.add_start_of_round_noise(tick - 1, circuit, code)
 
         # First compile the syndrome extraction circuits for the checks.
@@ -387,7 +388,7 @@ class Compiler(ABC):
                 final_checks, final_stabilizers
             )
 
-        # Finally, compile these detectors to the circuit.
+        # Finally, add these detectors to the circuit.
         circuit.measurer.add_detectors(final_detectors, round)
 
     def compile_final_detectors_from_stabilizers(

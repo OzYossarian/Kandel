@@ -10,10 +10,10 @@ class LogicalQubit(NiceRepr):
             x: LogicalOperator = None,
             y: LogicalOperator = None,
             z: LogicalOperator = None):
-        """
-        Class representing a logical qubit. Defined simply by its Pauli
-        operators X, Y and Z. These can be left as None if one isn't
-        interested in any particular one of them.
+        """Class representing a logical qubit using it's logical operators.
+        
+        This class simply defines logical operators by its Pauli operators X, Y and Z.
+        These can be left as None if one isn't interested in any particular one of them.
 
         Args:
             x: logical X operator. Defaults to None
@@ -64,6 +64,4 @@ class LogicalQubit(NiceRepr):
                 "Either all operators within a logical qubit should have "
                 "tuple coordinates, or none of them should."
                 f"Operators X, Y and Z respectively are {operators}")
-
-
-
+                
