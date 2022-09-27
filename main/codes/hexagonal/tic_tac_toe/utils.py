@@ -1,8 +1,12 @@
 import random
+from typing import List, Tuple
 
-from main.Colour import Red, Green, Blue
-from main.building_blocks.pauli.PauliLetter import PauliY, PauliZ, PauliX
+from main.Colour import Red, Green, Blue, Colour
+from main.building_blocks.pauli.PauliLetter import PauliY, PauliZ, PauliX, PauliLetter
 
+
+TicTacToeSquare = Tuple[Colour, PauliLetter]
+TicTacToeRoute = List[TicTacToeSquare]
 
 colours = [Red, Green, Blue]
 letters = [PauliX, PauliY, PauliZ]
@@ -74,3 +78,18 @@ def random_good_route(length):
         sandwich = random_valid_sandwiched_square(route[-1], route[0])
         route.append(sandwich)
     return route
+
+
+def rest_of_row(colour: Colour, letter: PauliLetter):
+    return [
+        (c, letter)
+        for c in colours
+        if c != colour]
+
+
+def rest_of_column(colour: Colour, letter: PauliLetter):
+    return [
+        (colour, l)
+        for l in letters
+        if l != letter]
+

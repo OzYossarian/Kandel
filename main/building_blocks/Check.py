@@ -59,32 +59,26 @@ class Check(NiceRepr):
                 coords_minus(pauli.qubit.coords, anchor): pauli
                 for pauli in paulis}
 
-        # TODO - allow Paulis here to have sign -1 too.
-        valid_signs = all(
-            [pauli.letter.sign == 1 for pauli in paulis.values()])
-        if not valid_signs:
-            raise ValueError(
-                f"All Paulis in a check must have sign 1. "
-                f"Given Paulis are: {list(paulis.values())}")
-        # TODO - remove the following in future. Make SyndromeExtractor
-        #  handle Pauli I letters gracefully. I'm a muppet for not doing
-        #  it from the start.
-        if any([pauli.letter.letter == 'I' for pauli in paulis.values()]):
-            raise ValueError(
-                f"Paulis with letter I aren't allowed in a Check. "
-                f"Given Paulis are: {list(paulis.values())}")
+        self.product = PauliProduct(list(paulis.values()))
+        self._assert_is_hermitian(self.product, paulis)
 
         self.paulis = paulis
         self.anchor = anchor
         self.colour = colour
         self.weight = len(paulis)
-        self.dimension = coords_length(self.anchor)
-        self.product = PauliProduct(paulis.values())
 
         # The following properties are set by a compiler.
         self.ancilla = None
 
-        super().__init__(['paulis', 'colour'])
+        super().__init__(['product.word', 'anchor', 'colour', 'paulis'])
+
+    @property
+    def dimension(self):
+        return coords_length(self.anchor)
+
+    @property
+    def has_tuple_coords(self):
+        return isinstance(self.anchor, tuple)
 
     @staticmethod
     def _assert_check_non_empty(
@@ -139,10 +133,8 @@ class Check(NiceRepr):
                 f"Paulis within a check must all have the same dimension. "
                 f"Instead, found dimensions {dimensions}. "
                 f"Paulis that make up the check are: {list(paulis)}")
-        all_tuples = all([
-            isinstance(pauli.qubit.coords, tuple) for pauli in paulis])
-        all_non_tuples = not any([
-            isinstance(pauli.qubit.coords, tuple) for pauli in paulis])
+        all_tuples = all([pauli.has_tuple_coords for pauli in paulis])
+        all_non_tuples = all([not pauli.has_tuple_coords for pauli in paulis])
         if not (all_tuples or all_non_tuples):
             raise ValueError(
                 f"Can't mix tuple and non-tuple coordinates! "
@@ -158,8 +150,7 @@ class Check(NiceRepr):
                 f"Anchor must have same dimensions as Paulis. "
                 f"Instead, anchor is {anchor} and Paulis are {paulis}.")
         types_wrong = xor(
-            isinstance(anchor, tuple),
-            isinstance(paulis[0].qubit.coords, tuple))
+            isinstance(anchor, tuple), paulis[0].has_tuple_coords)
         if types_wrong:
             raise ValueError(
                 f"Anchor and Pauli coordinates must all be tuples or all "
@@ -184,3 +175,11 @@ class Check(NiceRepr):
                 f"Anchor and offsets must all be tuples or all be non-tuples "
                 f"- can't mix! Instead, anchor is {anchor} and dict of Paulis "
                 f"is {paulis}.")
+
+    @staticmethod
+    def _assert_is_hermitian(
+            product: PauliProduct, paulis: Dict[Coordinates, Pauli]):
+        if not product.is_hermitian:
+            raise ValueError(
+                f"The product of all Paulis in a Check must be Hermitian! "
+                f"Given Paulis are {paulis}.")

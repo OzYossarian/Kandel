@@ -14,7 +14,7 @@ class RepetitionCode(Code):
             Pauli(qubit, PauliX) for qubit in data_qubits.values()])
         logical_z = LogicalOperator([
             Pauli(data_qubits[0], PauliZ)])
-        logical_qubit = LogicalQubit(logical_x, logical_z)
+        logical_qubit = LogicalQubit(x=logical_x, z=logical_z)
 
         super().__init__(
             data_qubits, [checks], distance=distance,

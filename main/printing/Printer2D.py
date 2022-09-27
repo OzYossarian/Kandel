@@ -18,9 +18,9 @@ class Printer2D(Printer):
     def __init__(self, scale_factor: int = 20):
         super().__init__(scale_factor)
         self.operator_colours = {
-            PauliX: Colour('orange', (255, 155, 0)),
-            PauliY: Colour('teal', (0, 255, 185)),
-            PauliZ: Colour('purple', (145, 0, 255))}
+            'X': Colour('orange', (255, 155, 0)),
+            'Y': Colour('teal', (0, 255, 185)),
+            'Z': Colour('purple', (145, 0, 255))}
 
     def print_qpu(self, qpu: QPU, filename: str):
         data_qubit_diameter = self.scale_factor/10
@@ -63,9 +63,8 @@ class Printer2D(Printer):
             self._print_qubit(qubit, printout, self.scale_factor/3, Grey)
 
         # Finally, print the logical operators.
-        code.update_logical_qubits(round)
         for logical_qubit in code.logical_qubits:
-            for operator in [logical_qubit.x, logical_qubit.z]:
+            for operator in logical_qubit.operators:
                 self._print_operator(operator, round, printout)
 
     def _print_check(self, check: Check, printout: Printout):
@@ -149,7 +148,7 @@ class Printer2D(Printer):
         if operator is not None:
             paulis = operator.at_round(round)
             for pauli in paulis:
-                colour = self.operator_colours[pauli.letter]
+                colour = self.operator_colours[pauli.letter.letter]
                 diameter = self.scale_factor
                 self._print_qubit(pauli.qubit, printout, diameter, colour)
 

@@ -25,7 +25,7 @@ class Measurer:
         This is why we do things in what might seem initially to be a
         convoluted way - we note down which measurements correspond to which
         checks in which rounds, then later on, when actually compiling to a
-        Stim circuit, we dig up this information again and built detectors
+        Stim circuit, we dig up this information again and build detectors
         and update observables accordingly.
         """
         # Note total number of measurements made. Used for calculating stim
@@ -60,7 +60,7 @@ class Measurer:
             for check in detector.final_slice:
                 self.triggers[(check, round)].append(detector)
 
-    def add_to_logical_observable(
+    def multiply_logical_observable(
         self, checks: Iterable[Check], observable: LogicalOperator, round: int
     ):
         for check in checks:
@@ -162,7 +162,6 @@ class Measurer:
             index = len(self.observable_indexes)
             self.observable_indexes[observable] = index
         return index
-
 
     def reset_compilation(self):
         """

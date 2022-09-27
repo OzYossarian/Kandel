@@ -46,7 +46,6 @@ class RotatedSurfaceCode(Code):
             for j in range(distance - 1):
                 anchor = (starting_x + j, starting_y - j)
                 letter = pauli_letters[anchor[0] % 2]
-
                 paulis = {
                     (1, 0): Pauli(data_qubits[anchor[0] + 1, anchor[1]], letter),
                     (0, 1): Pauli(data_qubits[anchor[0], anchor[1] + 1], letter),
@@ -117,5 +116,5 @@ class RotatedSurfaceCode(Code):
         logical_z = LogicalOperator(
             [Pauli(data_qubits[coords], PauliZ) for coords in top_left]
         )
-
-        return LogicalQubit(logical_x, logical_z)
+        
+        return LogicalQubit(x=logical_x, z=logical_z)

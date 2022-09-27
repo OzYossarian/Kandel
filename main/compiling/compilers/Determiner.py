@@ -141,7 +141,7 @@ class Determiner:
                 round_detectors.append(detector)
             else:
                 timed_checks = detector.checks_at_or_after(
-                    0, layer, self.code.schedule_length)
+                    0, self.code.schedule_length)
                 if self.is_deterministic(timed_checks, circuit, simulator):
                     # This detector should become a 'lid-only' detector
                     # in this layer.
@@ -161,7 +161,7 @@ class Determiner:
 
     def product_measurement_targets(self, check: Check, circuit: Circuit):
         assert len(check.paulis) > 0
-        product = PauliProduct(check.paulis.values())
+        product = PauliProduct(list(check.paulis.values()))
         assert product.word.sign in [1, -1]
         # Do first pauli separately, then do the rest in a for loop.
         paulis = list(check.paulis.values())

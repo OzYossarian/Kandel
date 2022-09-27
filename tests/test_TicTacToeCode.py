@@ -5,7 +5,6 @@ from main.building_blocks.pauli.PauliLetter import PauliZ, PauliY, PauliX
 from main.codes.hexagonal.tic_tac_toe.TicTacToeCode import TicTacToeCode
 from main.codes.hexagonal.tic_tac_toe.utils import random_valid_route, random_valid_route_chunk, all_good_colours, \
     random_good_route
-from tests.utils.numbers import default_test_repeats_medium
 
 colours = [Red, Green, Blue]
 letters = [PauliX, PauliY, PauliZ]
@@ -20,14 +19,14 @@ def test_follows_tic_tac_toe_rules():
         for l in letters)
 
     # Test that valid routes are indeed valid.
-    repeat = default_test_repeats_medium
-    for i in range(repeat):
+    repeat = 100
+    for _ in range(repeat):
         route_length = random.randint(2, 100)
         route = random_valid_route(route_length)
         assert TicTacToeCode.follows_tic_tac_toe_rules(route)
 
     # Now test bad routes do fail.
-    for i in range(repeat):
+    for _ in range(repeat):
         fail_at = random.randint(1, 100)
         route = random_valid_route_chunk(fail_at)
 
@@ -43,7 +42,7 @@ def test_follows_tic_tac_toe_rules():
 def test_is_good_code():
     # Function allows us to assume route length > 1.
     # So first check length 2 routes fail.
-    for i in range(100):
+    for _ in range(100):
         route = random_valid_route_chunk(2)
         assert not TicTacToeCode.is_good_code(route)
 
@@ -59,7 +58,7 @@ def test_is_good_code():
         assert not TicTacToeCode.is_good_code(route)
 
     # Now check 'bad' 4 != length >= 3 routes are indeed bad.
-    for i in range(100):
+    for _ in range(100):
         length = None
         while length in [None, 4]:
             length = random.randint(3, 50)

@@ -23,8 +23,15 @@ class Pauli(NiceRepr):
         """
         self.qubit = qubit
         self.letter = letter
-        self.dimension = qubit.dimension
         super().__init__(["qubit", "letter"])
+
+    @property
+    def dimension(self):
+        return self.qubit.dimension
+
+    @property
+    def has_tuple_coords(self):
+        return self.qubit.has_tuple_coords
 
     def __eq__(self, other):
         return (

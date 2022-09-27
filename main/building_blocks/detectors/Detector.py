@@ -22,8 +22,8 @@ class Detector(NiceRepr):
         Args:
             timed_checks:
                 The set of timed checks that make up the detector. A 'timed
-                check' is an (int, Check) tuple, where the int is the number of rounds
-                before the `end` round this check is measured at.
+                check' is an (int, Check) tuple, where the int is the number
+                of rounds before the `end` round this check is measured at.
                 # TODO - link to an example in the documentation.
             end:
                 The first round (modulo schedule length) by which ALL of the checks
@@ -33,16 +33,11 @@ class Detector(NiceRepr):
                 defaults to the midpoint of the anchors of all checks
                 involved.
         """
+        self._assert_timed_checks_valid(timed_checks)
+
         self.timed_checks = timed_checks
         self.final_slice = [check for t, check in self.timed_checks if t == 0]
-
         self.product = self.timed_checks_product(self.timed_checks)
-        if self.product.word.sign not in [1, -1]:
-            sign = self.product.word.sign
-            raise ValueError(
-                f"Can't create a Detector whose product has sign {sign}. Sign "
-                f"must instead be 1 or -1. Detector has timed checks "
-                f"{self.timed_checks}.")
 
         if anchor is None:
             check_anchors = [check.anchor for _, check in self.timed_checks]
@@ -59,11 +54,15 @@ class Detector(NiceRepr):
         self.start = end + first_check_rounds_ago
         self.end = end
 
-        super().__init__(['product.word', 'timed_checks'])
+        super().__init__(['product.word', 'end', 'timed_checks'])
 
     @staticmethod
     def timed_checks_product(timed_checks: List[TimedCheck]):
         # Pauli multiplication is not commutative so order matters.
+        # TODO - this is ambiguous if non-commuting Paulis appear in the same
+        #  round! e.g. if a qubit is involved in an XX...X check and YY...Y
+        #  check in the same round, it's ambiguous as to whether this product
+        #  should have an XY or YX contribution from this qubit.
         timed_checks = sorted(
             timed_checks, key=lambda timed_check: -timed_check[0])
         paulis = [
@@ -71,3 +70,34 @@ class Detector(NiceRepr):
             for pauli in check.paulis.values()]
         product = PauliProduct(paulis)
         return product
+
+    @staticmethod
+    def _assert_timed_checks_valid(timed_checks: List[TimedCheck]):
+        if len(timed_checks) == 0:
+            raise ValueError("Detector must contain at least one check!")
+        if not any([t == 0 for t, check in timed_checks]):
+            raise ValueError(
+                "At least one timed check must have time component 0 - i.e. "
+                "it must be measured in the detector's `end` round. "
+                "(Otherwise the round specified as the `end` is not really "
+                f"the end!). The given timed checks are: {timed_checks}")
+        if any([t > 0 for t, check in timed_checks]):
+            raise ValueError(
+                "No timed check can have time component > 0, because this "
+                "would mean it's measured after the detector's `end` round. "
+                f"The given timed checks are: {timed_checks}")
+
+        dimensions = {check.dimension for t, check in timed_checks}
+        if len(dimensions) > 1:
+            raise ValueError(
+                f"All checks in a detector must have the same dimension. "
+                f"Instead, found dimensions {dimensions}. "
+                f"The given timed checks are: {timed_checks}.")
+        all_tuple_coords = all([
+            check.has_tuple_coords for t, check in timed_checks])
+        all_non_tuple_coords = all([
+            not check.has_tuple_coords for t, check in timed_checks])
+        if not (all_tuple_coords or all_non_tuple_coords):
+            raise ValueError(
+                "Can't mix tuple and non-tuple coordinates!"
+                f"The given timed checks are: {timed_checks}.")
