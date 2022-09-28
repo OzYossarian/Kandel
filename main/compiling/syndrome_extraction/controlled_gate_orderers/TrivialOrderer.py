@@ -3,12 +3,14 @@ from main.compiling.syndrome_extraction.controlled_gate_orderers.ControlledGateO
 
 
 class TrivialOrderer(ControlledGateOrderer):
+    """
+    This orderer just returns a check's Paulis in the same order in which
+    they are stored. Useful in scenarios where it's irrelevant in which
+    order controlled not gates are performed - e.g. in tic-tac-toe codes.
+    """
     def __init__(self):
         super().__init__()
 
     def order(self, check: Check):
-        # This extractor should be used in cases where it is safe to place
-        # CNOTs in the order that the Paulis are listed within the check, e.g.
-        # in a tic-tac-toe code, or repetition code.
         return list(check.paulis.values())
 
