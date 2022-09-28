@@ -28,6 +28,7 @@ class AncillaPerCheckExtractor(SyndromeExtractor):
         """
         Base class for all syndrome extractors that use a single ancilla per
         check.
+        
         Args:
             controlled_gate_orderer:
                 Class that will define the order in which data qubits are
