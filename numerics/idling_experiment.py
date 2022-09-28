@@ -6,7 +6,7 @@ from main.codes.RotatedSurfaceCode import RotatedSurfaceCode
 from main.compiling.compilers.AncillaPerCheckCompiler import AncillaPerCheckCompiler
 from main.compiling.noise.models.CodeCapacityBitFlipNoise import CodeCapacityBitFlipNoise
 from main.compiling.syndrome_extraction.controlled_gate_orderers.TrivialOrderer import TrivialOrderer
-from main.compiling.syndrome_extraction.extractors.mixed.CxCyCzExtractor import CxCyCzExtractor
+from main.compiling.syndrome_extraction.extractors.ancilla_per_check.mixed import CxCyCzExtractor
 from main.decoding.PymatchingDecoder import PymatchingDecoder
 import numpy as np
 

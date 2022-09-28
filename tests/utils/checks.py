@@ -3,6 +3,9 @@ from typing import List
 
 from main.Colour import Colour
 from main.building_blocks.Check import Check
+from main.building_blocks.Qubit import Qubit
+from main.building_blocks.pauli import Pauli
+from main.building_blocks.pauli.PauliLetter import PauliLetter
 from main.utils.types import Coordinates
 from main.utils.utils import xor
 from tests.utils.colours import random_colour
@@ -230,4 +233,8 @@ def validate_arguments(
         assert from_colours != []
 
 
-
+def create_check(letters: List[str]):
+    paulis = [
+        Pauli(Qubit(i), PauliLetter(letter))
+        for i, letter in enumerate(letters)]
+    return Check(paulis)

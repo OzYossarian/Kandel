@@ -3,14 +3,15 @@ from typing import List, Dict
 from main.building_blocks.pauli.PauliLetter import PauliLetter
 from main.compiling.compilers.Compiler import Compiler
 from main.compiling.noise.models.NoiseModel import NoiseModel
-from main.compiling.syndrome_extraction.extractors.SyndromeExtractor import SyndromeExtractor
+from main.compiling.syndrome_extraction.extractors.NativePauliProductMeasurementsExtractor import \
+    NativePauliProductMeasurementsExtractor
 from main.enums import State
 
 
 class NativePauliProductMeasurementsCompiler(Compiler):
     def __init__(
             self, noise_model: NoiseModel = None,
-            syndrome_extractor: SyndromeExtractor = None,
+            syndrome_extractor: NativePauliProductMeasurementsExtractor = None,
             initialisation_instructions: Dict[State, List[str]] = None,
             measurement_instructions: Dict[PauliLetter, List[str]] = None):
         super().__init__(

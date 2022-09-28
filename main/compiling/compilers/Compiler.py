@@ -23,7 +23,7 @@ from main.compiling.syndrome_extraction.controlled_gate_orderers.TrivialOrderer 
 from main.compiling.syndrome_extraction.extractors.SyndromeExtractor import (
     SyndromeExtractor,
 )
-from main.compiling.syndrome_extraction.extractors.mixed.CnotExtractor import (
+from main.compiling.syndrome_extraction.extractors.ancilla_per_check.mixed.CnotExtractor import (
     CnotExtractor,
 )
 from main.enums import State
