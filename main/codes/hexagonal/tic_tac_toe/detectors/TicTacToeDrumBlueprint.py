@@ -18,7 +18,7 @@ class TicTacToeDrumBlueprint(NiceRepr):
             self, schedule_length: int, learned: int,
             floor: List[Tuple[int, Colour, PauliLetter]],
             lid: List[Tuple[int, Colour, PauliLetter]]):
-        """Constructs a drum blueprint 
+        """Constructs a drum blueprint.
 
         Args:
             schedule_length:

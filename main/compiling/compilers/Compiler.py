@@ -292,6 +292,7 @@ class Compiler(ABC):
         circuit: Circuit,
         code: Code,
     ):
+        
         self.add_start_of_round_noise(tick - 1, circuit, code)
 
         # First compile the syndrome extraction circuits for the checks.
@@ -387,7 +388,7 @@ class Compiler(ABC):
                 final_checks, final_stabilizers
             )
 
-        # Finally, compile these detectors to the circuit.
+        # Finally, add these detectors to the circuit.
         circuit.measurer.add_detectors(final_detectors, round)
 
     def compile_final_detectors_from_stabilizers(
@@ -469,7 +470,7 @@ class Compiler(ABC):
         paulis: Iterable[Pauli],
         checks: Iterable[Check],
         round: int,
-        tick: int,
+        tick: Tick,
         circuit: Circuit,
         measurement_instructions: Dict[PauliLetter, List[str]] = None,
     ):
@@ -504,7 +505,7 @@ class Compiler(ABC):
         return tick + ticks_needed
 
     def compile_one_qubit_gates(
-        self, gates: List[Instruction], tick: int, circuit: Circuit
+        self, gates: List[Instruction], tick: Tick, circuit: Circuit
     ) -> Tick:
         return self._compile_gates(
             gates, self.noise_model.one_qubit_gate, 1, tick, circuit
