@@ -465,9 +465,6 @@ def test_check_fails_if_is_not_hermitian():
         if expect_non_hermitian:
             with pytest.raises(ValueError, match=expected_error):
                 _ = Check(paulis)
-        else:
-            # No error should be raised
-            _ = Check(paulis)
 
 
 def test_check_fails_when_is_identity_up_to_sign():
