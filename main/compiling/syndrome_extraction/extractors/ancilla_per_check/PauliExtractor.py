@@ -11,16 +11,16 @@ class PauliExtractor:
         Args:
             pre_rotations:
                 Names of any gates to perform on the given data qubit before
-                the controlled gate
+                the controlled gate.
             controlled_gate:
                 Name of the controlled gate to perform between data and
-                ancilla qubit
+                ancilla qubit.
             ancilla_is_control:
                 Whether the ancilla is the control qubit or target qubit in
-                the controlled gate implementation
+                the controlled gate implementation.
             post_rotations:
                 Names of any gates to perform on the given data qubit
-                immediately after the controlled gate
+                immediately after the controlled gate.
         """
         self.pre_rotations = pre_rotations
         self.controlled_gate = controlled_gate

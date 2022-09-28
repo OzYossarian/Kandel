@@ -6,20 +6,11 @@ from main.compiling.compilers.AncillaPerCheckCompiler import AncillaPerCheckComp
 from main.QPUs.SquareLatticeQPU import SquareLatticeQPU
 from main.codes.RepetitionCode import RepetitionCode
 from main.codes.RotatedSurfaceCode import RotatedSurfaceCode
-from main.compiling.noise.models import CircuitLevelNoise
-from main.compiling.noise.models.CodeCapacityBitFlipNoise import (
-    CodeCapacityBitFlipNoise,
-)
-from main.compiling.noise.models.NoNoise import NoNoise
-from main.compiling.syndrome_extraction.controlled_gate_orderers.TrivialOrderer import (
-    TrivialOrderer,
-)
-from main.compiling.syndrome_extraction.controlled_gate_orderers.RotatedSurfaceCodeOrderer import (
-    RotatedSurfaceCodeOrderer,
-)
-from main.compiling.syndrome_extraction.extractors.mixed.CxCyCzExtractor import (
-    CxCyCzExtractor,
-)
+from main.compiling.noise.models import CircuitLevelNoise, CodeCapacityBitFlipNoise
+from main.compiling.syndrome_extraction.controlled_gate_orderers.RotatedSurfaceCodeOrderer import \
+    RotatedSurfaceCodeOrderer
+from main.compiling.syndrome_extraction.controlled_gate_orderers.TrivialOrderer import TrivialOrderer
+from main.compiling.syndrome_extraction.extractors.ancilla_per_check.mixed.CxCyCzExtractor import CxCyCzExtractor
 from main.enums import State
 
 test_qpu = SquareLatticeQPU((3, 1))

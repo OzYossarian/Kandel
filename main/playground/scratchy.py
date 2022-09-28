@@ -11,9 +11,7 @@ from main.compiling.noise.models.NoNoise import NoNoise
 from main.compiling.noise.models.PhenomenologicalNoise import PhenomenologicalNoise
 from main.compiling.syndrome_extraction.controlled_gate_orderers.RotatedSurfaceCodeOrderer import RotatedSurfaceCodeOrderer
 from main.compiling.syndrome_extraction.controlled_gate_orderers.TrivialOrderer import TrivialOrderer
-from main.compiling.syndrome_extraction.extractors.mixed.CxCyCzExtractor import CxCyCzExtractor
-from main.compiling.syndrome_extraction.extractors.pure.PurePauliWordExtractor import PurePauliWordExtractor
-from main.compiling.syndrome_extraction.extractors.mixed.UniformAncillaBasisExtractor import UniformAncillaBasisExtractor
+from main.compiling.syndrome_extraction.extractors.ancilla_per_check.mixed import CxCyCzExtractor
 from main.enums import State
 from main.printing.Printer2D import Printer2D
 

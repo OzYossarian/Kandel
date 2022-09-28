@@ -12,8 +12,10 @@ class OneBitNoise(Noise):
 
     @property
     def name(self):
-        # Note - this isn't a noise name that is recognised by Stim
-        raise ValueError
+        # Stim has no one-bit noise channel.
+        # Instead, this class should be used to parametrise Stim
+        # instructions, like measurements.
+        return None
 
     @property
     def params(self):

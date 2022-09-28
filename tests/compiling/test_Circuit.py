@@ -17,9 +17,7 @@ from main.compiling.noise.noises.OneQubitNoise import OneQubitNoise
 from main.compiling.syndrome_extraction.controlled_gate_orderers.RotatedSurfaceCodeOrderer import (
     RotatedSurfaceCodeOrderer,
 )
-from main.compiling.syndrome_extraction.extractors.mixed.CxCyCzExtractor import (
-    CxCyCzExtractor,
-)
+from main.compiling.syndrome_extraction.extractors.ancilla_per_check.mixed.CxCyCzExtractor import CxCyCzExtractor
 from main.enums import State
 
 single_qubit_circuit = Circuit()
