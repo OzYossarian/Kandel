@@ -4,7 +4,7 @@ from main.building_blocks.Check import Check
 from main.building_blocks.pauli.PauliLetter import PauliLetter
 from main.compiling.syndrome_extraction.controlled_gate_orderers.ControlledGateOrderer import ControlledGateOrderer
 from main.compiling.syndrome_extraction.extractors.ancilla_per_check.PauliExtractor import PauliExtractor
-from main.compiling.syndrome_extraction.extractors.ancilla_per_check.mixed.UniformAncillaBasisExtractor import \
+from main.compiling.syndrome_extraction.extractors.ancilla_per_check.UniformAncillaBasisExtractor import \
     UniformAncillaBasisExtractor
 from main.enums import State
 

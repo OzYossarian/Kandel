@@ -94,7 +94,7 @@ class UniformAncillaBasisExtractor(AncillaPerCheckExtractor):
             self, pauli: Pauli, check: Check) -> List[Instruction]:
         if pauli.letter in self.pauli_extractors:
             extractor = self.pauli_extractors[pauli.letter]
-            if extractor is not:
+            if extractor is not None:
                 return [
                     Instruction([pauli.qubit], name)
                     for name in extractor.pre_rotations]
