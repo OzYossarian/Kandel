@@ -286,7 +286,7 @@ def test_detector_start_and_end():
         assert detector.end == end
 
 
-def test_detector_final_slice():
+def test_detector_final_checks():
     # One explicit example:
     qubits = [Qubit(0), Qubit(1)]
     checks = [
@@ -298,7 +298,7 @@ def test_detector_final_slice():
         (-1, checks[0]),
         (-1, checks[1])]
     detector = Detector(timed_checks, end=0, anchor=0)
-    assert detector.final_slice == checks
+    assert detector.final_checks == checks
 
     # And some random ones:
     for _ in range(default_test_repeats_medium):
@@ -317,8 +317,8 @@ def test_detector_final_slice():
         end = random.randint(0, 100)
         detector = Detector(timed_checks, end)
 
-        expected_final_slice = [check for t, check in timed_checks if t == 0]
-        assert detector.final_slice == expected_final_slice
+        expected_final_checks = [check for t, check in timed_checks if t == 0]
+        assert detector.final_checks == expected_final_checks
 
 
 def test_detector_timed_checks_mod_2():

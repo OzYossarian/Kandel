@@ -67,7 +67,7 @@ def random_logical_operators(
         a list of `num` randomly generated operators.
 
     """
-    validate_arguments(
+    validate_random_logical_operators_arguments(
         tuple_coords,
         weight,
         max_weight,
@@ -99,10 +99,10 @@ def random_logical_operators(
             operator_weight = random.randint(1, max_operator_weight)
 
         operator = random_logical_operator(
-            int_coords,
-            tuple_coords,
             operator_weight,
             operator_dimension,
+            int_coords,
+            tuple_coords,
             from_letters,
             from_signs,
             min_coord,
@@ -113,15 +113,20 @@ def random_logical_operators(
 
 
 def random_logical_operator(
+        weight: int,
+        dimension: int = None,
         int_coords: bool = False,
         tuple_coords: bool = True,
-        weight: int = None,
-        dimension: int = None,
         from_letters: List[str] = None,
         from_signs: List[str] = None,
         min_coord: float | int = default_min_coord,
         max_coord: float | int = default_max_coord
 ):
+    validate_random_logical_operator_arguments(
+        weight, dimension, tuple_coords)
+
+    if tuple_coords is None:
+        dimension = 1
     if from_signs is None:
         from_signs = hermitian_signs
 
@@ -146,7 +151,7 @@ def random_logical_operator(
     return operator
 
 
-def validate_arguments(
+def validate_random_logical_operators_arguments(
         tuple_coords: bool,
         weight: int,
         max_weight: int,
@@ -154,13 +159,17 @@ def validate_arguments(
         max_dimension: int,
 ):
     assert xor(weight is None, max_weight is None)
-    weight_arg = weight if weight is not None else max_weight
-    assert weight_arg > 0
-
     if tuple_coords:
         assert xor(dimension is None, max_dimension is None)
-        dim_arg = dimension if dimension is not None else max_dimension
-        assert dim_arg > 0
+
+
+def validate_random_logical_operator_arguments(
+        weight: int,
+        dimension: int,
+        tuple_coords: bool,
+):
+    assert weight > 0
+    if tuple_coords:
+        assert dimension > 0
     else:
         assert dimension in [None, 1]
-        assert max_dimension in [None, 1]
