@@ -17,7 +17,7 @@ from main.building_blocks.pauli.PauliLetter import PauliZ
 from main.codes.RepetitionCode import RepetitionCode
 from main.QPUs.SquareLatticeQPU import SquareLatticeQPU
 from main.compiling.compilers.AncillaPerCheckCompiler import AncillaPerCheckCompiler
-from main.enums import State
+from main.utils.enums import State
 from main.printing.Printer2D import Printer2D
 
 # ### Create a QPU

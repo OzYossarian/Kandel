@@ -26,7 +26,7 @@ from main.compiling.syndrome_extraction.extractors.SyndromeExtractor import (
 from main.compiling.syndrome_extraction.extractors.ancilla_per_check.mixed.CnotExtractor import (
     CnotExtractor,
 )
-from main.enums import State
+from main.utils.enums import State
 from main.utils.types import Tick
 from main.utils.utils import xor
 import stim
@@ -470,7 +470,7 @@ class Compiler(ABC):
         paulis: Iterable[Pauli],
         checks: Iterable[Check],
         round: int,
-        tick: Tick,
+        tick: int,
         circuit: Circuit,
         measurement_instructions: Dict[PauliLetter, List[str]] = None,
     ):
@@ -505,7 +505,7 @@ class Compiler(ABC):
         return tick + ticks_needed
 
     def compile_one_qubit_gates(
-        self, gates: List[Instruction], tick: Tick, circuit: Circuit
+        self, gates: List[Instruction], tick: int, circuit: Circuit
     ) -> Tick:
         return self._compile_gates(
             gates, self.noise_model.one_qubit_gate, 1, tick, circuit

@@ -66,7 +66,7 @@ class Measurer:
         for check in checks:
             self.triggers[(check, round)].append(observable)
 
-    def measurement_triggers_to_stim(
+    def measurements_to_stim(
         self, measurements: List[Instruction], shift_coords: Tuple[Coordinates] | None
     ):
         # Measurements can potentially trigger detectors being built or

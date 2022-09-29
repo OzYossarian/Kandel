@@ -1,5 +1,5 @@
 from __future__ import annotations
-from main.Colour import Red, Blue, Green, Grey
+from main.utils.Colour import Red, Blue, Green, Grey
 from main.utils.NiceRepr import NiceRepr
 
 
