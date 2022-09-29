@@ -23,6 +23,7 @@ class UniformAncillaBasisExtractor(AncillaPerCheckExtractor):
         """
         A syndrome extractor that initialises and measures all ancilla qubits
         in the same basis.
+        
         Args:
             ancilla_basis:
                 The basis in which to initialise and measure all ancilla qubits

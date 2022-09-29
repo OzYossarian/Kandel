@@ -40,27 +40,27 @@ def random_checks(
 
     Args:
         num:
-            how many checks to generate.
+            How many checks to generate.
         int_coords:
             whether the coordinates should be strictly integers
         tuple_coords:
             whether the coordinates should be tuples
         weight:
-            the weight of all the checks, if all the same. Leave as None if
+            The weight of all the checks, if all the same. Leave as None if
             weights are allowed to vary
         max_weight:
-            the max weight of all the checks, if weight can vary. Leave as
+            The max weight of all the checks, if weight can vary. Leave as
             None if weights are all the same
         dimension:
-            the dimension of all the checks, if all the same. Leave as None if
+            The dimension of all the checks, if all the same. Leave as None if
             dimensions are allowed to vary, or if non-tuple coordinates are
             requested (since then dimension must be 1).
         max_dimension:
-            the max dimension of all the checks, if dimension can vary. Leave
+            The max dimension of all the checks, if dimension can vary. Leave
             as None if dimensions are fixed, or if non-tuple coordinates are
             requested (since then dimension must be 1).
         zero_anchors:
-            if True, all checks' anchors are set to the zero vector in the
+            If True, all checks' anchors are set to the zero vector in the
             appropriate dimension (or just 0, if non-tuple coords used).
             Defaults to False.
         random_anchors:
@@ -94,7 +94,7 @@ def random_checks(
         a list of `num` randomly generated checks.
 
     """
-    validate_random_checks_arguments(
+    validate_arguments(
         tuple_coords,
         weight,
         max_weight,
@@ -150,10 +150,10 @@ def random_checks(
             colour = None
 
         check = random_check(
-            check_weight,
-            check_dimension,
             int_coords,
             tuple_coords,
+            check_weight,
+            check_dimension,
             from_letters,
             from_signs,
             anchor,
@@ -166,10 +166,10 @@ def random_checks(
 
 
 def random_check(
-        weight: int,
-        dimension: int = None,
         int_coords: bool = False,
         tuple_coords: bool = True,
+        weight: int = None,
+        dimension: int = None,
         from_letters: List[str] = None,
         from_signs: List[str] = None,
         anchor: Coordinates = None,
@@ -214,14 +214,7 @@ def random_check(
     return check
 
 
-def specific_check(letters: List[str]):
-    paulis = [
-        Pauli(Qubit(i), PauliLetter(letter))
-        for i, letter in enumerate(letters)]
-    return Check(paulis)
-
-
-def validate_random_checks_arguments(
+def validate_arguments(
         tuple_coords: bool,
         weight: int,
         max_weight: int,
@@ -232,9 +225,16 @@ def validate_random_checks_arguments(
         from_colours: List[Colour]
 ):
     assert xor(weight is None, max_weight is None)
+    weight_arg = weight if weight is not None else max_weight
+    assert weight_arg > 0
 
     if tuple_coords:
         assert xor(dimension is None, max_dimension is None)
+        dim_arg = dimension if dimension is not None else max_dimension
+        assert dim_arg > 0
+    else:
+        assert dimension in [None, 1]
+        assert max_dimension in [None, 1]
 
     assert zero_anchors is False or random_anchors is False
     # Here we allow both to be False - this just means anchors will be set
@@ -244,16 +244,18 @@ def validate_random_checks_arguments(
     if from_colours is not None:
         assert from_colours != []
 
-
+def create_check(letters: List[str]):
+    paulis = [
+        Pauli(Qubit(i), PauliLetter(letter))
+        for i, letter in enumerate(letters)]
+    return Check(paulis)
+    
 def validate_random_check_arguments(
         weight: int,
         dimension: int,
-        tuple_coords: bool,
-        from_letters: List[str]):
+        tuple_coords: bool):
     assert weight > 0
     if tuple_coords:
         assert dimension > 0
     else:
         assert dimension in [None, 1]
-    # Can't have all paulis be I up to sign
-    assert from_letters != ['I']
