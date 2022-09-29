@@ -116,5 +116,5 @@ class RotatedSurfaceCode(Code):
         logical_z = LogicalOperator(
             [Pauli(data_qubits[coords], PauliZ) for coords in top_left]
         )
-
+        
         return LogicalQubit(x=logical_x, z=logical_z)

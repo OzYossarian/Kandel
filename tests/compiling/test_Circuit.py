@@ -1,4 +1,6 @@
 from collections import defaultdict
+import copy
+import pytest
 import stim
 from main.building_blocks.Qubit import Qubit
 from main.building_blocks.pauli.Pauli import Pauli
