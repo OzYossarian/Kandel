@@ -4,12 +4,12 @@ from main.compiling.Circuit import Circuit
 from main.compiling.compilers.AncillaPerCheckCompiler import AncillaPerCheckCompiler
 from main.compiling.syndrome_extraction.extractors.ancilla_per_check.pure.CnotCssExtractor import CnotCssExtractor
 from main.utils.enums import State
-from tests.building_blocks.utils_checks import specific_check
+from tests.building_blocks.utils_checks import create_check
 from tests.compiling.utils_instructions import MockInstruction
 
 
 def test_cnot_css_extractor_on_XX_check():
-    check = specific_check(['X', 'X'])
+    check = create_check(['X', 'X'])
     data_qubits = [pauli.qubit for pauli in check.paulis.values()]
     ancilla = Qubit(-1)
     check.ancilla = ancilla
@@ -47,7 +47,7 @@ def test_cnot_css_extractor_on_XX_check():
 
 
 def test_cnot_css_extractor_on_ZZ_check():
-    check = specific_check(['Z', 'Z'])
+    check = create_check(['Z', 'Z'])
     data_qubits = [pauli.qubit for pauli in check.paulis.values()]
     ancilla = Qubit(-1)
     check.ancilla = ancilla

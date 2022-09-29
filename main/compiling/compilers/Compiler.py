@@ -300,7 +300,7 @@ class Compiler(ABC):
             checks, round, tick, circuit, self
         )
 
-        # Next note down any detectors we'll need to compile at this round.
+        # Next note down any detectors we'll need to build at this round.
         detectors = detector_schedule[relative_round]
         circuit.measurer.add_detectors(detectors, round)
 
@@ -469,7 +469,7 @@ class Compiler(ABC):
         paulis: Iterable[Pauli],
         checks: Iterable[Check],
         round: int,
-        tick: Tick,
+        tick: int,
         circuit: Circuit,
         measurement_instructions: Dict[PauliLetter, List[str]] = None,
     ):
@@ -504,7 +504,7 @@ class Compiler(ABC):
         return tick + ticks_needed
 
     def compile_one_qubit_gates(
-        self, gates: List[Instruction], tick: Tick, circuit: Circuit
+        self, gates: List[Instruction], tick: int, circuit: Circuit
     ) -> Tick:
         return self._compile_gates(
             gates, self.noise_model.one_qubit_gate, 1, tick, circuit

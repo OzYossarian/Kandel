@@ -1,9 +1,5 @@
 from collections import defaultdict
-import copy
-import pytest
 import stim
-
-from main.building_blocks.Check import Check
 from main.building_blocks.Qubit import Qubit
 from main.building_blocks.pauli.Pauli import Pauli
 from main.building_blocks.pauli.PauliLetter import PauliZ
@@ -65,101 +61,12 @@ def create_rsc_circuit():
     return rsc_circuit
 
 
-def test_to_circ_string():
-    assert single_qubit_circuit.to_cirq_string() == "1: ───R───Z───"
-
-
-def test_get_number_of_occurences_gates():
+def test_get_number_of_specific_gates():
     n_R_gates = single_qubit_circuit.get_number_of_occurences_of_gate("R")
     assert n_R_gates == 1
 
     n_X_gates = single_qubit_circuit.get_number_of_occurences_of_gate("X")
     assert n_X_gates == 0
-
-
-def test_qubit_index():
-    assert single_qubit_circuit.qubit_index(qubit) == 0
-    assert two_qubit_circuit.qubit_index(qubit_1) == 0
-    assert two_qubit_circuit.qubit_index(qubit_2) == 1
-
-
-def test_is_initialised():
-    assert single_qubit_circuit.is_initialised(1, qubit)
-    assert not single_qubit_circuit.is_initialised(0, qubit_1)
-
-
-def test_initialise():
-    three_qubit_circuit = Circuit()
-    q_1 = Qubit(1)
-    q_2 = Qubit(2)
-    q_3 = Qubit(3)
-    with pytest.raises(Exception, match='The instruction has to act on 1 qubit'):
-        three_qubit_circuit.initialise(0, Instruction([q_1, q_2], "R"))
-    with pytest.raises(Exception, match='The instruction has to be an initialize instruction starting with \"R\"'):
-        three_qubit_circuit.initialise(0, Instruction([q_1], "X"))
-
-    three_qubit_circuit.initialise(0, Instruction([q_1], "R"))
-    three_qubit_circuit.initialise(12, Instruction([q_3], "R"))
-    three_qubit_circuit.initialise(4, Instruction([q_3], "R"))
-
-    init_ticks_test = defaultdict(list)
-    init_ticks_test[q_1] = [0]
-    init_ticks_test[q_3] = [12, 4]
-    assert init_ticks_test == three_qubit_circuit.init_ticks
-
-
-def test_measure():
-    single_measurement_circuit = copy.deepcopy(two_qubit_circuit)
-
-    qubit_to_measure = list(single_measurement_circuit.qubits)[0]
-    m_instruction = Instruction([qubit_to_measure], "M")
-
-    m_instruction.is_measurement = True
-    m_instruction.params = ()
-    check = Check([Pauli(qubit_to_measure, PauliZ)])
-    single_measurement_circuit.measure(m_instruction, check, round=0, tick=4)
-    correct_dict = defaultdict(list)
-    correct_dict[qubit_to_measure] = [m_instruction]
-    # test if the circuit is correctly updated
-    assert single_measurement_circuit.instructions[4] == correct_dict
-
-    # test if the measurer is correctly updated
-    assert single_measurement_circuit.measurer.measurement_checks == {
-        m_instruction: (check, 0)
-    }
-
-    # test if circuit.measure_ticks is correctly updated
-    correct_measurement_tick_dict = defaultdict(list)
-    correct_measurement_tick_dict[qubit_to_measure] = [4]
-    assert single_measurement_circuit.measure_ticks == correct_measurement_tick_dict
-
-    # test measure multiple
-    two_measurements_circuit = copy.deepcopy(two_qubit_circuit)
-    qubit_1 = list(two_measurements_circuit.qubits)[0]
-    qubit_2 = list(two_measurements_circuit.qubits)[1]
-
-    m_instruction = Instruction([qubit_1, qubit_2], "M")
-
-    m_instruction.params = ()
-    check = Check([Pauli(qubit_1, PauliZ), Pauli(qubit_2, PauliZ)])
-    two_measurements_circuit.measure(m_instruction, check, round=0, tick=6)
-    correct_dict = {}
-    correct_dict[qubit_2] = [m_instruction]
-    correct_dict[qubit_1] = [m_instruction]
-    # test if the circuit is correctly updated
-    assert two_measurements_circuit.instructions[6] == correct_dict
-
-    # test if the measurer is correctly updated
-
-    assert two_measurements_circuit.measurer.measurement_checks == {
-        m_instruction: (check, 0)
-    }
-
-    # test if circuit.measure_ticks is correctly updated
-    correct_measurement_tick_dict = defaultdict(list)
-    correct_measurement_tick_dict[qubit_1] = [6]
-    correct_measurement_tick_dict[qubit_2] = [6]
-    assert two_measurements_circuit.measure_ticks == correct_measurement_tick_dict
 
 
 def test_to_stim(capfd):
@@ -186,12 +93,16 @@ def test__to_stim():
 
     # testing if the properties of the measurer class are reset
     assert rsc_circuit_one_layer.measurer.measurement_numbers == {}
-    assert rsc_circuit_one_layer.measurer.detectors_compiled == defaultdict(bool)
+    assert rsc_circuit_one_layer.measurer.detectors_built == defaultdict(bool)
     assert rsc_circuit_one_layer.measurer.total_measurements == 0
 
     # test number of measurements
     assert stim_rsc_circuit_one_layer.num_measurements == 17
     assert stim_rsc_circuit_one_layer.num_detectors == 8
+
+
+def test_to_circ_string():
+    assert single_qubit_circuit.to_cirq_string() == "1: ───R───Z───"
 
 
 def add_iddle_noise():
