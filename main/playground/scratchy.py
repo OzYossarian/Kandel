@@ -12,7 +12,7 @@ from main.compiling.noise.models.PhenomenologicalNoise import PhenomenologicalNo
 from main.compiling.syndrome_extraction.controlled_gate_orderers.RotatedSurfaceCodeOrderer import RotatedSurfaceCodeOrderer
 from main.compiling.syndrome_extraction.controlled_gate_orderers.TrivialOrderer import TrivialOrderer
 from main.compiling.syndrome_extraction.extractors.ancilla_per_check.mixed import CxCyCzExtractor
-from main.enums import State
+from main.utils.enums import State
 from main.printing.Printer2D import Printer2D
 
 

@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from main.Colour import Red, Blue, Green
+from main.utils.Colour import Red, Blue, Green
 from main.building_blocks.logical.LogicalQubit import LogicalQubit
 from main.building_blocks.pauli import Pauli
 from main.building_blocks.pauli.PauliLetter import PauliLetter, PauliX, PauliZ

@@ -7,7 +7,7 @@ from typing import Iterable, List
 
 from main.building_blocks.pauli.Pauli import Pauli
 from main.building_blocks.pauli.PauliLetter import PauliZ, PauliLetter, PauliX, PauliY
-from main.enums import State
+from main.utils.enums import State
 
 
 def compose(paulis: Iterable[Pauli], identities_removed: bool = False):

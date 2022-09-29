@@ -1,6 +1,6 @@
 from typing import List, Dict, Iterable
 
-from main.Colour import Colour
+from main.utils.Colour import Colour
 from main.building_blocks.pauli.Pauli import Pauli
 from main.building_blocks.pauli.PauliProduct import PauliProduct
 from main.utils.NiceRepr import NiceRepr

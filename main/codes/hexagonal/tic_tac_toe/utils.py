@@ -1,7 +1,7 @@
 import random
 from typing import List, Tuple
 
-from main.Colour import Red, Green, Blue, Colour
+from main.utils.Colour import Red, Green, Blue, Colour
 from main.building_blocks.pauli.PauliLetter import PauliY, PauliZ, PauliX, PauliLetter
 
 

@@ -1,7 +1,7 @@
 from collections import defaultdict
 from typing import Tuple, List, Dict
 
-from main.Colour import Colour
+from main.utils.Colour import Colour
 from main.building_blocks.Qubit import Qubit
 from main.codes.hexagonal.HexagonalCode import HexagonalCode
 

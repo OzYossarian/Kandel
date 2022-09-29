@@ -2,10 +2,9 @@ from typing import List, Tuple
 
 from PIL import Image
 
-from main.Colour import Black, Colour, White, Grey
+from main.utils.Colour import Black, Colour, White, Grey
 from main.building_blocks.Check import Check
 from main.building_blocks.logical.LogicalOperator import LogicalOperator
-from main.building_blocks.pauli.PauliLetter import PauliX, PauliY, PauliZ
 from main.codes.Code import Code
 from main.QPUs.QPU import QPU
 from main.building_blocks.Qubit import Qubit

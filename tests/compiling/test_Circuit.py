@@ -14,7 +14,7 @@ from main.compiling.syndrome_extraction.controlled_gate_orderers.RotatedSurfaceC
     RotatedSurfaceCodeOrderer,
 )
 from main.compiling.syndrome_extraction.extractors.ancilla_per_check.mixed.CxCyCzExtractor import CxCyCzExtractor
-from main.enums import State
+from main.utils.enums import State
 
 single_qubit_circuit = Circuit()
 qubit = Qubit(1)

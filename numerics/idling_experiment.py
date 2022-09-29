@@ -10,7 +10,7 @@ from main.compiling.syndrome_extraction.extractors.ancilla_per_check.mixed impor
 from main.decoding.PymatchingDecoder import PymatchingDecoder
 import numpy as np
 
-from main.enums import State
+from main.utils.enums import State
 
 
 class IdlingExperiment():
