@@ -7,7 +7,7 @@ from main.building_blocks.logical.LogicalOperator import LogicalOperator
 from main.building_blocks.logical.LogicalQubit import LogicalQubit
 from main.building_blocks.pauli import Pauli
 from main.building_blocks.pauli.PauliLetter import PauliX, PauliY, PauliZ
-from main.codes.hexagonal.ToricHexagonalCode import ToricHexagonalCode
+from main.codes.ToricHexagonalCode import ToricHexagonalCode
 from main.utils.types import Coordinates
 from main.utils.utils import coords_minus
 
@@ -17,13 +17,16 @@ class ToricXyzSquaredCode(ToricHexagonalCode):
         assert distance_z % 2 == 0
         distance = min([distance_z, distance_x])
         assert distance > 1
+
         self.distance_x = distance_x
         self.distance_z = distance_z
         self.xyzxyz = [PauliX, PauliY, PauliZ, PauliX, PauliY, PauliZ]
 
         # Call super now so that we have data qubits available to us in a sec
         super().__init__(
-            rows=distance_x, columns=distance_z, distance=distance)
+            rows=distance_x,
+            columns=distance_z,
+            distance=distance)
 
         checks = self.create_checks()
         self.set_schedules([checks])

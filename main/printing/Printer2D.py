@@ -35,7 +35,8 @@ class Printer2D(Printer):
             printout.save(f'{filename}_round_{round}')
         return printouts
 
-    def print_code(self, code: Code, filename: str):
+    def print_code(
+            self, code: Code, filename: str, print_logicals: bool = True):
         # Going to need to print all the data qubits
         coords = list(code.data_qubits)
         # But if code has periodic geometry, might need a slightly bigger
@@ -47,11 +48,13 @@ class Printer2D(Printer):
         printouts = self.get_printouts(coords, [code])
 
         for round, printout in enumerate(printouts):
-            self.print_code_round(code, round, printout)
+            self.print_code_round(code, round, print_logicals, printout)
             printout.save(f'{filename}_round_{round}')
         return printouts
 
-    def print_code_round(self, code: Code, round: int, printout: Printout):
+    def print_code_round(
+            self, code: Code, round: int, print_logicals: bool,
+            printout: Printout):
         # First print the checks
         checks = code.check_schedule[round % code.schedule_length]
         for check in sorted(checks, key=lambda check: -check.weight):
@@ -173,11 +176,11 @@ class Printer2D(Printer):
         # Redefine where (0,0) is
         offset = (1 - x_min, 1 - y_min)
         size = self.scale(unscaled_size, buffer)
-        # Make a separate printout for each 'round' of the QPU - e.g. Floquet
+        # Make a separate printout for each round - e.g. Floquet
         # codes measure different stabilizers in each round.
         rounds = 1 \
             if len(codes) == 0 \
-            else max(code.schedule_length for code in codes)
+            else max([code.schedule_length for code in codes], default=1)
         printouts = [
             Printout(Image.new('RGB', size, White.rgb), offset)
             for _ in range(rounds)]

@@ -1,7 +1,7 @@
 from main.building_blocks.pauli.Pauli import Pauli
 from main.building_blocks.pauli.PauliLetter import PauliX, PauliZ
 from main.building_blocks.Check import Check
-from main.codes.hexagonal.ToricHexagonalCode import ToricHexagonalCode
+from main.codes.ToricHexagonalCode import ToricHexagonalCode
 from main.utils.utils import coords_minus
 
 
@@ -10,7 +10,10 @@ class ToricColourCode(ToricHexagonalCode):
         assert distance % 4 == 0
         rows = 3 * (distance // 4)
         columns = 4 * (distance // 4)
-        super().__init__(rows, columns, distance)
+        super().__init__(
+            rows=rows,
+            columns=columns,
+            distance=distance)
 
         checks = []
         for colour in self.colours:
