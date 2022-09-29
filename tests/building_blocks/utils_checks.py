@@ -18,6 +18,12 @@ from tests.building_blocks.pauli.utils_paulis import random_paulis, random_pauli
 hermitian_signs = [1, -1]
 
 
+def specific_check(letters: List[str]):
+    paulis = [
+        Pauli(Qubit(i), PauliLetter(letter))
+        for i, letter in enumerate(letters)]
+    return Check(paulis)
+
 def random_checks(
         num: int,
         int_coords: bool = False,
@@ -249,7 +255,7 @@ def create_check(letters: List[str]):
         Pauli(Qubit(i), PauliLetter(letter))
         for i, letter in enumerate(letters)]
     return Check(paulis)
-    
+
 def validate_random_check_arguments(
         weight: int,
         dimension: int,
