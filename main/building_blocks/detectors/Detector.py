@@ -21,7 +21,7 @@ class Detector(NiceRepr):
 
         Args:
             timed_checks:
-                the set of timed checks that make up the detector. A 'timed
+                The set of timed checks that make up the detector. A 'timed
                 check' is an (int, Check) tuple, where the int is the number
                 of rounds before the `end` round this check is measured at.
                 # TODO - link to an example in the documentation.
@@ -36,7 +36,7 @@ class Detector(NiceRepr):
         self._assert_timed_checks_valid(timed_checks)
 
         self.timed_checks = timed_checks
-        self.final_checks = [check for t, check in self.timed_checks if t == 0]
+        self.final_slice = [check for t, check in self.timed_checks if t == 0]
         self.product = self.timed_checks_product(self.timed_checks)
 
         if anchor is None:
