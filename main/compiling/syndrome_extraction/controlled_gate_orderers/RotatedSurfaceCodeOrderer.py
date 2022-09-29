@@ -6,7 +6,6 @@ from main.building_blocks.pauli.PauliLetter import PauliX, PauliZ
 from main.compiling.syndrome_extraction.controlled_gate_orderers.ControlledGateOrderer import (
     ControlledGateOrderer,
 )
-from main.utils.types import Coordinates
 
 
 class RotatedSurfaceCodeOrderer(ControlledGateOrderer):
@@ -27,41 +26,14 @@ class RotatedSurfaceCodeOrderer(ControlledGateOrderer):
             (PauliZ, (0, 1)): 1,
             (PauliZ, (0, -1)): 2,
             (PauliZ, (-1, 0)): 3}
+        self.order_length = 4
 
     def order(self, check: Check) -> List[Pauli | None]:
-        if check.weight not in [2, 4]:
-            self.unexpected_weight_error(check)
-        if check.product.word.word not in ['XXXX', 'ZZZZ', 'XX', 'ZZ']:
-            self.unexpected_word_error(check)
-        ordered = [None, None, None, None]
-        for offset, pauli in check.paulis.items():
-            key = (pauli.letter, offset)
-            if key in self.ordering:
-                order = self.ordering[key]
-                ordered[order] = pauli
-            else:
-                self.unexpected_pauli_error(check, pauli, offset)
-        return ordered
+        expected_weights = [2, 4]
+        if check.weight not in expected_weights:
+            self.unexpected_weight_error(check, expected_weights)
+        expected_words = ['XXXX', 'ZZZZ', 'XX', 'ZZ']
+        if check.product.word.word not in expected_words:
+            self.unexpected_word_error(check, expected_words)
 
-    def unexpected_pauli_error(
-            self, check: Check, pauli: Pauli, offset: Coordinates):
-        raise ValueError(
-            f"Check contains an unexpected Pauli! "
-            f"Found a Pauli {pauli} with coords {offset} "
-            f"relative to check anchor {check.anchor}. "
-            f"Expected only the following Pauli letters and relative "
-            f"coordinates: {self.ordering}")
-
-    def unexpected_weight_error(self, check: Check):
-        raise ValueError(
-            f"Check has unexpected weight! "
-            f"Expected check to have weight 2 or 4, "
-            f"but instead it has weight {check.weight}. "
-            f"Check is: {check}.")
-
-    def unexpected_word_error(self, check: Check):
-        raise ValueError(
-            f"Check has unexpected word! "
-            f"Expected check to have word XXXX, ZZZZ, XX or ZZ, "
-            f"but instead it has word {check.product.word.word}. "
-            f"Check is: {check}.")
+        return self._order(check, self.order_length, self.ordering)

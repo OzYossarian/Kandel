@@ -12,7 +12,8 @@ class LogicalOperator(NiceRepr):
         Class representing a logical operator. This base class assumes it's
         'static' (defined by the same Paulis at all times). A 'dynamic'
         logical operator (one defined by different Paulis at different times)
-        should subclass this.
+        should subclass this. For an example of a dynamic logical operator,
+        see TicTacToeLogicalOperator.
 
         Args:
             paulis: the Paulis that constitute the operator.
