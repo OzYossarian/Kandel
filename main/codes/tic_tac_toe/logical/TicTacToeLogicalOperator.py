@@ -5,7 +5,7 @@ from typing import List, TYPE_CHECKING
 from main.building_blocks.Check import Check
 from main.building_blocks.logical.LogicalOperator import LogicalOperator
 from main.building_blocks.pauli import Pauli
-from main.building_blocks.pauli.PauliLetter import PauliLetter, PauliX, PauliZ
+from main.building_blocks.pauli.PauliLetter import PauliLetter
 from main.building_blocks.pauli.utils import compose
 if TYPE_CHECKING:
     from main.codes.tic_tac_toe.logical.TicTacToeLogicalQubit import TicTacToeLogicalQubit
@@ -32,11 +32,11 @@ class TicTacToeLogicalOperator(LogicalOperator):
                 whether this operator runs vertically across our square
                 tic-tac-toe code or not.
             logical_letter:
-                which operator this represents - either PauliX or PauliZ
+                which operator this represents - either PauliLetter('X') or PauliLetter('Z')
             logical_qubit:
                 the logical qubit this operator is part of.
         """
-        assert logical_letter in [PauliX, PauliZ]
+        assert logical_letter in [PauliLetter('X'), PauliLetter('Z')]
 
         self._at_round = {-1: initial_paulis}
         self.last_updated = -1
@@ -57,7 +57,7 @@ class TicTacToeLogicalOperator(LogicalOperator):
         prev_x_type, prev_z_type = self.logical_qubit.get_types(round - 1)
         next_x_type, next_z_type = self.logical_qubit.get_types(round)
 
-        if self.logical_letter == PauliX:
+        if self.logical_letter == PauliLetter('X'):
             next_type, prev_type = next_x_type, prev_x_type
         else:
             next_type, prev_type = next_z_type, prev_z_type

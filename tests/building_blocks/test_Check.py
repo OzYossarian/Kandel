@@ -6,7 +6,7 @@ import pytest
 from main.building_blocks.Check import Check
 from main.building_blocks.Qubit import Qubit
 from main.building_blocks.pauli import Pauli
-from main.building_blocks.pauli.PauliLetter import PauliY, PauliX
+from main.building_blocks.pauli.PauliLetter import PauliLetter
 from tests.utils.utils_colours import random_colour
 from tests.utils.utils_coordinates import random_coords, random_coordss, coords_length
 from tests.utils.utils_numbers import default_max_unique_sample_size, default_test_repeats_medium, default_test_repeats_small
@@ -610,7 +610,7 @@ def test_check_has_tuple_coords_when_should_be_false():
 
 def test_check_repr():
     # Explicit example:
-    paulis = [Pauli(Qubit(0), PauliX), Pauli(Qubit(1), PauliY)]
+    paulis = [Pauli(Qubit(0), PauliLetter('X')), Pauli(Qubit(1), PauliLetter('Y'))]
     check = Check(paulis, anchor=0)
     expected = {
         'product.word': {'word': 'XY', 'sign': 1},

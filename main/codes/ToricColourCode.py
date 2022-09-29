@@ -1,5 +1,5 @@
 from main.building_blocks.pauli.Pauli import Pauli
-from main.building_blocks.pauli.PauliLetter import PauliX, PauliZ
+from main.building_blocks.pauli.PauliLetter import PauliLetter
 from main.building_blocks.Check import Check
 from main.codes.ToricHexagonalCode import ToricHexagonalCode
 from main.utils.utils import coords_minus
@@ -28,10 +28,10 @@ class ToricColourCode(ToricHexagonalCode):
                     for coords in neighbour_coords]
 
                 x_paulis = {
-                    coords: Pauli(qubit, PauliX)
+                    coords: Pauli(qubit, PauliLetter('X'))
                     for coords, qubit in zip(relative_coords, neighbours)}
                 z_paulis = {
-                    coords: Pauli(qubit, PauliZ)
+                    coords: Pauli(qubit, PauliLetter('Z'))
                     for coords, qubit in zip(relative_coords, neighbours)}
 
                 x_check = Check(x_paulis, anchor, colour)

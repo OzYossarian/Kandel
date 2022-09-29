@@ -9,7 +9,7 @@ import pytest
 
 from main.building_blocks.Qubit import Qubit
 from main.building_blocks.pauli import Pauli
-from main.building_blocks.pauli.PauliLetter import PauliLetter, PauliI, PauliX
+from main.building_blocks.pauli.PauliLetter import PauliLetter
 from main.building_blocks.pauli.utils import remove_identities, compose
 from tests.utils.utils_numbers import default_max_unique_sample_size, default_test_repeats_medium
 from tests.building_blocks.pauli.utils_paulis import random_grouped_paulis, random_paulis
@@ -118,8 +118,8 @@ def test_compose_XYZ_XZY_iI_equals_iZ_minusiZ_I():
 def test_remove_identities_when_identities_sign_1():
     # Explicit test:
     paulis = [
-        Pauli(Qubit(0), PauliI),
-        Pauli(Qubit(1), PauliX)]
+        Pauli(Qubit(0), PauliLetter('I')),
+        Pauli(Qubit(1), PauliLetter('X'))]
     result = remove_identities(paulis)
     assert result == [paulis[1]]
 

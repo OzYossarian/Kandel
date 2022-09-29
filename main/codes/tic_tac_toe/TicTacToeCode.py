@@ -4,7 +4,7 @@ from typing import List
 from main.building_blocks.Check import Check
 from main.building_blocks.detectors.Drum import Drum
 from main.building_blocks.pauli.Pauli import Pauli
-from main.building_blocks.pauli.PauliLetter import PauliZ, PauliX, PauliLetter
+from main.building_blocks.pauli.PauliLetter import PauliLetter
 from main.codes.ToricHexagonalCode import ToricHexagonalCode
 from main.codes.tic_tac_toe.detectors.TicTacToeDrumBlueprint import TicTacToeDrumBlueprint
 from main.codes.tic_tac_toe.logical.TicTacToeLogicalQubit import TicTacToeLogicalQubit
@@ -15,7 +15,7 @@ from main.utils.utils import coords_mid, xor, coords_minus, embed_coords
 class TicTacToeCode(ToricHexagonalCode):
     def __init__(self, distance: int, tic_tac_toe_route: TicTacToeRoute):
         # Initialise parent class immediately so that we have data qubits
-        # etc available for use in the rest of this init.
+        # etc. available for use in the rest of this init.
         rows = 3 * (distance // 4)
         columns = 4 * (distance // 4)
         super().__init__(
@@ -359,7 +359,7 @@ class TicTacToeCode(ToricHexagonalCode):
         # Choose convention that the X operator is horizontal on qubit 0 but
         # vertical on qubit 1, and vice verse for Z operator.
         logical_0 = TicTacToeLogicalQubit(
-            vertical=PauliZ, horizontal=PauliX, code=self)
+            vertical=PauliLetter('Z'), horizontal=PauliLetter('X'), code=self)
         logical_1 = TicTacToeLogicalQubit(
-            vertical=PauliX, horizontal=PauliZ, code=self)
+            vertical=PauliLetter('X'), horizontal=PauliLetter('Z'), code=self)
         return [logical_0, logical_1]

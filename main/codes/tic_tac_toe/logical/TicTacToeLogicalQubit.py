@@ -5,7 +5,7 @@ from typing import TYPE_CHECKING
 from main.utils.Colour import Red, Blue, Green
 from main.building_blocks.logical.LogicalQubit import LogicalQubit
 from main.building_blocks.pauli import Pauli
-from main.building_blocks.pauli.PauliLetter import PauliLetter, PauliX, PauliZ
+from main.building_blocks.pauli.PauliLetter import PauliLetter
 if TYPE_CHECKING:
     from main.codes.tic_tac_toe.TicTacToeCode import TicTacToeCode
 from main.codes.tic_tac_toe.logical.TicTacToeLogicalOperator import TicTacToeLogicalOperator
@@ -21,7 +21,7 @@ class TicTacToeLogicalQubit(LogicalQubit):
         self.code = code
         self.vertical = vertical
         self.horizontal = horizontal
-        assert {self.vertical, self.horizontal} == {PauliX, PauliZ}
+        assert {self.vertical, self.horizontal} == {PauliLetter('X'), PauliLetter('Z')}
 
         self.vertical_operator_starts = {
             Red: (6, 4),
@@ -33,16 +33,16 @@ class TicTacToeLogicalQubit(LogicalQubit):
             Green: (8, 6)}
 
         initial_x_type, initial_z_type = self.get_types(round=-1)
-        if vertical == PauliX:
+        if vertical == PauliLetter('X'):
             x_operator = self.get_initial_vertical_operator(
-                PauliX, initial_x_type)
+                PauliLetter('X'), initial_x_type)
             z_operator = self.get_initial_horizontal_operator(
-                PauliZ, initial_z_type)
+                PauliLetter('Z'), initial_z_type)
         else:
             x_operator = self.get_initial_horizontal_operator(
-                PauliX, initial_x_type)
+                PauliLetter('X'), initial_x_type)
             z_operator = self.get_initial_vertical_operator(
-                PauliZ, initial_z_type)
+                PauliLetter('Z'), initial_z_type)
 
         super().__init__(x=x_operator, z=z_operator)
 

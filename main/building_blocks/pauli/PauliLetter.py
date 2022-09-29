@@ -3,10 +3,6 @@ from main.utils.Colour import Red, Blue, Green, Grey
 from main.utils.NiceRepr import NiceRepr
 
 
-# TODO - use stim.PauliString stuff instead? Has many operations built-in.
-#  Could then maybe do away with all instances of using PauliX (say) as a
-#  key in a dictionary, and just replace it with the equivalent Stim object?
-#  (For 'could', maybe read 'should'?)
 class PauliLetter(NiceRepr):
     def __init__(self, letter: str, sign: complex = 1):
         if letter not in ['I', 'X', 'Y', 'Z']:
@@ -67,12 +63,3 @@ pauli_colours = {
     'Y': Blue,
     'Z': Green,
     'I': Grey}
-
-
-# TODO - these are going to lead to obscure bugs!!!
-#   These mean the same object is being reused multiple times all over
-#   the place. Should instead create a new object every time.
-PauliI = PauliLetter('I')
-PauliX = PauliLetter('X')
-PauliY = PauliLetter('Y')
-PauliZ = PauliLetter('Z')

@@ -1,7 +1,7 @@
 import stim
 import pytest
 from main.building_blocks.pauli.Pauli import Pauli
-from main.building_blocks.pauli.PauliLetter import PauliZ
+from main.building_blocks.pauli.PauliLetter import PauliLetter
 from main.compiling.compilers.AncillaPerCheckCompiler import AncillaPerCheckCompiler
 from main.QPUs.SquareLatticeQPU import SquareLatticeQPU
 from main.codes.RepetitionCode import RepetitionCode
@@ -23,7 +23,7 @@ test_compiler = AncillaPerCheckCompiler(noise_model, extractor)
 rep_qubits = list(rep_code.data_qubits.values())
 rep_initials_zero = {qubit: State.Zero for qubit in rep_qubits}
 rep_initials_plus = {qubit: State.Plus for qubit in rep_qubits}
-rep_finals = [Pauli(qubit, PauliZ) for qubit in rep_qubits]
+rep_finals = [Pauli(qubit, PauliLetter('Z')) for qubit in rep_qubits]
 rep_logicals = [rep_code.logical_qubits[0].z]
 
 
@@ -94,7 +94,7 @@ def test_compile_final_measurement():
     initial_detector_schedules, tick, circuit = compiler.compile_initialisation(
         code, rsc_initials, None
     )
-    rsc_finals = [Pauli(qubit, PauliZ) for qubit in rsc_qubits]
+    rsc_finals = [Pauli(qubit, PauliLetter('Z')) for qubit in rsc_qubits]
     tick = compiler.compile_layer(
         0,
         initial_detector_schedules[0],
@@ -135,7 +135,7 @@ def test_compile_code(code, distance, num_detectors, num_measurements):
 
     rsc_qubits = list(code.data_qubits.values())
     rsc_initials = {qubit: State.Zero for qubit in rsc_qubits}
-    rsc_finals = [Pauli(qubit, PauliZ) for qubit in rsc_qubits]
+    rsc_finals = [Pauli(qubit, PauliLetter('Z')) for qubit in rsc_qubits]
     rsc_logicals = [code.logical_qubits[0].z]
     rsc_circuit: stim.Circuit = compiler.compile_code(
         code,

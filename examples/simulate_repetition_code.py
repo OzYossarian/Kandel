@@ -13,7 +13,7 @@
 #     name: python3
 # ---
 from main.building_blocks.pauli import Pauli
-from main.building_blocks.pauli.PauliLetter import PauliZ
+from main.building_blocks.pauli.PauliLetter import PauliLetter
 from main.codes.RepetitionCode import RepetitionCode
 from main.QPUs.SquareLatticeQPU import SquareLatticeQPU
 from main.compiling.compilers.AncillaPerCheckCompiler import AncillaPerCheckCompiler
@@ -45,7 +45,7 @@ Image(url="../output/small_18_rep_code_qpu_round_0.jpg")
 test_compiler = AncillaPerCheckCompiler()
 data_qubits = rep_code.data_qubits.values()
 initial_states = {qubit: State.Zero for qubit in data_qubits}
-final_measurements = [Pauli(qubit, PauliZ) for qubit in data_qubits]
+final_measurements = [Pauli(qubit, PauliLetter('Z')) for qubit in data_qubits]
 stim_circuit = test_compiler.compile_code(
     rep_code,
     layers=3,
