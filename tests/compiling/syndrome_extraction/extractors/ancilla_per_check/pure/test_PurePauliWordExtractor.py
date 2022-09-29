@@ -7,7 +7,7 @@ from main.building_blocks.Check import Check
 from main.building_blocks.Qubit import Qubit
 from main.building_blocks.pauli import Pauli
 from main.building_blocks.pauli.PauliLetter import PauliLetter
-from main.compiling.syndrome_extraction.extractors.ancilla_per_check.pure.PurePauliWordExtractor import \
+from main.compiling.syndrome_extraction.extractors.ancilla_per_check.PurePauliWordExtractor import \
     PurePauliWordExtractor
 from tests.building_blocks.utils_checks import random_check
 from tests.utils.utils_numbers import default_test_repeats_medium

@@ -53,6 +53,7 @@ PyMatching==0.6.2
 pyparsing==3.0.7
 pyrsistent==0.18.1
 pytest==7.0.1
+pytest-mock==3.8.2
 python-dateutil==2.8.2
 PyYAML==6.0
 pyzmq==22.3.0
