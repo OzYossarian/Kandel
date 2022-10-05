@@ -9,6 +9,11 @@ from main.codes.Code import Code
 
 class RepetitionCode(Code):
     def __init__(self, distance: int):
+        if distance < 2:
+            raise ValueError(
+                f"Repetition code should have distance at least 2. "
+                f"Instead, got distance {distance}.")
+
         data_qubits, checks = self.init_checks(distance)
         logical_x = LogicalOperator([
             Pauli(qubit, PauliLetter('X')) for qubit in data_qubits.values()])
@@ -17,7 +22,9 @@ class RepetitionCode(Code):
         logical_qubit = LogicalQubit(x=logical_x, z=logical_z)
 
         super().__init__(
-            data_qubits, [checks], distance=distance,
+            data_qubits=data_qubits,
+            check_schedule=[checks],
+            distance=distance,
             logical_qubits=[logical_qubit])
 
     def init_checks(self, distance: int):
