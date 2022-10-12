@@ -249,10 +249,11 @@ class Circuit():
                     initialised_qubits = {
                         qubit
                         for qubit in self.qubits
-                        if self.is_initialised(tick, qubit)
-                    }
+                        if self.is_initialised(tick, qubit)}
                     active_qubits = set(qubit_instructions.keys())
                     idle_qubits = initialised_qubits.difference(active_qubits)
+                    # Sort for reproducibility in tests.
+                    idle_qubits = sorted(idle_qubits, key=lambda qubit: qubit.coords)
                     for qubit in idle_qubits:
                         noise = idling_noise.instruction([qubit])
                         self.add_instruction(tick + 1, noise)

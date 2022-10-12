@@ -407,32 +407,39 @@ class Compiler(ABC):
             self, final_checks: Dict[Qubit, Check], round: int, code: Code):
         final_detectors = []
         for detector in code.detectors:
-            open_lid, checks_measured = detector.has_open_lid(
+            open_lid, detector_checks_measured = detector.has_open_lid(
                 round - 1, code.schedule_length)
             if open_lid:
                 # This detector can potentially be 'finished off', if our
-                # final data qubit measurements are in the right bases
-                detector_checks = sorted(
-                    checks_measured, key=lambda timed_check: -timed_check[0])
-                detector_product = PauliProduct(
-                    [
-                        pauli
-                        for _, check in detector_checks
-                        for pauli in check.paulis.values()
-                    ]
-                )
-                detector_qubits = {pauli.qubit for pauli in detector_product.paulis}
+                # final data qubit measurements are in the right bases. First,
+                # calculate the product of the detector's checks that have
+                # actually been measured.
+                detector_checks_measured = sorted(
+                    detector_checks_measured,
+                    key=lambda timed_check: -timed_check[0])
+                detector_product_measured = PauliProduct([
+                    pauli
+                    for _, check in detector_checks_measured
+                    for pauli in check.paulis.values()])
+                # Restrict now just to the qubits that are actually involved
+                # in the checks measured so far. Sort them just for
+                # reproducibility in tests.
+                detector_qubits = {
+                    pauli.qubit
+                    for pauli in detector_product_measured.paulis}
+                detector_qubits = sorted(
+                    detector_qubits, key=lambda qubit: qubit.coords)
+                # Now calculate the product of the measurements on these qubits.
                 measurements = [
                     list(final_checks[data_qubit].paulis.values())[0]
-                    for data_qubit in detector_qubits
-                ]
+                    for data_qubit in detector_qubits]
                 measurement_product = PauliProduct(measurements)
 
-                if detector_product.equal_up_to_sign(measurement_product):
+                if detector_product_measured.equal_up_to_sign(measurement_product):
                     # Can make a lid for this detector!
                     floor = [
-                        (t + detector.lid_end, check) for t, check in detector_checks
-                    ]
+                        (t + detector.lid_end, check)
+                        for t, check in detector_checks_measured]
                     lid = [(0, final_checks[qubit]) for qubit in detector_qubits]
                     final_detectors.append(Drum(floor, lid, 0, detector.anchor))
 
