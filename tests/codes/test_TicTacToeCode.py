@@ -2,8 +2,8 @@ import random
 
 from main.utils.Colour import Red, Green, Blue
 from main.building_blocks.pauli.PauliLetter import PauliZ, PauliY, PauliX
-from main.codes.hexagonal.tic_tac_toe.TicTacToeCode import TicTacToeCode
-from main.codes.hexagonal.tic_tac_toe.utils import random_valid_route, random_valid_route_chunk, all_good_colours, \
+from main.codes.tic_tac_toe.TicTacToeCode import TicTacToeCode
+from main.codes.tic_tac_toe.utils import random_valid_route, random_valid_route_chunk, all_good_colours, \
     random_good_route
 
 colours = [Red, Green, Blue]

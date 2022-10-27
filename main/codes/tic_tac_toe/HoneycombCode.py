@@ -1,6 +1,6 @@
 from main.utils.Colour import Red, Green, Blue
 from main.building_blocks.pauli.PauliLetter import PauliX, PauliY, PauliZ
-from main.codes.hexagonal.tic_tac_toe.TicTacToeCode import TicTacToeCode
+from main.codes.tic_tac_toe.TicTacToeCode import TicTacToeCode
 
 
 class HoneycombCode(TicTacToeCode):

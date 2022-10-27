@@ -6,14 +6,17 @@ import sinter
 from matplotlib import pyplot as plt
 
 from main.building_blocks.pauli.Pauli import Pauli
-from main.building_blocks.pauli.PauliLetter import PauliX
-from main.codes.hexagonal.tic_tac_toe.HoneycombCode import HoneycombCode
-from main.codes.hexagonal.tic_tac_toe.TicTacToeCode import TicTacToeCode
+from main.building_blocks.pauli.PauliLetter import PauliLetter
+from main.codes.tic_tac_toe.FloquetColourCode import FloquetColourCode
+from main.codes.tic_tac_toe.HoneycombCode import HoneycombCode
+from main.codes.tic_tac_toe.TicTacToeCode import TicTacToeCode
 from main.compiling.compilers.AncillaPerCheckCompiler import AncillaPerCheckCompiler
+from main.compiling.noise.models import CircuitLevelNoise
 from main.compiling.noise.models.PhenomenologicalNoise import PhenomenologicalNoise
 from main.compiling.syndrome_extraction.controlled_gate_orderers.TrivialOrderer import TrivialOrderer
-from main.compiling.syndrome_extraction.extractors.ancilla_per_check.mixed import CxCyCzExtractor
-from main.compiling.syndrome_extraction.extractors.ancilla_per_check.mixed import UniformAncillaBasisExtractor
+from main.compiling.syndrome_extraction.extractors.ancilla_per_check.UniformAncillaBasisExtractor import \
+    UniformAncillaBasisExtractor
+from main.compiling.syndrome_extraction.extractors.ancilla_per_check.mixed.CxCyCzExtractor import CxCyCzExtractor
 from main.utils.enums import State
 from main.utils.utils import output_path
 
@@ -21,7 +24,7 @@ from main.utils.utils import output_path
 def tic_tac_toe_phenom_tasks(constructor: Callable[[int], TicTacToeCode]):
     tasks = []
     syndrome_extractor = CxCyCzExtractor(TrivialOrderer())
-    error_rates = [0.002, 0.004, 0.006, 0.008, 0.01]
+    error_rates = [0.001, 0.0015, 0.002, 0.0035, 0.003]
     distances = [4, 8, 12]
     for error_rate in error_rates:
         print(f'Error rate: {error_rate}')
@@ -35,13 +38,13 @@ def tic_tac_toe_phenom_tasks(constructor: Callable[[int], TicTacToeCode]):
 def tic_tac_toe_phenom_task(
         constructor: Callable[[int], TicTacToeCode],
         distance: int, error_rate: float, syndrome_extractor: UniformAncillaBasisExtractor):
-    noise_model = PhenomenologicalNoise(error_rate, error_rate)
+    noise_model = CircuitLevelNoise(error_rate, error_rate, error_rate, error_rate, error_rate)
     compiler = AncillaPerCheckCompiler(noise_model, syndrome_extractor)
 
     code = constructor(distance)
     data_qubits = list(code.data_qubits.values())
     initial_states = {qubit: State.Plus for qubit in data_qubits}
-    final_measurements = [Pauli(qubit, PauliX) for qubit in data_qubits]
+    final_measurements = [Pauli(qubit, PauliLetter('X')) for qubit in data_qubits]
     observables = [code.logical_qubits[1].x]
     circuit = compiler.compile_code(
         code=code,
@@ -58,13 +61,13 @@ def tic_tac_toe_phenom_task(
 
 def main():
     # Collect the samples (takes a few minutes).
-    tasks = tic_tac_toe_phenom_tasks(HoneycombCode)
+    tasks = tic_tac_toe_phenom_tasks(FloquetColourCode)
     samples = sinter.collect(
         tasks=tasks,
         hint_num_tasks=len(tasks),
         num_workers=4,
-        max_shots=10000,
-        max_errors=1000,
+        max_shots=1000,
+        max_errors=100,
         decoders=['pymatching'],
         print_progress=True
     )
@@ -93,7 +96,7 @@ def main():
     ax.grid()
     ax.set_title('Logical Error Rate vs Physical Error Rate')
     ax.set_ylabel('Logical Error Probability (per shot)')
-    ax.set_xlabel('Phenomenological Noise Model Parameter')
+    ax.set_xlabel('Circuit-Level Noise Model Parameter')
     ax.legend()
 
     # Save to file and also open in a window.

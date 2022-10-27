@@ -22,13 +22,15 @@ class AncillaPerCheckCompiler(Compiler):
             measurement_instructions)
 
     def add_ancilla_qubits(self, code: Code):
+        # Reset ancilla qubits - e.g. in case this code was previously
+        # compiled.
+        code.ancilla_qubits = {}
         for check in code.checks:
-            if check.ancilla is None:
-                # For each check, just create an ancilla wherever the anchor is -
-                # or use the one that's already there.
-                if check.anchor in code.ancilla_qubits:
-                    ancilla = code.ancilla_qubits[check.anchor]
-                else:
-                    ancilla = Qubit(check.anchor)
-                    code.ancilla_qubits[check.anchor] = ancilla
-                check.ancilla = ancilla
+            # For each check, just create an ancilla wherever the anchor is -
+            # or use the one that's already there.
+            if check.anchor in code.ancilla_qubits:
+                ancilla = code.ancilla_qubits[check.anchor]
+            else:
+                ancilla = Qubit(check.anchor)
+                code.ancilla_qubits[check.anchor] = ancilla
+            check.ancilla = ancilla

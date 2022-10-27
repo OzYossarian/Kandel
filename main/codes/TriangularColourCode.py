@@ -1,8 +1,8 @@
 from typing import Tuple
 
 from main.building_blocks.Check import Check
-from main.codes.hexagonal.HexagonalCode import HexagonalCode
-from main.codes.hexagonal.ToricColourCode import ToricColourCode
+from main.codes.HexagonalCode import HexagonalCode
+from main.codes.ToricColourCode import ToricColourCode
 
 
 class TriangularColourCode(HexagonalCode):
@@ -30,7 +30,10 @@ class TriangularColourCode(HexagonalCode):
                     if self._is_in_triangle(pauli.qubit.coords)}
                 checks.append(Check(paulis, check.anchor, check.colour))
 
-        super().__init__(data_qubits, [checks], distance)
+        super().__init__(
+            data_qubits=data_qubits,
+            check_schedule=[checks],
+            distance=distance)
 
     def _is_in_triangle(self, coords: Tuple[int, int]):
         (x, y) = coords
