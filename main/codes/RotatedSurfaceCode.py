@@ -3,7 +3,7 @@ from main.building_blocks.Check import Check
 from main.building_blocks.logical.LogicalOperator import LogicalOperator
 from main.building_blocks.logical.LogicalQubit import LogicalQubit
 from main.building_blocks.pauli.Pauli import Pauli
-from main.building_blocks.pauli.PauliLetter import PauliZ, PauliX
+from main.building_blocks.pauli.PauliLetter import PauliLetter
 from main.building_blocks.Qubit import Qubit
 from main.codes.Code import Code
 from main.utils.types import Coordinates
@@ -38,7 +38,7 @@ class RotatedSurfaceCode(Code):
     def init_face_checks(self, data_qubits: Dict[Coordinates, Qubit], distance: int):
         checks = []
         y_middle = distance - 1
-        pauli_letters = [PauliX, PauliZ]
+        pauli_letters = [PauliLetter('X'), PauliLetter('Z')]
         starting_x, starting_y = (1, y_middle)
 
         # Diagonal lines of faces
@@ -70,8 +70,8 @@ class RotatedSurfaceCode(Code):
             # bottom left boundary
             anchor = (2 * i + 1, y_middle - 2 * (i + 1))
             paulis = {
-                (1, 0): Pauli(data_qubits[anchor[0] + 1, anchor[1]], PauliZ),
-                (0, 1): Pauli(data_qubits[anchor[0], anchor[1] + 1], PauliZ),
+                (1, 0): Pauli(data_qubits[anchor[0] + 1, anchor[1]], PauliLetter('Z')),
+                (0, 1): Pauli(data_qubits[anchor[0], anchor[1] + 1], PauliLetter('Z')),
             }
             new_check = Check(paulis, anchor)
             checks.append(new_check)
@@ -79,8 +79,8 @@ class RotatedSurfaceCode(Code):
             # top right boundary
             anchor = (x_middle + 2 * i + 1, 2 * (distance - 1) - 2 * i)
             paulis = {
-                (0, -1): Pauli(data_qubits[anchor[0], anchor[1] - 1], PauliZ),
-                (-1, 0): Pauli(data_qubits[anchor[0] - 1, anchor[1]], PauliZ),
+                (0, -1): Pauli(data_qubits[anchor[0], anchor[1] - 1], PauliLetter('Z')),
+                (-1, 0): Pauli(data_qubits[anchor[0] - 1, anchor[1]], PauliLetter('Z')),
             }
             new_check = Check(paulis, anchor)
             checks.append(new_check)
@@ -88,8 +88,8 @@ class RotatedSurfaceCode(Code):
             # top left boundary
             anchor = (2 * i, y_middle + 2 * i + 1)
             paulis = {
-                (1, 0): Pauli(data_qubits[anchor[0] + 1, anchor[1]], PauliX),
-                (0, -1): Pauli(data_qubits[anchor[0], anchor[1] - 1], PauliX),
+                (1, 0): Pauli(data_qubits[anchor[0] + 1, anchor[1]], PauliLetter('X')),
+                (0, -1): Pauli(data_qubits[anchor[0], anchor[1] - 1], PauliLetter('X')),
             }
             new_check = Check(paulis, anchor)
             checks.append(new_check)
@@ -97,8 +97,8 @@ class RotatedSurfaceCode(Code):
             # bottom right boundary
             anchor = (x_middle + 2 * (i + 1), 2 * i + 1)
             paulis = {
-                (0, 1): Pauli(data_qubits[anchor[0], anchor[1] + 1], PauliX),
-                (-1, 0): Pauli(data_qubits[anchor[0] - 1, anchor[1]], PauliX),
+                (0, 1): Pauli(data_qubits[anchor[0], anchor[1] + 1], PauliLetter('X')),
+                (-1, 0): Pauli(data_qubits[anchor[0] - 1, anchor[1]], PauliLetter('X')),
             }
             new_check = Check(paulis, anchor)
             checks.append(new_check)
@@ -108,13 +108,13 @@ class RotatedSurfaceCode(Code):
         # Put logical X along bottom left boundary
         bottom_left = [(i, distance - 1 - i) for i in range(distance)]
         logical_x = LogicalOperator(
-            [Pauli(data_qubits[coords], PauliX) for coords in bottom_left]
+            [Pauli(data_qubits[coords], PauliLetter('X')) for coords in bottom_left]
         )
 
         # Put logical Z along top left boundary
         top_left = [(i, distance - 1 + i) for i in range(distance)]
         logical_z = LogicalOperator(
-            [Pauli(data_qubits[coords], PauliZ) for coords in top_left]
+            [Pauli(data_qubits[coords], PauliLetter('Z')) for coords in top_left]
         )
 
         return LogicalQubit(x=logical_x, z=logical_z)

@@ -9,7 +9,7 @@ from main.building_blocks.pauli.PauliProduct import PauliProduct
 from main.building_blocks.pauli.utils import plus_one_eigenstates
 from main.compiling.Instruction import Instruction
 from main.codes.Code import Code
-from main.building_blocks.pauli.PauliLetter import PauliX, PauliZ, PauliY, PauliLetter
+from main.building_blocks.pauli.PauliLetter import PauliLetter
 from main.building_blocks.Qubit import Qubit
 from main.building_blocks.pauli.Pauli import Pauli
 from main.compiling.Circuit import Circuit
@@ -59,7 +59,7 @@ class Compiler(ABC):
                 State.MinusI: ["RY", "X"],
             }
         if measurement_instructions is None:
-            measurement_instructions = {PauliX: ["MX"], PauliY: ["MY"], PauliZ: ["MZ"]}
+            measurement_instructions = {PauliLetter('X'): ["MX"], PauliLetter('Y'): ["MY"], PauliLetter('Z'): ["MZ"]}
 
         # All initialisations must start with a reset, but can follow it with
         # other types of gates
@@ -203,18 +203,16 @@ class Compiler(ABC):
     def _get_paulis(self, stabilizers: List[Stabilizer]):
         paulis = {}
         for stabilizer in stabilizers:
-            # TODO - does any extra work need to be done if it's -1? SURELY
-            #  yes - e.g. if using these Paulis as measurement bases, means
-            #  we need to flip a sign, yes? Could all get quite tricky if
-            #  some stabilizers are +1 and some are -1...
+            # Whether the stabilizer has sign +1 or -1, we can use Paulis
+            # with all +1 signs.
             assert stabilizer.product.word.sign in [-1, 1]
             for pauli in stabilizer.product.paulis:
-                # Can just use the plus one eigenstate of the Pauli, ignoring sign.
-                pauli.letter.sign = 1
+                positive_letter = PauliLetter(pauli.letter.letter)
+                positive_pauli = Pauli(pauli.qubit, positive_letter)
                 existing = paulis.get(pauli.qubit, None)
                 if existing is None:
-                    paulis[pauli.qubit] = pauli
-                elif existing != pauli:
+                    paulis[pauli.qubit] = positive_pauli
+                elif existing != positive_pauli:
                     raise ValueError(
                         f"The desired initial stabilizers are inconsistent! "
                         f"Qubit at {pauli.qubit.coords} resolves to "

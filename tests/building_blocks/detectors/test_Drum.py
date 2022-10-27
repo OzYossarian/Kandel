@@ -7,7 +7,7 @@ from main.building_blocks.Check import Check
 from main.building_blocks.Qubit import Qubit
 from main.building_blocks.detectors.Drum import Drum
 from main.building_blocks.pauli import Pauli
-from main.building_blocks.pauli.PauliLetter import PauliX
+from main.building_blocks.pauli.PauliLetter import PauliLetter
 from tests.building_blocks.utils_checks import random_checks
 from tests.utils.utils_numbers import default_test_repeats_medium, default_test_repeats_small
 
@@ -15,14 +15,14 @@ from tests.utils.utils_numbers import default_test_repeats_medium, default_test_
 def test_drum_fails_given_empty_lid():
     expected_error = "Drum lid must contain at least one check"
     lid = []
-    floor = [(-1, Check([Pauli(Qubit(0), PauliX)]))]
+    floor = [(-1, Check([Pauli(Qubit(0), PauliLetter('X'))]))]
     with pytest.raises(ValueError, match=expected_error):
         _ = Drum(floor, lid, end=0)
 
 
 def test_drum_fails_given_empty_floor():
     expected_error = "Drum floor must contain at least one check"
-    lid = [(0, Check([Pauli(Qubit(0), PauliX)]))]
+    lid = [(0, Check([Pauli(Qubit(0), PauliLetter('X'))]))]
     floor = []
     with pytest.raises(ValueError, match=expected_error):
         _ = Drum(floor, lid, end=0)
@@ -34,7 +34,7 @@ def test_drum_fails_if_no_lid_check_with_time_component_0():
 
     # Explicit test
     qubit = Qubit(0)
-    check = Check([Pauli(qubit, PauliX)])
+    check = Check([Pauli(qubit, PauliLetter('X'))])
     floor = [(-2, check)]
     lid = [(-1, check)]
     with pytest.raises(ValueError, match=expected_error):
@@ -69,8 +69,8 @@ def test_drum_floor_start_and_end_and_lid_start_and_end():
     # Explicit test
     qubits = [Qubit(0), Qubit(1)]
     checks = [
-        Check([Pauli(qubits[0], PauliX)]),
-        Check([Pauli(qubits[1], PauliX)])]
+        Check([Pauli(qubits[0], PauliLetter('X'))]),
+        Check([Pauli(qubits[1], PauliLetter('X'))])]
     lid = [(0, checks[0]), (-1, checks[1])]
     floor = [(-2, checks[0]), (-3, checks[1])]
 
@@ -118,8 +118,8 @@ def test_drum_has_open_lid():
     # want to compare lists but don't care about ordering.
     qubits = [Qubit(0), Qubit(1)]
     checks = [
-        Check([Pauli(qubits[0], PauliX)]),
-        Check([Pauli(qubits[1], PauliX)])]
+        Check([Pauli(qubits[0], PauliLetter('X'))]),
+        Check([Pauli(qubits[1], PauliLetter('X'))])]
     lid = [(0, checks[0]), (-1, checks[1])]
     floor = [(-2, checks[0]), (-3, checks[1])]
 
@@ -183,8 +183,8 @@ def test_drum_checks_at_or_after():
     # want to compare lists but don't care about ordering.
     qubits = [Qubit(0), Qubit(1)]
     checks = [
-        Check([Pauli(qubits[0], PauliX)]),
-        Check([Pauli(qubits[1], PauliX)])]
+        Check([Pauli(qubits[0], PauliLetter('X'))]),
+        Check([Pauli(qubits[1], PauliLetter('X'))])]
     lid = [(0, checks[0]), (-1, checks[1])]
     floor = [(-2, checks[0]), (-3, checks[1])]
 
@@ -246,8 +246,8 @@ def test_drum_repr():
     # Explicit test:
     qubits = [Qubit(0), Qubit(1)]
     checks = [
-        Check([Pauli(qubits[0], PauliX)]),
-        Check([Pauli(qubits[1], PauliX)])]
+        Check([Pauli(qubits[0], PauliLetter('X'))]),
+        Check([Pauli(qubits[1], PauliLetter('X'))])]
     lid = [(0, checks[0]), (-1, checks[1])]
     floor = [(-2, checks[0]), (-3, checks[1])]
     end = 0

@@ -8,7 +8,7 @@ import pytest
 
 from main.building_blocks.Qubit import Qubit
 from main.building_blocks.pauli import Pauli
-from main.building_blocks.pauli.PauliLetter import PauliX, PauliY, PauliLetter
+from main.building_blocks.pauli.PauliLetter import PauliLetter
 from main.building_blocks.pauli.PauliProduct import PauliProduct
 from main.building_blocks.pauli.PauliWord import PauliWord
 from tests.utils.utils_numbers import default_max_unique_sample_size, default_test_repeats_medium, default_test_repeats_small
@@ -75,8 +75,8 @@ def test_pauli_product_fails_when_pauli_dims_vary():
 def test_pauli_product_fails_when_some_pauli_coords_are_tuple_and_some_are_not():
     expected_error = "Can't mix tuple and non-tuple coordinates"
     # Explicit tests:
-    tuple_pauli = Pauli(Qubit((0,)), PauliX)
-    non_tuple_pauli = Pauli(Qubit(0), PauliX)
+    tuple_pauli = Pauli(Qubit((0,)), PauliLetter('X'))
+    non_tuple_pauli = Pauli(Qubit(0), PauliLetter('X'))
     with pytest.raises(ValueError, match=expected_error):
         PauliProduct([tuple_pauli, non_tuple_pauli])
 
@@ -204,7 +204,7 @@ def test_pauli_product_inequality_when_types_are_different():
 
 def test_pauli_product_equal_up_to_sign_when_expect_true():
     # Explicit examples:
-    paulis = [Pauli(Qubit(i), PauliX) for i in range(3)]
+    paulis = [Pauli(Qubit(i), PauliLetter('X')) for i in range(3)]
     # Create two identical PauliProducts from these Paulis
     product_1 = PauliProduct(paulis)
     product_2 = PauliProduct(paulis)
@@ -246,8 +246,8 @@ def test_pauli_product_equal_up_to_sign_when_expect_true():
 def test_pauli_product_equal_up_to_sign_when_expect_false():
     # Explicit examples:
     # Create an XXX and YYY product
-    product_1 = PauliProduct([Pauli(Qubit(i), PauliX) for i in range(3)])
-    product_2 = PauliProduct([Pauli(Qubit(i), PauliY) for i in range(3)])
+    product_1 = PauliProduct([Pauli(Qubit(i), PauliLetter('X')) for i in range(3)])
+    product_2 = PauliProduct([Pauli(Qubit(i), PauliLetter('Y')) for i in range(3)])
     assert not product_1.equal_up_to_sign(product_2)
 
     # Random tests:
@@ -344,8 +344,8 @@ def test_pauli_product_is_hermitian_for_sequential_paulis():
 def test_pauli_product_repr():
     # Explicit test
     paulis = [
-        Pauli(Qubit(0), PauliX),
-        Pauli(Qubit(1), PauliY)]
+        Pauli(Qubit(0), PauliLetter('X')),
+        Pauli(Qubit(1), PauliLetter('Y'))]
     product = PauliProduct(paulis)
     expected = {
         'word': {'word': 'XY', 'sign': 1},

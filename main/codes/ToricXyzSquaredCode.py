@@ -6,7 +6,7 @@ from main.building_blocks.detectors.Stabilizer import Stabilizer
 from main.building_blocks.logical.LogicalOperator import LogicalOperator
 from main.building_blocks.logical.LogicalQubit import LogicalQubit
 from main.building_blocks.pauli import Pauli
-from main.building_blocks.pauli.PauliLetter import PauliX, PauliY, PauliZ
+from main.building_blocks.pauli.PauliLetter import PauliLetter
 from main.codes.ToricHexagonalCode import ToricHexagonalCode
 from main.utils.types import Coordinates
 from main.utils.utils import coords_minus
@@ -20,7 +20,7 @@ class ToricXyzSquaredCode(ToricHexagonalCode):
 
         self.distance_x = distance_x
         self.distance_z = distance_z
-        self.xyzxyz = [PauliX, PauliY, PauliZ, PauliX, PauliY, PauliZ]
+        self.xyzxyz = [PauliLetter('X'), PauliLetter('Y'), PauliLetter('Z'), PauliLetter('X'), PauliLetter('Y'), PauliLetter('Z')]
 
         # Call super now so that we have data qubits available to us in a sec
         super().__init__(
@@ -44,8 +44,8 @@ class ToricXyzSquaredCode(ToricHexagonalCode):
     def create_xx_check(self, left: Coordinates):
         # Create the XX check attached to the rightmost point of this face
         right = self.get_neighbour_coords(left)[0]
-        X_left = Pauli(self.data_qubits[self.wrap_coords(left)], PauliX)
-        X_right = Pauli(self.data_qubits[self.wrap_coords(right)], PauliX)
+        X_left = Pauli(self.data_qubits[self.wrap_coords(left)], PauliLetter('X'))
+        X_right = Pauli(self.data_qubits[self.wrap_coords(right)], PauliLetter('X'))
         midpoint = self.wrap_coords((left[0] + 2, left[1]))
         check = Check({(-2, 0): X_left, (2, 0): X_right}, midpoint, Blue)
         return check
@@ -67,7 +67,7 @@ class ToricXyzSquaredCode(ToricHexagonalCode):
     def create_logical_qubits(self):
         # TODO - add the other three logical operators.
         support = [(8, 4 * i + 2) for i in range(self.distance_x)]
-        paulis = [Pauli(self.data_qubits[coords], PauliX) for coords in support]
+        paulis = [Pauli(self.data_qubits[coords], PauliLetter('X')) for coords in support]
         logical_x = LogicalOperator(paulis)
         logical_qubit = LogicalQubit(x=logical_x)
         return [logical_qubit]

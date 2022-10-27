@@ -6,7 +6,7 @@ import stim
 from main.building_blocks.Check import Check
 from main.building_blocks.Qubit import Qubit
 from main.building_blocks.pauli.Pauli import Pauli
-from main.building_blocks.pauli.PauliLetter import PauliZ
+from main.building_blocks.pauli.PauliLetter import PauliLetter
 from main.codes.RotatedSurfaceCode import RotatedSurfaceCode
 from main.compiling.Circuit import Circuit
 from main.compiling.Instruction import Instruction
@@ -44,7 +44,7 @@ def create_rsc_circuit():
         code, rsc_initials, None
     )
 
-    rsc_finals = [Pauli(qubit, PauliZ) for qubit in rsc_qubits]
+    rsc_finals = [Pauli(qubit, PauliLetter('Z')) for qubit in rsc_qubits]
     tick = compiler.compile_layer(
         0,
         initial_detector_schedules[0],
@@ -116,7 +116,7 @@ def test_measure():
 
     m_instruction.is_measurement = True
     m_instruction.params = ()
-    check = Check([Pauli(qubit_to_measure, PauliZ)])
+    check = Check([Pauli(qubit_to_measure, PauliLetter('Z'))])
     single_measurement_circuit.measure(m_instruction, check, round=0, tick=4)
     correct_dict = defaultdict(list)
     correct_dict[qubit_to_measure] = [m_instruction]
@@ -141,7 +141,7 @@ def test_measure():
     m_instruction = Instruction([qubit_1, qubit_2], "M")
 
     m_instruction.params = ()
-    check = Check([Pauli(qubit_1, PauliZ), Pauli(qubit_2, PauliZ)])
+    check = Check([Pauli(qubit_1, PauliLetter('Z')), Pauli(qubit_2, PauliLetter('Z'))])
     two_measurements_circuit.measure(m_instruction, check, round=0, tick=6)
     correct_dict = {}
     correct_dict[qubit_2] = [m_instruction]
