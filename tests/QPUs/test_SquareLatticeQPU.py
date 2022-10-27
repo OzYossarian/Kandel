@@ -1,6 +1,6 @@
 from main.QPUs.SquareLatticeQPU import SquareLatticeQPU
 from main.codes.RepetitionCode import RepetitionCode
-from main.codes.hexagonal.TriangularColourCode import TriangularColourCode
+from main.codes.TriangularColourCode import TriangularColourCode
 
 
 def test_square_lattice_qpu():

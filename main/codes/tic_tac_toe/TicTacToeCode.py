@@ -4,11 +4,11 @@ from typing import List
 from main.building_blocks.Check import Check
 from main.building_blocks.detectors.Drum import Drum
 from main.building_blocks.pauli.Pauli import Pauli
-from main.building_blocks.pauli.PauliLetter import PauliZ, PauliX
-from main.codes.hexagonal.ToricHexagonalCode import ToricHexagonalCode
-from main.codes.hexagonal.tic_tac_toe.detectors.TicTacToeDrumBlueprint import TicTacToeDrumBlueprint
-from main.codes.hexagonal.tic_tac_toe.logical.TicTacToeLogicalQubit import TicTacToeLogicalQubit
-from main.codes.hexagonal.tic_tac_toe.utils import TicTacToeRoute, rest_of_row, rest_of_column
+from main.building_blocks.pauli.PauliLetter import PauliZ, PauliX, PauliLetter
+from main.codes.ToricHexagonalCode import ToricHexagonalCode
+from main.codes.tic_tac_toe.detectors.TicTacToeDrumBlueprint import TicTacToeDrumBlueprint
+from main.codes.tic_tac_toe.logical.TicTacToeLogicalQubit import TicTacToeLogicalQubit
+from main.codes.tic_tac_toe.utils import TicTacToeRoute, rest_of_row, rest_of_column
 from main.utils.utils import coords_mid, xor, coords_minus, embed_coords
 
 
@@ -18,7 +18,15 @@ class TicTacToeCode(ToricHexagonalCode):
         # etc available for use in the rest of this init.
         rows = 3 * (distance // 4)
         columns = 4 * (distance // 4)
-        super().__init__(rows, columns, distance)
+        super().__init__(
+            rows=rows,
+            columns=columns,
+            distance=distance)
+
+        self.letters = [
+            PauliLetter('X'),
+            PauliLetter('Y'),
+            PauliLetter('Z')]
 
         assert self.follows_tic_tac_toe_rules(tic_tac_toe_route)
         assert self.is_good_code(tic_tac_toe_route)

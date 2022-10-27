@@ -1,4 +1,4 @@
-from main.codes.hexagonal.TriangularColourCode import TriangularColourCode
+from main.codes.TriangularColourCode import TriangularColourCode
 
 
 def test_distance_3_triangular_colour_code():

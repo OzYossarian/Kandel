@@ -7,9 +7,9 @@ from main.building_blocks.logical.LogicalQubit import LogicalQubit
 from main.building_blocks.pauli import Pauli
 from main.building_blocks.pauli.PauliLetter import PauliLetter, PauliX, PauliZ
 if TYPE_CHECKING:
-    from main.codes.hexagonal.tic_tac_toe.TicTacToeCode import TicTacToeCode
-from main.codes.hexagonal.tic_tac_toe.logical.TicTacToeLogicalOperator import TicTacToeLogicalOperator
-from main.codes.hexagonal.tic_tac_toe.utils import rest_of_row, rest_of_column, TicTacToeSquare
+    from main.codes.tic_tac_toe.TicTacToeCode import TicTacToeCode
+from main.codes.tic_tac_toe.logical.TicTacToeLogicalOperator import TicTacToeLogicalOperator
+from main.codes.tic_tac_toe.utils import rest_of_row, rest_of_column, TicTacToeSquare
 
 
 class TicTacToeLogicalQubit(LogicalQubit):
