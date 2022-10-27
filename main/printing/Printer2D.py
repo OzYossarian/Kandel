@@ -70,13 +70,15 @@ class Printer2D(Printer):
             for logical_qubit in code.logical_qubits
             for logical_operator in logical_qubit.operators
             if logical_operator is not None]
-        max_diameter = self.scale_factor
-        min_diameter = self.scale_factor // 2
-        decrease_per_operator = \
-            (max_diameter - min_diameter) / len(logical_operators)
-        for i, logical_operator in enumerate(logical_operators):
-            diameter = max_diameter - i * decrease_per_operator
-            self._print_operator(logical_operator, round, printout, diameter)
+        if print_logicals and len(logical_operators) > 0:
+            max_diameter = self.scale_factor
+            min_diameter = self.scale_factor // 2
+            decrease_per_operator = \
+                (max_diameter - min_diameter) / len(logical_operators)
+            for i, logical_operator in enumerate(logical_operators):
+                diameter = max_diameter - i * decrease_per_operator
+                self._print_operator(
+                    logical_operator, round, printout, diameter)
 
     def _print_check(self, check: Check, printout: Printout):
         # Qubits in the check must be given in 'polygonal order' - that is,

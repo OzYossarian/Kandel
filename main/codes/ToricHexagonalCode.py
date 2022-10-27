@@ -9,10 +9,27 @@ from main.utils.types import Coordinates
 
 
 class ToricHexagonalCode(HexagonalCode, ToricCode):
-    def __init__(self, rows: int, columns: int, distance: int = None, **kwargs):
-        # Number of columns must be even in order for periodic boundaries
-        # to slot together
-        assert columns % 2 == 0
+    """Parent class of ToricColourCode and TicTacToeCode.
+
+    Args:
+        rows: Number of rows of hexagons.
+        columns: Number of columns of hexagons.
+        distance: Distance of the code. Defaults to None.
+    """
+    def __init__(
+            self, rows: int, columns: int, distance: int = None, **kwargs):
+
+        if rows <= 0 or columns <= 0:
+            raise ValueError(
+                f"Number of rows and columns must both be positive! "
+                f"Instead, got {rows} rows and {columns} columns.")
+        if columns % 2 == 1:
+            raise ValueError(
+                f"Number of columns of hexagons must be even in order for "
+                f"periodic boundaries to slot together. Instead, {columns} "
+                f"columns of hexagons were requested.")
+        self.rows = rows
+        self.columns = columns
         width = (columns // 2) * (8 + 4)
         height = rows * 4
 
@@ -37,6 +54,11 @@ class ToricHexagonalCode(HexagonalCode, ToricCode):
 
     @property
     def colourful_plaquette_anchors(self) -> Dict[Colour, List[Coordinates]]:
+        if self.rows % 3 != 0:
+            raise ValueError(
+                f"A toric hexagonal code with {self.rows} rows of hexagons "
+                f"is not three-colourable! Number of rows must be a multiple "
+                f"of three for the code to have this property.")
         if self._colourful_plaquette_anchors is None:
             self._get_plaquette_anchors()
         return self._colourful_plaquette_anchors

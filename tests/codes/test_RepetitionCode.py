@@ -1,32 +1,79 @@
+import random
+from collections import Counter
+
+import pytest
+
+from main.building_blocks.Check import Check
 from main.building_blocks.pauli.Pauli import Pauli
 from main.building_blocks.pauli.PauliLetter import PauliLetter
 from main.codes.RepetitionCode import RepetitionCode
-
-d3_rep_code = RepetitionCode(3)
-
-
-def test_init():
-    assert len(d3_rep_code.data_qubits) == 3
-    qubit = d3_rep_code.data_qubits[4]
-    assert qubit.coords == 4
-
-    assert d3_rep_code.logical_qubits[0].z.at_round(-1) == [
-        Pauli(d3_rep_code.data_qubits[0], PauliLetter('Z'))
-    ]
-
-    assert d3_rep_code.logical_qubits[0].x.at_round(-1) == [
-        Pauli(d3_rep_code.data_qubits[0], PauliLetter('X')),
-        Pauli(d3_rep_code.data_qubits[2], PauliLetter('X')),
-        Pauli(d3_rep_code.data_qubits[4], PauliLetter('X')),
-    ]
+from tests.utils.utils_numbers import default_test_repeats_small
 
 
-def test_init_checks():
-    expected_anchor = 3
-    last_check = d3_rep_code.check_schedule[0][-1]
-    assert last_check.anchor == expected_anchor
-    check_qubits = {pauli.qubit for pauli in last_check.paulis.values()}
-    expected_qubits = {d3_rep_code.data_qubits[2], d3_rep_code.data_qubits[4]}
-    assert check_qubits == expected_qubits
-    check_paulis = [pauli.letter for pauli in last_check.paulis.values()]
-    assert check_paulis == [PauliLetter('Z'), PauliLetter('Z')]
+def test_repetition_code_fails_if_distance_less_than_2():
+    expected_error = "Repetition code should have distance at least 2"
+    # Pick a few random numbers less than 2:
+    k = default_test_repeats_small
+    for distance in random.choices(range(1, -100, -1), k=k):
+        with pytest.raises(ValueError, match=expected_error):
+            RepetitionCode(distance)
+
+
+def test_repetition_code_data_qubits():
+    # Pick a few random distances:
+    k = default_test_repeats_small
+    for distance in random.choices(range(2, 100), k=k):
+        code = RepetitionCode(distance)
+        qubit_coords = [qubit.coords for qubit in code.data_qubits.values()]
+        expected = [2*i for i in range(distance)]
+        # Order irrelevant, so don't use a list for comparison.
+        # But a set would hide duplicates. So use a counter.
+        assert Counter(qubit_coords) == Counter(expected)
+
+
+def test_repetition_code_schedules():
+    # Pick a few random distances:
+    k = default_test_repeats_small
+    for distance in random.choices(range(2, 100), k=k):
+        code = RepetitionCode(distance)
+
+        # Assert schedules have the right shape
+        assert len(code.check_schedule) == 1
+        assert len(code.check_schedule[0]) == distance - 1
+        assert len(code.detector_schedule) == 1
+        assert len(code.detector_schedule[0]) == distance - 1
+
+        # Assert individual checks and detectors are as expected
+        for i in range(distance - 1):
+            checks = [
+                check for check in code.checks
+                if check.anchor == 1 + 2*i]
+            assert len(checks) == 1
+            assert checks[0] == Check([
+                Pauli(code.data_qubits[2 * i], PauliLetter('Z')),
+                Pauli(code.data_qubits[2 * (i + 1)], PauliLetter('Z'))])
+
+            drums = [
+                drum for drum in code.detectors
+                if drum.anchor == (1 + 2 * i, 0)]
+            assert len(drums) == 1
+            assert drums[0].floor == [(-1, checks[0])]
+            assert drums[0].lid == [(0, checks[0])]
+
+
+def test_repetition_code_logical_qubits():
+    # Pick a few random distances:
+    k = default_test_repeats_small
+    for distance in random.choices(range(2, 100), k=k):
+        code = RepetitionCode(distance)
+
+        assert len(code.logical_qubits) == 1
+
+        expected_z = [
+            Pauli(code.data_qubits[0], PauliLetter('Z'))]
+        expected_x = [
+            Pauli(code.data_qubits[2*i], PauliLetter('X'))
+            for i in range(distance)]
+
+        assert code.logical_qubits[0].z.at_round(-1) == expected_z
+        assert code.logical_qubits[0].x.at_round(-1) == expected_x

@@ -1,4 +1,4 @@
-from typing import List, Dict, Iterable
+from typing import List, Dict, Iterable, Any
 
 from main.utils.Colour import Colour
 from main.building_blocks.pauli.Pauli import Pauli
@@ -195,3 +195,15 @@ class Check(NiceRepr):
             raise ValueError(f"""
                 Can't have a check in which every Pauli is either I or -I. 
                 Given Paulis are {paulis}.""")
+
+    def __eq__(self, other: Any):
+        return \
+            type(self) == type(other) and \
+            self.paulis == other.paulis and \
+            self.anchor == other.anchor and \
+            self.colour == other.colour
+
+    def __hash__(self):
+        paulis = frozenset(self.paulis.items())
+        return hash((paulis, self.anchor, self.colour))
+
