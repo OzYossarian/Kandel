@@ -24,7 +24,7 @@ class RotatedSurfaceCode(Code):
                 f"Instead, got distance {distance}")
         if distance % 2 == 0:
             raise ValueError(
-                f"Currenlty only implemented for odd distances!"
+                f"Currently only implemented for odd distances! "
                 f"Instead, got distance {distance}")
 
         data_qubits = self.init_data_qubits(distance)

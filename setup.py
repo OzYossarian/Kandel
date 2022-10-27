@@ -2,7 +2,7 @@ from setuptools import setup
 
 setup(
     python_requires='>=3.6',
-    name='FaultTolerantQPU',
+    name='Kandel',
     version='0.1dev',
     packages=['main', 'tests'],
     license='GNU General Public License v3.0',
