@@ -7,7 +7,7 @@ from main.building_blocks.Check import Check
 from main.building_blocks.Qubit import Qubit
 from main.building_blocks.detectors.Detector import Detector
 from main.building_blocks.pauli import Pauli
-from main.building_blocks.pauli.PauliLetter import PauliX, PauliLetter, PauliY, PauliZ
+from main.building_blocks.pauli.PauliLetter import PauliLetter
 from main.building_blocks.pauli.PauliProduct import PauliProduct
 from main.utils.utils import modulo_duplicates
 from tests.building_blocks.utils_checks import random_checks
@@ -24,7 +24,7 @@ def test_detector_fails_if_no_timed_check_happens_end_round():
     expected_error = "At least one timed check must have time component 0"
 
     # One explicit test:
-    check = Check([Pauli(Qubit(0), PauliX)])
+    check = Check([Pauli(Qubit(0), PauliLetter('X'))])
     timed_checks = [(-1, check)]
     with pytest.raises(ValueError, match=expected_error):
         _ = Detector(timed_checks, end=0, anchor=0)
@@ -52,7 +52,7 @@ def test_detector_fails_if_any_timed_check_positive():
     expected_error = "No timed check can have time component > 0"
 
     # One explicit test:
-    check = Check([Pauli(Qubit(0), PauliX)])
+    check = Check([Pauli(Qubit(0), PauliLetter('X'))])
     timed_checks = [(0, check), (1, check)]
     with pytest.raises(ValueError, match=expected_error):
         _ = Detector(timed_checks, end=0, anchor=0)
@@ -94,8 +94,8 @@ def test_detector_fails_if_check_dims_unequal():
         "All checks in a detector must have the same dimension"
 
     # One explicit test:
-    check_dim_1 = Check([Pauli(Qubit((0,)), PauliX)])
-    check_dim_2 = Check([Pauli(Qubit((0, 0)), PauliX)])
+    check_dim_1 = Check([Pauli(Qubit((0,)), PauliLetter('X'))])
+    check_dim_2 = Check([Pauli(Qubit((0, 0)), PauliLetter('X'))])
     timed_checks = [(0, check_dim_1), (0, check_dim_2)]
     with pytest.raises(ValueError, match=expected_error):
         _ = Detector(timed_checks, end=0, anchor=None)
@@ -127,8 +127,8 @@ def test_detector_fails_if_check_coords_types_unequal():
     expected_error = "Can't mix tuple and non-tuple coordinates"
 
     # One explicit test:
-    tuple_check = Check([Pauli(Qubit((0,)), PauliX)])
-    non_tuple_check = Check([Pauli(Qubit(0), PauliX)])
+    tuple_check = Check([Pauli(Qubit((0,)), PauliLetter('X'))])
+    non_tuple_check = Check([Pauli(Qubit(0), PauliLetter('X'))])
     timed_checks = [(0, tuple_check), (0, non_tuple_check)]
     with pytest.raises(ValueError, match=expected_error):
         _ = Detector(timed_checks, end=0, anchor=None)
@@ -164,10 +164,10 @@ def test_detector_fails_if_check_coords_types_unequal():
 def test_anchor_default_tuple_coords():
     # One explicit test:
     checks = [
-        Check([Pauli(Qubit((0, 0)), PauliX)]),
-        Check([Pauli(Qubit((0, 2)), PauliX)]),
-        Check([Pauli(Qubit((2, 0)), PauliX)]),
-        Check([Pauli(Qubit((2, 2)), PauliX)])]
+        Check([Pauli(Qubit((0, 0)), PauliLetter('X'))]),
+        Check([Pauli(Qubit((0, 2)), PauliLetter('X'))]),
+        Check([Pauli(Qubit((2, 0)), PauliLetter('X'))]),
+        Check([Pauli(Qubit((2, 2)), PauliLetter('X'))])]
     timed_checks = [(0, check) for check in checks]
     detector = Detector(timed_checks, end=0)
     assert detector.anchor == (1, 1)
@@ -199,9 +199,9 @@ def test_anchor_default_tuple_coords():
 def test_anchor_default_non_tuple_coords():
     # One explicit test:
     checks = [
-        Check([Pauli(Qubit(0), PauliX)]),
-        Check([Pauli(Qubit(1), PauliX)]),
-        Check([Pauli(Qubit(2), PauliX)])]
+        Check([Pauli(Qubit(0), PauliLetter('X'))]),
+        Check([Pauli(Qubit(1), PauliLetter('X'))]),
+        Check([Pauli(Qubit(2), PauliLetter('X'))])]
     timed_checks = [(0, check) for check in checks]
     detector = Detector(timed_checks, end=0)
     assert detector.anchor == 1
@@ -236,17 +236,17 @@ def test_detector_timed_checks_product():
     # Explicit example:
     qubits = [Qubit(i) for i in range(3)]
     timed_checks = [
-        (0, Check([Pauli(qubits[0], PauliX)])),
-        (0, Check([Pauli(qubits[1], PauliX)])),
-        (0, Check([Pauli(qubits[2], PauliX)])),
-        (-1, Check([Pauli(qubits[1], PauliY)])),
-        (-1, Check([Pauli(qubits[2], PauliY)])),
-        (-2, Check([Pauli(qubits[2], PauliZ)]))]
+        (0, Check([Pauli(qubits[0], PauliLetter('X'))])),
+        (0, Check([Pauli(qubits[1], PauliLetter('X'))])),
+        (0, Check([Pauli(qubits[2], PauliLetter('X'))])),
+        (-1, Check([Pauli(qubits[1], PauliLetter('Y'))])),
+        (-1, Check([Pauli(qubits[2], PauliLetter('Y'))])),
+        (-2, Check([Pauli(qubits[2], PauliLetter('Z'))]))]
     detector = Detector(timed_checks, 0, 0)
 
     # Note XY = iZ and XYZ = iZZ = iI
     expected = PauliProduct([
-        Pauli(qubits[0], PauliX),
+        Pauli(qubits[0], PauliLetter('X')),
         Pauli(qubits[1], PauliLetter('Z', 1j)),
         Pauli(qubits[2], PauliLetter('I', 1j))])
     assert detector.product == expected
@@ -257,9 +257,9 @@ def test_detector_start_and_end():
     # One explicit example:
     qubit = Qubit(0)
     timed_checks = [
-        (0, Check([Pauli(qubit, PauliX)])),
-        (-1, Check([Pauli(qubit, PauliX)])),
-        (-2, Check([Pauli(qubit, PauliX)]))]
+        (0, Check([Pauli(qubit, PauliLetter('X'))])),
+        (-1, Check([Pauli(qubit, PauliLetter('X'))])),
+        (-2, Check([Pauli(qubit, PauliLetter('X'))]))]
     for end in range(10):
         detector = Detector(timed_checks, end, anchor=0)
         assert detector.start == end - 2
@@ -290,8 +290,8 @@ def test_detector_final_checks():
     # One explicit example:
     qubits = [Qubit(0), Qubit(1)]
     checks = [
-        Check([Pauli(qubits[0], PauliX)]),
-        Check([Pauli(qubits[1], PauliX)])]
+        Check([Pauli(qubits[0], PauliLetter('X'))]),
+        Check([Pauli(qubits[1], PauliLetter('X'))])]
     timed_checks = [
         (0, checks[0]),
         (0, checks[1]),
@@ -325,8 +325,8 @@ def test_detector_timed_checks_mod_2():
     # One explicit example:
     qubits = [Qubit(0), Qubit(1)]
     checks = [
-        Check([Pauli(qubits[0], PauliX)]),
-        Check([Pauli(qubits[1], PauliX)])]
+        Check([Pauli(qubits[0], PauliLetter('X'))]),
+        Check([Pauli(qubits[1], PauliLetter('X'))])]
     timed_checks = [
         (0, checks[0]),
         (-1, checks[1]),
@@ -361,7 +361,7 @@ def test_detector_timed_checks_mod_2():
 
 def test_detector_repr():
     # One explicit test:
-    timed_checks = [(0, Check([Pauli(Qubit(0), PauliX)]))]
+    timed_checks = [(0, Check([Pauli(Qubit(0), PauliLetter('X'))]))]
     detector = Detector(timed_checks, end=0, anchor=0)
     expected = {
         'product.word': detector.product.word,

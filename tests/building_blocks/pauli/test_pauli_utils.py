@@ -9,7 +9,7 @@ import pytest
 
 from main.building_blocks.Qubit import Qubit
 from main.building_blocks.pauli import Pauli
-from main.building_blocks.pauli.PauliLetter import PauliLetter, PauliI, PauliX
+from main.building_blocks.pauli.PauliLetter import PauliLetter
 from main.building_blocks.pauli.utils import remove_identities, compose
 from tests.utils.utils_numbers import default_max_unique_sample_size, default_test_repeats_medium
 from tests.building_blocks.pauli.utils_paulis import random_grouped_paulis, random_paulis
@@ -118,8 +118,8 @@ def test_compose_XYZ_XZY_iI_equals_iZ_minusiZ_I():
 def test_remove_identities_when_identities_sign_1():
     # Explicit test:
     paulis = [
-        Pauli(Qubit(0), PauliI),
-        Pauli(Qubit(1), PauliX)]
+        Pauli(Qubit(0), PauliLetter('I')),
+        Pauli(Qubit(1), PauliLetter('X'))]
     result = remove_identities(paulis)
     assert result == [paulis[1]]
 
@@ -184,13 +184,21 @@ def test_remove_identities_when_identities_sign_not_1_and_exist_non_identity_pau
 
         paulis = identities + non_identities
         result = remove_identities(paulis)
+
+        # Expect to get back the non-identities, except with the sign of the first
+        # one changed
+        expected_first_sign = non_identities[0].letter.sign * identities_sign
+        expected_first_letter = PauliLetter(
+            non_identities[0].letter.letter, expected_first_sign)
+        expected_first_pauli = Pauli(non_identities[0].qubit, expected_first_letter)
+        expected = [expected_first_pauli] + non_identities[1:]
         # Order irrelevant, so shouldn't compare lists. But can't compare
         # sets, because two Paulis acting via the same PauliLetter on the same
         # qubit are considered equal, so won't both appear in a set. So use a
         # Counter instead. (Could also sort the lists but that's longer)
-        assert Counter(result) == Counter(non_identities)
+        assert Counter(result) == Counter(expected)
         # The identities' sign should have transferred onto the non-identities
-        new_non_identities_signs = [pauli.letter.sign for pauli in non_identities]
+        new_non_identities_signs = [pauli.letter.sign for pauli in result]
         new_non_identities_sign = reduce(mul, new_non_identities_signs, 1)
         assert identities_sign * non_identities_sign == new_non_identities_sign
 

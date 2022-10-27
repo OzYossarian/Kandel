@@ -1,6 +1,6 @@
 from py import code
 from main.building_blocks.pauli.Pauli import Pauli
-from main.building_blocks.pauli.PauliLetter import PauliZ
+from main.building_blocks.pauli.PauliLetter import PauliLetter
 from main.codes.RepetitionCode import RepetitionCode
 from main.codes.RotatedSurfaceCode import RotatedSurfaceCode
 from main.compiling.compilers.AncillaPerCheckCompiler import AncillaPerCheckCompiler
@@ -31,7 +31,7 @@ class IdlingExperiment():
         code_qubits = list(self.code.data_qubits.values())
     
         code_initials = {qubit: State.Zero for qubit in code_qubits}
-        code_finals = [Pauli(qubit, PauliZ) for qubit in code_qubits]
+        code_finals = [Pauli(qubit, PauliLetter('Z')) for qubit in code_qubits]
         code_logicals = [self.code.logical_qubits[0].z]
 
         if noise_model.measurement is None:

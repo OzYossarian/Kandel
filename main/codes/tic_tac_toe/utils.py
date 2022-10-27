@@ -2,14 +2,14 @@ import random
 from typing import List, Tuple
 
 from main.utils.Colour import Red, Green, Blue, Colour
-from main.building_blocks.pauli.PauliLetter import PauliY, PauliZ, PauliX, PauliLetter
+from main.building_blocks.pauli.PauliLetter import PauliLetter
 
 
 TicTacToeSquare = Tuple[Colour, PauliLetter]
 TicTacToeRoute = List[TicTacToeSquare]
 
 colours = [Red, Green, Blue]
-letters = [PauliX, PauliY, PauliZ]
+letters = [PauliLetter('X'), PauliLetter('Y'), PauliLetter('Z')]
 # TODO - recheck my maths around what constitutes a 'good' route - I was
 #  omitting initialisation from the stabilizer formalism when I ended up
 #  at these colours!

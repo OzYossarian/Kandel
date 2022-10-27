@@ -1,5 +1,5 @@
 from main.building_blocks.pauli.Pauli import Pauli
-from main.building_blocks.pauli.PauliLetter import PauliX, PauliZ
+from main.building_blocks.pauli.PauliLetter import PauliLetter
 from main.codes.RepetitionCode import RepetitionCode
 
 d3_rep_code = RepetitionCode(3)
@@ -11,13 +11,13 @@ def test_init():
     assert qubit.coords == 4
 
     assert d3_rep_code.logical_qubits[0].z.at_round(-1) == [
-        Pauli(d3_rep_code.data_qubits[0], PauliZ)
+        Pauli(d3_rep_code.data_qubits[0], PauliLetter('Z'))
     ]
 
     assert d3_rep_code.logical_qubits[0].x.at_round(-1) == [
-        Pauli(d3_rep_code.data_qubits[0], PauliX),
-        Pauli(d3_rep_code.data_qubits[2], PauliX),
-        Pauli(d3_rep_code.data_qubits[4], PauliX),
+        Pauli(d3_rep_code.data_qubits[0], PauliLetter('X')),
+        Pauli(d3_rep_code.data_qubits[2], PauliLetter('X')),
+        Pauli(d3_rep_code.data_qubits[4], PauliLetter('X')),
     ]
 
 
@@ -29,4 +29,4 @@ def test_init_checks():
     expected_qubits = {d3_rep_code.data_qubits[2], d3_rep_code.data_qubits[4]}
     assert check_qubits == expected_qubits
     check_paulis = [pauli.letter for pauli in last_check.paulis.values()]
-    assert check_paulis == [PauliZ, PauliZ]
+    assert check_paulis == [PauliLetter('Z'), PauliLetter('Z')]

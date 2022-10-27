@@ -6,7 +6,7 @@ from functools import reduce
 from typing import Iterable, List
 
 from main.building_blocks.pauli.Pauli import Pauli
-from main.building_blocks.pauli.PauliLetter import PauliZ, PauliLetter, PauliX, PauliY
+from main.building_blocks.pauli.PauliLetter import PauliLetter
 from main.utils.enums import State
 
 
@@ -44,7 +44,11 @@ def remove_identities(paulis: List[Pauli]) -> List[Pauli]:
         if len(non_identities) > 0:
             # Transfer the sign of the identities onto a non-identity Pauli
             # and then remove the identities.
-            non_identities[0].letter.sign *= identity_sign
+            old_pauli = non_identities[0]
+            new_sign = old_pauli.letter.sign * identity_sign
+            new_letter = PauliLetter(old_pauli.letter.letter, new_sign)
+            new_pauli = Pauli(old_pauli.qubit, new_letter)
+            non_identities[0] = new_pauli
             return non_identities
         else:
             raise ValueError(
@@ -54,17 +58,17 @@ def remove_identities(paulis: List[Pauli]) -> List[Pauli]:
 
 
 stabilizers = {
-    State.Zero: PauliZ,
+    State.Zero: PauliLetter('Z'),
     State.One: PauliLetter('Z', -1),
-    State.Plus: PauliX,
+    State.Plus: PauliLetter('X'),
     State.Minus: PauliLetter('X', -1),
-    State.I: PauliY,
+    State.I: PauliLetter('Y'),
     State.MinusI: PauliLetter('Y', -1)}
 
 plus_one_eigenstates = {
-    PauliZ: State.Zero, 
+    PauliLetter('Z'): State.Zero, 
     PauliLetter('Z', -1): State.One,
-    PauliX: State.Plus,
+    PauliLetter('X'): State.Plus,
     PauliLetter('X', -1): State.Minus,
-    PauliY: State.I,
+    PauliLetter('Y'): State.I,
     PauliLetter('Y', -1): State.MinusI}
