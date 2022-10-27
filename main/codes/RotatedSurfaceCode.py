@@ -10,6 +10,13 @@ from main.utils.types import Coordinates
 
 
 class RotatedSurfaceCode(Code):
+    """A [d^2, 1, d] version of the surface code.
+
+    See for details: https://errorcorrectionzoo.org/c/rotated_surface
+
+    Args:
+        distance: The distance of the code, which also specificies the dimensions of the code.
+    """
     def __init__(self, distance: int):
         if distance < 3:
             raise ValueError(
@@ -17,7 +24,7 @@ class RotatedSurfaceCode(Code):
                 f"Instead, got distance {distance}")
         if distance % 2 == 0:
             raise ValueError(
-                f"Distance of a rotated surface code should be odd!"
+                f"Currenlty only implemented for odd distances!"
                 f"Instead, got distance {distance}")
 
         data_qubits = self.init_data_qubits(distance)

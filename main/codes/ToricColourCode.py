@@ -11,6 +11,13 @@ from main.utils.utils import coords_minus
 
 
 class ToricColourCode(ToricHexagonalCode):
+    """6.6.6 Colour code on a torus.
+
+    For details see: https://errorcorrectionzoo.org/c/color
+
+    Args:
+        distance: The distance of the code.
+    """
     def __init__(self, distance: int):
         if distance <= 0:
             raise ValueError(
