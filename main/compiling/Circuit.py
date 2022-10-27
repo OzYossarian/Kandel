@@ -440,7 +440,8 @@ class Circuit:
         circuit.append(instruction.name, targets, instruction.params)
 
     def entered_repeat_block(self, tick: int, last_tick: int):
-        """
+        """Checks if a repeat block started between last_tick and tick.
+
         Whether we've entered a repeat block between two CONSECUTIVE ticks.
         That is, if one were to make an ordered list of all ticks at which
         at least one gate occurs, then `tick` and `last_tick` should be
@@ -450,13 +451,13 @@ class Circuit:
 
         Args:
             tick:
-                The current tick
+                The current tick.
             last_tick:
                 The last tick at which at least one gate occurred before
                 the current tick.
 
         Returns:
-            Whether we've entered a repeat block between `last_tick` and `tick`
+            Whether we've entered a repeat block between `last_tick` and `tick`.
 
         """
         last_block = self.repeat_blocks[last_tick]
@@ -464,7 +465,8 @@ class Circuit:
         return last_block != this_block and this_block is not None
 
     def left_repeat_block(self, tick: int, last_tick: int):
-        """
+        """Returns a repeat blocks repititions if it has ended at last tick.
+
         Whether we've left a repeat block between two CONSECUTIVE ticks.
         That is, if one were to make an ordered list of all ticks at which
         at least one gate occurs, then `tick` and `last_tick` should be
@@ -474,7 +476,7 @@ class Circuit:
 
         Args:
             tick:
-                The current tick
+                The current tick.
             last_tick:
                 The last tick at which at least one gate occurred before
                 the current tick.
