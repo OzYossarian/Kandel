@@ -1,129 +1,126 @@
-from main.codes.RotatedSurfaceCode import RotatedSurfaceCode
+import random
 import pytest
+from typing import Tuple
 
-d3_sc = RotatedSurfaceCode(3)
-d5_sc = RotatedSurfaceCode(5)
-d7_sc = RotatedSurfaceCode(7)
-
-
-def test_init():
-
-    """TODO discuss with TEAGUE
-
-    assert list(d3_sc.ancilla_qubits.keys()) == [
-        (1, 2),
-        (2, 1),
-        (2, 3),
-        (3, 2),
-        (1, 0),
-        (3, 4),
-        (0, 3),
-        (4, 1),
-    ]
-    assert len(list(d5_sc.ancilla_qubits)) == 24
-    """
-    assert len(d3_sc.check_schedule[0]) == 8
-    assert len(d5_sc.check_schedule[0]) == 24
+from main.building_blocks.pauli import Pauli
+from main.building_blocks.pauli.PauliLetter import PauliLetter
+from main.building_blocks.pauli.PauliWord import PauliWord
+from main.codes.RotatedSurfaceCode import RotatedSurfaceCode
+from tests.utils.utils_numbers import default_test_repeats_small
 
 
-def test_data_qubits():
-    assert list(d3_sc.data_qubits.keys()) == [
-        (0, 2),
-        (1, 1),
-        (2, 0),
-        (1, 3),
-        (2, 2),
-        (3, 1),
-        (2, 4),
-        (3, 3),
-        (4, 2),
-    ]
-    print(d3_sc.data_qubits[(1, 1)])
+def test_rotated_surface_code_fails_if_distance_less_than_3():
+    expected_error = "Distance of a rotated surface code should be at least 3"
+    repeats = default_test_repeats_small
+    for distance in random.choices(range(1, -100, -1), k=repeats):
+        with pytest.raises(ValueError, match=expected_error):
+            RotatedSurfaceCode(distance)
 
 
-"""
-def test_ancilla_qubits():
-    print(d3_sc.ancilla_qubits.keys())
-
-    assert list(d3_sc.ancilla_qubits.keys()) == [
-        (1, 2),
-        (2, 1),
-        (2, 3),
-        (3, 2),
-        (1, 0),
-        (3, 4),
-        (0, 3),
-        (4, 1),
-    ]
-"""
+def test_rotated_surface_code_fails_if_distance_even():
+    expected_error = "Distance of a rotated surface code should be odd"
+    repeats = default_test_repeats_small
+    for distance in random.choices(range(4, 100, 2), k=repeats):
+        with pytest.raises(ValueError, match=expected_error):
+            RotatedSurfaceCode(distance)
 
 
-@pytest.mark.parametrize("code, distance", [(d3_sc, 3)])  # , (d5_sc, 5), (d7_sc, 7)])
-def test_init_face_checks(code, distance):
-    checks = code.init_face_checks(code.data_qubits, distance)
-    print(checks, "checks")
-    print(checks[0], "0")
-    # check_0 is the leftmost face check. CNOT dance order is taken from
-    # https://arxiv.org/pdf/1612.08208.pdf
-    #    pauli_1 = Pauli(code.data_qubits[(2, distance - 1)], PauliLetter('Z'))
-    #    pauli_2 = Pauli(code.data_qubits[(1, distance)], PauliLetter('Z'))
-    #    pauli_3 = Pauli(code.data_qubits[(1, distance - 2)], PauliLetter('Z'))
-    #    pauli_4 = Pauli(code.data_qubits[(0, distance - 1)], PauliLetter('Z'))
-    """
-    assert checks[0].ancilla == face_ancillas[(1, distance - 1)]
-    assert checks[0].paulis[0].qubit == code.data_qubits[(2, distance - 1)]
-    assert checks[0].paulis == [pauli_1, pauli_2, pauli_3, pauli_4]
-    """
+def test_rotated_surface_code_init_data_qubits():
+    repeats = default_test_repeats_small
+    for distance in random.choices(range(3, 25, 2), k=repeats):
+        code = RotatedSurfaceCode(distance)
+        mid = (distance - 1, distance - 1)
+        expected_coords = {
+            (x, y)
+            for x in range(2 * distance - 1)
+            for y in range(2 * distance - 1)
+            if (x + y) % 2 == 0 and manhattan((x, y), mid) < distance}
+        coords = {
+            data_qubit.coords for data_qubit in code.data_qubits.values()}
+        assert coords == expected_coords
 
 
-"""
-def test_init_face_checks_bottom():
-    # check_1 is the bottom face check
-    face_ancillas, checks = d3_sc.init_face_checks(d3_sc.data_qubits, 3)
-    pauli_1 = Pauli(d3_sc.data_qubits[(3, 1)], PauliLetter('X'))
-    pauli_2 = Pauli(d3_sc.data_qubits[(2, 0)], PauliLetter('X'))
-    pauli_3 = Pauli(d3_sc.data_qubits[(2, 2)], PauliLetter('X'))
-    pauli_4 = Pauli(d3_sc.data_qubits[(1, 1)], PauliLetter('X'))
-    assert checks[1].anchor == (2, 1)
-    assert checks[1].colour == Red
-    assert checks[1].ancilla == face_ancillas[(2, 1)]
+def test_rotated_surface_code_init_schedules():
+    repeats = default_test_repeats_small
+    for distance in random.choices(range(3, 25, 2), k=repeats):
+        code = RotatedSurfaceCode(distance)
 
-    assert checks[1].paulis == [pauli_1, pauli_2, pauli_3, pauli_4]
+        # Assert schedules have the right shape
+        expected_num_checks = (distance - 1) * (distance + 1)
+        assert len(code.check_schedule) == 1
+        assert len(code.check_schedule[0]) == expected_num_checks
+        assert len(code.detector_schedule) == 1
+        assert len(code.detector_schedule[0]) == expected_num_checks
+
+        def validate_anchor(anchor, expected_word):
+            checks = [
+                check for check in code.checks if check.anchor == anchor]
+            assert len(checks) == 1
+            assert checks[0].product.word == expected_word
+
+            drums = [
+                drum for drum in code.detectors
+                if drum.anchor == (anchor[0], anchor[1], 0)]
+            assert len(drums) == 1
+            assert drums[0].floor == [(-1, checks[0])]
+            assert drums[0].lid == [(-0, checks[0])]
+
+        # Assert individual checks and drums are as expected.
+        # First, bulk checks.
+        mid = (distance - 1, distance - 1)
+        bulk_anchors = {
+            (x, y)
+            for x in range(2 * distance - 1)
+            for y in range(2 * distance - 1)
+            if (x + y) % 2 == 1 and manhattan((x, y), mid) < distance}
+        for anchor in bulk_anchors:
+            expected_word = PauliWord('XXXX') \
+                if anchor[0] % 2 == 0 \
+                else PauliWord('ZZZZ')
+            validate_anchor(anchor, expected_word)
+
+        # Then XX boundary checks.
+        top_left_anchors = [
+            (0 + 2*i, distance + 2*i)
+            for i in range((distance - 1) // 2)]
+        bottom_right_anchors = [
+            (2 * (distance - 1) - 2*i, distance - 2 - 2*i)
+            for i in range((distance - 1) // 2)]
+        for anchor in top_left_anchors + bottom_right_anchors:
+            validate_anchor(anchor, PauliWord('XX'))
+
+        # Then ZZ boundary checks.
+        bottom_left_anchors = [
+            (distance - 2 - 2*i, 0 + 2*i)
+            for i in range((distance - 1) // 2)]
+        top_right_anchors = [
+            (distance + 2 * i, 2 * (distance - 1) - 2 * i)
+            for i in range((distance - 1) // 2)]
+        for anchor in bottom_left_anchors + top_right_anchors:
+            validate_anchor(anchor, PauliWord('ZZ'))
 
 
+def test_rotated_surface_code_init_logical_qubits():
+    repeats = default_test_repeats_small
+    for distance in random.choices(range(3, 25, 2), k=repeats):
+        code = RotatedSurfaceCode(distance)
+        assert len(code.logical_qubits) == 1
 
-def test_init_boundary_checks():
-    # bottom left boundary
-    boundary_ancillas, checks = d3_sc.init_boundary_checks(d3_sc.data_qubits, 3)
-    assert list(boundary_ancillas.keys()) == [(1, 0), (3, 4), (0, 3), (4, 1)]
-    pauli_1 = Pauli(d3_sc.data_qubits[(2, 0)], PauliLetter('Z'))
-    pauli_2 = Pauli(d3_sc.data_qubits[(1, 1)], PauliLetter('Z'))
-    assert checks[0].anchor == (1, 0)
-    assert checks[0].colour == Green
-    assert checks[0].ancilla == boundary_ancillas[(1, 0)]
-    assert checks[0].paulis[0].qubit == d3_sc.data_qubits[(2, 0)]
-    assert checks[0].paulis == [pauli_1, pauli_2]
+        expected_x_support = [
+            (i, distance - 1 - i) for i in range(distance)]
+        expected_x = [
+            Pauli(code.data_qubits[coord], PauliLetter('X'))
+            for coord in expected_x_support]
+        expected_z_support = [
+            (i, distance - 1 + i) for i in range(distance)]
+        expected_z = [
+            Pauli(code.data_qubits[coord], PauliLetter('Z'))
+            for coord in expected_z_support]
 
-    assert checks[0].initialization_timestep == 1
-    assert checks[1].initialization_timestep == 3
-    assert checks[2].initialization_timestep == 0
-    assert checks[3].initialization_timestep == 2
+        assert code.logical_qubits[0].x.at_round(-1) == expected_x
+        assert code.logical_qubits[0].z.at_round(-1) == expected_z
 
 
-def test_logical_operator():
-    d3_logical_op = [
-        Pauli(
-            d3_sc.data_qubits[(2, 0)],
-            PauliLetter('X'),
-        ),
-        Pauli(
-            d3_sc.data_qubits[(2, 2)],
-            PauliLetter('X'),
-        ),
-        Pauli(
-            d3_sc.data_qubits[(2, 4)],
-            PauliLetter('X'),
-        ),
-    ]
-    assert d3_sc.logical_operator == d3_logical_op
-"""
+def manhattan(a: Tuple[int, ...], b: Tuple[int, ...]):
+    return sum(map(lambda pair: abs(pair[0]-pair[1]), zip(a, b)))
+
