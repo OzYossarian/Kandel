@@ -28,3 +28,10 @@ class ToricXyzSquaredOrderer(ControlledGateOrderer):
             self.unexpected_weight_error(check, expected_weights)
 
         return self._order(check, self.order_length, self.ordering)
+
+    def __eq__(self, other):
+        # Any two instances of a ToricXyzSquaredOrderer are equal!
+        return type(self) == type(other)
+
+    def __hash__(self):
+        return hash(type(self))

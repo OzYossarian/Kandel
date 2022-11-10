@@ -35,3 +35,22 @@ class NoiseModel:
         # If not, user must have given either a Noise object or None; in
         # both cases, just return this.
         return arg if not isinstance(arg, float | int) else noise.uniform(arg)
+
+    def __eq__(self, other):
+        return \
+            type(self) == type(other) and \
+            self.initialisation == other.initialisation and \
+            self.idling == other.idling and \
+            self.data_qubit_start_round == other.data_qubit_start_round and \
+            self.one_qubit_gate == other.one_qubit_gate and \
+            self.two_qubit_gate == other.two_qubit_gate and \
+            self.measurement == other.measurement
+
+    def __hash__(self):
+        return hash((
+            self.initialisation,
+            self.idling,
+            self.data_qubit_start_round,
+            self.one_qubit_gate,
+            self.two_qubit_gate,
+            self.measurement))

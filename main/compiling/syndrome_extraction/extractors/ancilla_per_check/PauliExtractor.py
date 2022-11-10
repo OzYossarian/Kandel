@@ -1,10 +1,13 @@
-from typing import Iterable
+from typing import List
 
 
 class PauliExtractor:
     def __init__(
-            self, pre_rotations: Iterable[str], controlled_gate: str,
-            ancilla_is_control: bool, post_rotations: Iterable[str]):
+            self,
+            pre_rotations: List[str],
+            controlled_gate: str,
+            ancilla_is_control: bool,
+            post_rotations: List[str]):
         """
         A small helper class to collect together data needed when processing
         individual Paulis during a syndrome extraction routine.
@@ -26,3 +29,18 @@ class PauliExtractor:
         self.controlled_gate = controlled_gate
         self.ancilla_is_control = ancilla_is_control
         self.post_rotations = post_rotations
+
+    def __eq__(self, other):
+        return \
+            type(self) == type(other) and \
+            self.pre_rotations == other.pre_rotations and \
+            self.controlled_gate == other.controlled_gate and \
+            self.ancilla_is_control == other.ancilla_is_control and \
+            self.post_rotations == other.post_rotations
+
+    def __hash__(self):
+        return hash((
+            tuple(self.pre_rotations),
+            self.controlled_gate,
+            self.ancilla_is_control,
+            tuple(self.post_rotations)))

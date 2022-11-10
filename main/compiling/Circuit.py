@@ -1,5 +1,5 @@
 from collections import defaultdict
-from typing import List, Dict, Tuple, Any
+from typing import List, Dict, Tuple, Any, Iterable
 
 import stim
 import stimcirq
@@ -15,7 +15,7 @@ from main.utils.types import Tick
 RepeatBlock = Tuple[int, int, int] | None
 
 
-class Circuit():
+class Circuit:
     def __init__(self):
         """Intermediate representation of a quantum circuit. Rather than
         compile directly to a Stim circuit, which is somewhat inflexible, we
@@ -67,22 +67,22 @@ class Circuit():
         """
         return str(stimcirq.stim_circuit_to_cirq_circuit(self.to_stim(idling_noise)))
 
-    def get_number_of_occurrences_of_gate(self, instruction_name: str) -> int:
-        """Counts the number of times a gate occurs.
+    def number_of_instructions(self, instruction_names: Iterable[str]) -> int:
+        """Counts the number of times an instruction occurs.
 
         Args:
-            instruction_name: Name of the gate to count.
+            instruction_names: Names of the instructions to count.
 
         Returns:
-            Number of occurrences of the gate.
+            Number of occurrences of instructions with these names.
         """
-        number_of_occurrences = 0
+        occurrences = 0
         for instructions_at_tick in self.instructions.values():
             for instructions_on_qubit_at_tick in instructions_at_tick.values():
                 for instruction in instructions_on_qubit_at_tick:
-                    if instruction.name == instruction_name:
-                        number_of_occurrences += 1
-        return number_of_occurrences
+                    if instruction.name in instruction_names:
+                        occurrences += 1
+        return occurrences
 
     def qubit_index(self, qubit: Qubit) -> int:
         """Get the stim index corresponding to this qubit, or create one if it doesn't yet have one.

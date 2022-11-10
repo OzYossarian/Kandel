@@ -135,3 +135,15 @@ class UniformAncillaBasisExtractor(AncillaPerCheckExtractor):
             f"No data was given to the SyndromeExtractor "
             f"specifying how to extract pauli {pauli} as part of check "
             f"{check}.")
+
+    def __eq__(self, other):
+        return \
+            super().__eq__(other) and \
+            self.ancilla_basis == other.ancilla_basis and \
+            self.pauli_extractors == other.pauli_extractors
+
+    def __hash__(self):
+        return hash((
+            super().__hash__(),
+            self.ancilla_basis,
+            frozenset(self.pauli_extractors.items())))

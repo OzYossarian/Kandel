@@ -34,12 +34,40 @@ import stim
 
 class Compiler(ABC):
     def __init__(
-        self,
-        noise_model: NoiseModel = None,
-        syndrome_extractor: SyndromeExtractor = None,
-        initialisation_instructions: Dict[State, List[str]] = None,
-        measurement_instructions: Dict[PauliLetter, List[str]] = None,
+            self,
+            noise_model: NoiseModel = None,
+            syndrome_extractor: SyndromeExtractor = None,
+            initialisation_instructions: Dict[State, List[str]] = None,
+            measurement_instructions: Dict[PauliLetter, List[str]] = None,
     ):
+        # All initialisations must start with a reset, but can follow it with
+        # other types of gates.
+        # e.g. Initialising into the plus state can be implemented by
+        # initialising into the zero state ('RZ') then doing a Hadamard ('H').
+        if initialisation_instructions is not None:
+            valid = all([
+                instructions[0][0] == "R"
+                for instructions in initialisation_instructions.values()])
+            if not valid:
+                raise ValueError(
+                    "All initialisation instructions should start with a "
+                    f"reset gate. Instead, got the following: "
+                    f"{initialisation_instructions}")
+
+        # Similarly, all measurements must end with an actual measurement, but
+        # can be preceded by some other gates.
+        # e.g. Measuring in the X-basis can be implemented by doing a Hadamard
+        # ('H') then measuring in the Z-basis ('MZ')
+        if measurement_instructions is not None:
+            valid = all([
+                instructions[-1][0] == "M"
+                for instructions in measurement_instructions.values()])
+            if not valid:
+                raise ValueError(
+                    "All measurement instructions should end with a "
+                    f"measurement gate. Instead, got the following: "
+                    f"{measurement_instructions}")
+
         # Configure defaults
         if noise_model is None:
             noise_model = NoNoise()
@@ -48,7 +76,7 @@ class Compiler(ABC):
             # without providing an ordering, this might try to place two
             # controlled gates on the same qubit at once, which will raise
             # an error.
-            syndrome_extractor = CnotExtractor(TrivialOrderer())
+            syndrome_extractor = CnotExtractor()
         if initialisation_instructions is None:
             initialisation_instructions = {
                 State.Zero: ["RZ"],
@@ -56,31 +84,19 @@ class Compiler(ABC):
                 State.Plus: ["RX"],
                 State.Minus: ["RX", "Z"],
                 State.I: ["RY"],
-                State.MinusI: ["RY", "X"],
-            }
+                State.MinusI: ["RY", "X"]}
         if measurement_instructions is None:
-            measurement_instructions = {PauliLetter('X'): ["MX"], PauliLetter('Y'): ["MY"], PauliLetter('Z'): ["MZ"]}
-
-        # All initialisations must start with a reset, but can follow it with
-        # other types of gates
-        assert all(
-            instructions[0][0] == "R"
-            for instructions in initialisation_instructions.values()
-        )
-
-        # Similarly, all measurements must end with an actual measurement, but
-        # can be preceded by some other gates
-        assert all(
-            instructions[-1][0] == "M"
-            for instructions in measurement_instructions.values()
-        )
+            measurement_instructions = {
+                PauliLetter('X'): ["MX"],
+                PauliLetter('Y'): ["MY"],
+                PauliLetter('Z'): ["MZ"]}
 
         self.noise_model = noise_model
         self.syndrome_extractor = syndrome_extractor
         self.initialisation_instructions = initialisation_instructions
         self.measurement_instructions = measurement_instructions
 
-    def compile_code(
+    def compile_to_circuit(
         self,
         code: Code,
         layers: int,
@@ -89,7 +105,7 @@ class Compiler(ABC):
         final_measurements: List[Pauli] = None,
         final_stabilizers: List[Stabilizer] = None,
         logical_observables: List[LogicalOperator] = None,
-    ) -> stim.Circuit():
+    ) -> Circuit():
 
         # TODO - actually might make more sense to only allow
         #  initial_stabilizers and final_stabilizers?? Is more general! But no
@@ -143,6 +159,26 @@ class Compiler(ABC):
             circuit,
             code)
 
+        return circuit
+
+    def compile_to_stim(
+            self,
+            code: Code,
+            layers: int,
+            initial_states: Dict[Qubit, State] = None,
+            initial_stabilizers: List[Stabilizer] = None,
+            final_measurements: List[Pauli] = None,
+            final_stabilizers: List[Stabilizer] = None,
+            logical_observables: List[LogicalOperator] = None,
+    ) -> stim.Circuit():
+        circuit = self.compile_to_circuit(
+            code=code,
+            layers=layers,
+            initial_states=initial_states,
+            initial_stabilizers=initial_stabilizers,
+            final_measurements=final_measurements,
+            final_stabilizers=final_stabilizers,
+            logical_observables=logical_observables)
         return circuit.to_stim(self.noise_model.idling)
 
     def compile_initialisation(
@@ -196,16 +232,18 @@ class Compiler(ABC):
     def get_initial_states(self, initial_stabilizers: List[Stabilizer]):
         paulis = self._get_paulis(initial_stabilizers)
         initial_states = {
-            qubit: plus_one_eigenstates[pauli.letter] for qubit, pauli in paulis.items()
-        }
+            qubit: plus_one_eigenstates[pauli.letter]
+            for qubit, pauli in paulis.items()}
         return initial_states
 
     def _get_paulis(self, stabilizers: List[Stabilizer]):
         paulis = {}
         for stabilizer in stabilizers:
             # Whether the stabilizer has sign +1 or -1, we can use Paulis
-            # with all +1 signs.
-            assert stabilizer.product.word.sign in [-1, 1]
+            # with all +1 signs. This is because when these Paulis are later
+            # used to build a detector, it does not matter whether the
+            # detector's expected outcome is 1 or -1. It only matters that
+            # the expected outcome is deterministic.
             for pauli in stabilizer.product.paulis:
                 positive_letter = PauliLetter(pauli.letter.letter)
                 positive_pauli = Pauli(pauli.qubit, positive_letter)
@@ -214,10 +252,9 @@ class Compiler(ABC):
                     paulis[pauli.qubit] = positive_pauli
                 elif existing != positive_pauli:
                     raise ValueError(
-                        f"The desired initial stabilizers are inconsistent! "
-                        f"Qubit at {pauli.qubit.coords} resolves to "
-                        f"both {existing.letter} and {pauli.letter}."
-                    )
+                        f"The desired stabilizers are inconsistent! "
+                        f"Qubit {pauli.qubit} resolves to both "
+                        f"{existing.letter} and {pauli.letter}.")
         return paulis
 
     def initialize_qubits(

@@ -26,7 +26,7 @@ def test_repetition_code_end_to_end_1():
     initial_states = {qubit: State.Zero for qubit in data_qubits}
     final_measurements = [
         Pauli(qubit, PauliLetter('Z')) for qubit in data_qubits]
-    stim_circuit = compiler.compile_code(
+    stim_circuit = compiler.compile_to_stim(
         code=code,
         layers=3,
         initial_states=initial_states,
@@ -100,7 +100,7 @@ def test_repetition_code_end_to_end_2():
     initial_states = {qubit: State.Plus for qubit in data_qubits}
     final_measurements = [
         Pauli(qubit, PauliLetter('X')) for qubit in data_qubits]
-    stim_circuit = compiler.compile_code(
+    stim_circuit = compiler.compile_to_stim(
         code=code,
         layers=3,
         initial_states=initial_states,
@@ -172,7 +172,7 @@ def test_repetition_code_end_to_end_3():
     initial_states = {qubit: State.Zero for qubit in data_qubits}
     final_measurements = [
         Pauli(qubit, PauliLetter('Z')) for qubit in data_qubits]
-    stim_circuit = compiler.compile_code(
+    stim_circuit = compiler.compile_to_stim(
         code=code,
         layers=3,
         initial_states=initial_states,
@@ -254,7 +254,7 @@ def test_repetition_code_end_to_end_4():
     initial_states = {qubit: State.Zero for qubit in data_qubits}
     final_measurements = [
         Pauli(qubit, PauliLetter('Z')) for qubit in data_qubits]
-    stim_circuit = compiler.compile_code(
+    stim_circuit = compiler.compile_to_stim(
         code=code,
         layers=3,
         initial_states=initial_states,

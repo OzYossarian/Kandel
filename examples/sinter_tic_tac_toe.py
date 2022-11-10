@@ -46,7 +46,7 @@ def tic_tac_toe_phenom_task(
     initial_states = {qubit: State.Plus for qubit in data_qubits}
     final_measurements = [Pauli(qubit, PauliLetter('X')) for qubit in data_qubits]
     observables = [code.logical_qubits[1].x]
-    circuit = compiler.compile_code(
+    circuit = compiler.compile_to_stim(
         code=code,
         layers=distance,
         initial_states=initial_states,

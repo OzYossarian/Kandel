@@ -6,11 +6,11 @@ from main.compiling.noise.noises.TwoQubitNoise import TwoQubitNoise
 
 class CircuitLevelNoise(NoiseModel):
     def __init__(
-            self, initialisation: OneQubitNoise | float,
-            idling: OneQubitNoise | float,
-            one_qubit_gate: OneQubitNoise | float,
-            two_qubit_gate: TwoQubitNoise | float,
-            measurement: OneBitNoise | float):
+            self, initialisation: OneQubitNoise | float | None,
+            idling: OneQubitNoise | float | None,
+            one_qubit_gate: OneQubitNoise | float | None,
+            two_qubit_gate: TwoQubitNoise | float | None,
+            measurement: OneBitNoise | float | None):
 
         super().__init__(
             initialisation=initialisation,

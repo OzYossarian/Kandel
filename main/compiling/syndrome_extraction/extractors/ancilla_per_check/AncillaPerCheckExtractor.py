@@ -264,3 +264,30 @@ class AncillaPerCheckExtractor(SyndromeExtractor):
     @abstractmethod
     def get_controlled_gate(self, pauli: Pauli, check: Check) -> Instruction:
         raise NotImplementedError("Must be overridden in a subclass!")
+
+    def __eq__(self, other):
+        return \
+            type(self) == type(other) and \
+            self.controlled_gate_orderer == other.controlled_gate_orderer and \
+            self.initialisation_instructions == other.initialisation_instructions and \
+            self.measurement_instructions == other.measurement_instructions and \
+            self.parallelize == other.parallelize
+
+    def __hash__(self):
+        if self.initialisation_instructions is None:
+            initialisation_instructions = None
+        else:
+            initialisation_instructions = frozenset(
+                (state, tuple(names))
+                for state, names in self.initialisation_instructions.items())
+        if self.measurement_instructions is None:
+            measurement_instructions = None
+        else:
+            measurement_instructions = frozenset(
+                (letter, tuple(names))
+                for letter, names in self.measurement_instructions.items())
+        return hash((
+            self.controlled_gate_orderer,
+            initialisation_instructions,
+            measurement_instructions,
+            self.parallelize))

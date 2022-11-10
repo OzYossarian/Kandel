@@ -121,3 +121,17 @@ class PurePauliWordExtractor(UniformAncillaBasisExtractor):
             f"Tried to extract syndrome for {word} check but no "
             f"ancilla basis was provided to the PurePauliWordExtractor "
             f"for such a check! The relevant check is: {check}")
+
+    def __eq__(self, other):
+        return \
+            super().__eq__(other) and \
+            self.x_word_ancilla_basis == other.x_word_ancilla_basis and \
+            self.y_word_ancilla_basis == other.y_word_ancilla_basis and \
+            self.z_word_ancilla_basis == other.z_word_ancilla_basis
+
+    def __hash__(self):
+        return hash((
+            super().__hash__(),
+            self.x_word_ancilla_basis,
+            self.y_word_ancilla_basis,
+            self.z_word_ancilla_basis))
