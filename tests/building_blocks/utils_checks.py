@@ -1,5 +1,5 @@
 import random
-from typing import List
+from typing import List, Union
 
 from main.utils.Colour import Colour
 from main.building_blocks.Check import Check
@@ -32,8 +32,8 @@ def random_checks(
         from_colours: List[Colour] = None,
         from_letters: List[str] = None,
         from_signs: List[str] = None,
-        min_coord: float | int = default_min_coord,
-        max_coord: float | int = default_max_coord
+        min_coord: Union[float,int] = default_min_coord,
+        max_coord: Union[float,int] = default_max_coord
 ):
     """
     A method to generate `num` Check objects, with various settings.
@@ -174,8 +174,8 @@ def random_check(
         from_signs: List[str] = None,
         anchor: Coordinates = None,
         colour: Colour = None,
-        min_coord: float | int = default_min_coord,
-        max_coord: float | int = default_max_coord
+        min_coord: Union[float,int] = default_min_coord,
+        max_coord: Union[float,int] = default_max_coord
 ):
     validate_random_check_arguments(
         weight, dimension, tuple_coords, from_letters)

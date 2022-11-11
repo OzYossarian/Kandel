@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import List, Dict
+from typing import List, Dict, Union
 
 from main.building_blocks.Check import Check
 from main.building_blocks.pauli.Pauli import Pauli
@@ -15,7 +15,7 @@ from main.utils.enums import State
 class UniformAncillaBasisExtractor(AncillaPerCheckExtractor):
     def __init__(
             self, ancilla_basis: PauliLetter,
-            pauli_extractors: Dict[PauliLetter, PauliExtractor | None],
+            pauli_extractors: Dict[PauliLetter, Union[PauliExtractor, None]],
             controlled_gate_orderer: ControlledGateOrderer = None,
             initialisation_instructions: Dict[State, List[str]] = None,
             measurement_instructions: Dict[PauliLetter, List[str]] = None,
@@ -116,7 +116,7 @@ class UniformAncillaBasisExtractor(AncillaPerCheckExtractor):
             self._no_extraction_method_error(pauli, check)
 
     def get_controlled_gate(
-            self, pauli: Pauli, check: Check) -> Instruction | None:
+            self, pauli: Pauli, check: Check) -> Union[Instruction,None]:
         if pauli.letter in self.pauli_extractors:
             extractor = self.pauli_extractors[pauli.letter]
             if extractor is not None:

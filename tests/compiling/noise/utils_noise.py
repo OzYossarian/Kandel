@@ -1,10 +1,10 @@
-from typing import Tuple
+from typing import Tuple, Union
 
 from main.compiling.noise.noises.Noise import Noise
 
 
 class MockNoise(Noise):
-    def __init__(self, name: str, params: Tuple[float, ...] | float):
+    def __init__(self, name: str, params: Union[Tuple[float, ...],float]):
         self._name = name
         self._params = params
         super().__init__()

@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Dict, Any, List, Set
+from typing import Dict, Any, List, Set, Union
 from typing import TYPE_CHECKING
 
 from main.building_blocks.detectors.Drum import Drum
@@ -22,7 +22,7 @@ class Code:
     Base class for all quantum error correction codes.
     """
     def __init__(
-            self, data_qubits: Dict[Coordinates, Qubit] | List[Qubit],
+            self, data_qubits: Union[Dict[Coordinates, Qubit],List[Qubit]],
             check_schedule: List[List[Check]] = None,
             detector_schedule: List[List[Drum]] = None,
             logical_qubits: List[LogicalQubit] = None,
@@ -75,9 +75,9 @@ class Code:
         # Allows for a code to be partially instantiated (e.g. in order to
         # create the data qubits) but then for the code and detector
         # schedules to be set later.
-        self.check_schedule: List[List[Check]] | None = None
-        self.detector_schedule: List[List[Drum]] | None = None
-        self.schedule_length: int | None = None
+        self.check_schedule: Union[List[List[Check]],None] = None
+        self.detector_schedule: Union[List[List[Drum]], None] = None
+        self.schedule_length: Union[int,None] = None
         self.checks: Set[Check] = set()
         self.detectors: Set[Drum] = set()
 

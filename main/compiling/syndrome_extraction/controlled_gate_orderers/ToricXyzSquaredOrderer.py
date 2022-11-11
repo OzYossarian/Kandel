@@ -1,4 +1,4 @@
-from typing import List
+from typing import List, Union
 
 from main.building_blocks.Check import Check
 from main.building_blocks.pauli import Pauli
@@ -22,7 +22,7 @@ class ToricXyzSquaredOrderer(ControlledGateOrderer):
             (PauliLetter('Z'), (2, -2)): 0}
         self.order_length = 6
 
-    def order(self, check: Check) -> List[Pauli | None]:
+    def order(self, check: Check) -> List[Union[Pauli, None]]:
         expected_weights = [2, 6]
         if check.weight not in expected_weights:
             self.unexpected_weight_error(check, expected_weights)

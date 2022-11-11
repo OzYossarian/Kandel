@@ -1,5 +1,5 @@
 from collections import defaultdict
-from typing import List, Dict, Tuple, Any, Iterable
+from typing import List, Dict, Tuple, Any, Iterable, Union
 
 import stim
 import stimcirq
@@ -12,7 +12,7 @@ from main.compiling.Measurer import Measurer
 from main.compiling.noise.noises import OneQubitNoise
 from main.utils.types import Tick
 
-RepeatBlock = Tuple[int, int, int] | None
+RepeatBlock = Union[Tuple[int, int, int],None]
 
 
 class Circuit:
@@ -228,7 +228,7 @@ class Circuit:
         # TODO - implement!
         raise NotImplementedError
 
-    def add_idling_noise(self, idling_noise: OneQubitNoise | None):
+    def add_idling_noise(self, idling_noise: Union[OneQubitNoise,None]):
         """Adds idling noise everywhere in the circuit
 
         Idling noise is added at every tick to qubits that have been initialized but on which no gate is performed
@@ -260,7 +260,7 @@ class Circuit:
 
     def to_stim(
         self,
-        idling_noise: OneQubitNoise | None,
+        idling_noise: Union[OneQubitNoise,None],
         track_coords: bool = True,
         track_progress: bool = True,
     ) -> stim.Circuit:
@@ -285,7 +285,7 @@ class Circuit:
             return self._to_stim(idling_noise, track_coords, None)
 
     def _to_stim(
-        self, idling_noise: OneQubitNoise | None, track_coords: bool, progress_bar: Any
+        self, idling_noise: Union[OneQubitNoise,None], track_coords: bool, progress_bar: Any
     ) -> stim.Circuit:
         """Called by to_stim() to transform the circuit to a stim circuit.
 

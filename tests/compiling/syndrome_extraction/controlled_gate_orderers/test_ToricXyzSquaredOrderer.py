@@ -1,5 +1,4 @@
 import random
-
 import pytest
 
 from main.building_blocks.Check import Check

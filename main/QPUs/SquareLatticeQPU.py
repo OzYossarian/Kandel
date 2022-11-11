@@ -1,5 +1,5 @@
 import itertools
-from typing import Tuple
+from typing import Tuple, Union
 
 from main.QPUs.QPU import QPU
 from main.building_blocks.Qubit import Qubit
@@ -9,7 +9,7 @@ from main.utils.utils import coords_length
 
 
 class SquareLatticeQPU(QPU):
-    def __init__(self, dims: Tuple[int, ...] | int):
+    def __init__(self, dims: Union[Tuple[int, ...], int]):
         self.dim = coords_length(dims)
         if self.dim == 1 and isinstance(dims, tuple):
             # Don't bother with a one-element tuple - turn it into an int.

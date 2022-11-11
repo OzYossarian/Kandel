@@ -1,5 +1,5 @@
 from collections import defaultdict
-from typing import List, Iterable, Tuple, Dict
+from typing import List, Iterable, Tuple, Dict, Union
 
 import stim
 
@@ -10,7 +10,7 @@ from main.compiling.Instruction import Instruction
 from main.utils.types import Coordinates
 
 
-Trigger = Detector | LogicalOperator
+Trigger = Union[Detector,LogicalOperator]
 
 
 class Measurer:
@@ -71,7 +71,7 @@ class Measurer:
             self.triggers[(check, round)].append(observable)
 
     def measurement_triggers_to_stim(
-        self, measurements: List[Instruction], shift_coords: Tuple[Coordinates] | None
+        self, measurements: List[Instruction], shift_coords: Union[Tuple[Coordinates], None]
     ):
         # TODO - have just realised that everything triggered by measurements
         #  (detectors, observable updates, shift coords) can probably all be

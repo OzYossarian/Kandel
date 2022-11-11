@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from typing import List, Tuple, Dict
+from typing import List, Tuple, Dict, Union
 
 from main.building_blocks.Check import Check
 from main.building_blocks.pauli.Pauli import Pauli
@@ -18,7 +18,7 @@ class ControlledGateOrderer(ABC):
         pass
 
     @abstractmethod
-    def order(self, check: Check) -> List[Pauli | None]:
+    def order(self, check: Check) -> List[Union[Pauli, None]]:
         """
         Given a check, this returns the check's Paulis in the order in which
         controlled gates should be placed between them and the ancilla. The
@@ -48,11 +48,11 @@ class ControlledGateOrderer(ABC):
     def _order(
             self, check: Check, order_length: int,
             ordering: Dict[Tuple[PauliLetter, Coordinates], int]
-    ) -> List[Pauli | None]:
+    ) -> List[Union[Pauli,None]]:
         """ A helper function for implementing `order`.
         For use after some validity checks have passed, perhaps.
         """
-        ordered: List[Pauli | None] = [None for _ in range(order_length)]
+        ordered: List[Union[Pauli,None]] = [None for _ in range(order_length)]
         for offset, pauli in check.paulis.items():
             key = (pauli.letter, offset)
             if key in ordering:

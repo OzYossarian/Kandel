@@ -1,3 +1,4 @@
+from typing import Union
 from main.building_blocks.Qubit import Qubit
 from tests.utils.utils_coordinates import random_coordss
 from tests.utils.utils_numbers import default_min_coord, default_max_coord
@@ -7,8 +8,8 @@ def random_qubit(
         int_coords: bool = False,
         tuple_coords: bool = True,
         dimension: int = None,
-        min_coord: int | float = default_min_coord,
-        max_coord: int | float = default_max_coord):
+        min_coord: Union[int,float] = default_min_coord,
+        max_coord: Union[int, float] = default_max_coord):
     qubits = random_qubits(
         num=1,
         int_coords=int_coords,
@@ -26,8 +27,8 @@ def random_qubits(
         tuple_coords: bool = True,
         dimension: int = None,
         max_dimension: int = None,
-        min_coord: int | float = default_min_coord,
-        max_coord: int | float = default_max_coord
+        min_coord: Union[int,float] = default_min_coord,
+        max_coord: Union[int,float] = default_max_coord
 ):
     coordss = random_coordss(
         num,

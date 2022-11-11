@@ -1,5 +1,5 @@
 from abc import abstractmethod, ABC
-from typing import List, Dict, Iterable
+from typing import List, Dict, Iterable, Union
 from main.building_blocks.Check import Check
 from main.building_blocks.detectors.Detector import Detector
 from main.building_blocks.detectors.Drum import Drum
@@ -296,7 +296,7 @@ class Compiler(ABC):
             self,
             layer: int,
             detector_schedule: List[List[Detector]],
-            observables: List[LogicalOperator] | None,
+            observables: Union[List[LogicalOperator],None],
             tick: int,
             circuit: Circuit,
             code: Code
@@ -321,7 +321,7 @@ class Compiler(ABC):
         round: int,
         relative_round: int,
         detector_schedule: List[List[Detector]],
-        observables: List[LogicalOperator] | None,
+        observables: Union[List[LogicalOperator],None],
         tick: int,
         circuit: Circuit,
         code: Code,
@@ -357,9 +357,9 @@ class Compiler(ABC):
 
     def compile_final_measurements(
         self,
-        final_measurements: List[Pauli] | None,
-        final_stabilizers: List[Stabilizer] | None,
-        logical_observables: List[LogicalOperator] | None,
+        final_measurements: Union[List[Pauli],None],
+        final_stabilizers: Union[Stabilizer,None],
+        logical_observables: Union[LogicalOperator ,None],
         layer: int,
         tick: int,
         circuit: Circuit,
@@ -482,8 +482,8 @@ class Compiler(ABC):
 
     def compile_initial_logical_observables(
         self,
-        logical_observables: List[LogicalOperator] | None,
-        final_checks: Dict[Qubit, Check] | None,
+        logical_observables: Union[List[LogicalOperator],None],
+        final_checks: Union[Dict[Qubit, Check],None],
         round: int,
         circuit: Circuit,
     ):

@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import math
 from collections import defaultdict
-from typing import List, Dict, TYPE_CHECKING, Tuple
+from typing import List, Dict, TYPE_CHECKING, Tuple, Union
 
 import stim
 
@@ -53,7 +53,7 @@ class DetectorInitialiser:
 
     def get_initial_detectors(
             self, initial_states: Dict[Qubit, State],
-            initial_stabilizers: List[Stabilizer] | None
+            initial_stabilizers: Union[List[Stabilizer],None]
     ) -> List[List[List[Detector]]]:
         """
         Determine the detectors that should be measured in the first round(s).

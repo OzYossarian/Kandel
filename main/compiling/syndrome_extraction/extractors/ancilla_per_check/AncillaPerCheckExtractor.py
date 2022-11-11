@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from abc import abstractmethod
-from typing import List, Dict, Iterable, Callable, TYPE_CHECKING
+from typing import List, Dict, Iterable, Callable, TYPE_CHECKING, Union
 
 from main.building_blocks.Check import Check
 from main.building_blocks.pauli import Pauli
@@ -162,7 +162,7 @@ class AncillaPerCheckExtractor(SyndromeExtractor):
             self,
             step: int,
             checks: Iterable[Check],
-            ordered_paulis: Iterable[List[Pauli | None]],
+            ordered_paulis: Iterable[List[Union[Pauli, None]]],
             tick: int,
             circuit: Circuit,
             compiler: Compiler) -> Tick:
@@ -199,7 +199,7 @@ class AncillaPerCheckExtractor(SyndromeExtractor):
 
     def pre_rotate_pauli(
             self,
-            pauli: Pauli | None,
+            pauli: Union[Pauli,None],
             check: Check,
             tick: int,
             circuit: Circuit,
@@ -209,7 +209,7 @@ class AncillaPerCheckExtractor(SyndromeExtractor):
 
     def post_rotate_pauli(
             self,
-            pauli: Pauli | None,
+            pauli: Union[Pauli, None],
             check: Check,
             tick: int,
             circuit: Circuit,
@@ -219,7 +219,7 @@ class AncillaPerCheckExtractor(SyndromeExtractor):
 
     def _rotate_pauli(
             self,
-            pauli: Pauli | None,
+            pauli: Union[Pauli,None],
             check: Check,
             get_rotations: Callable[[Pauli, Check], List[Instruction]],
             tick: int,
@@ -235,7 +235,7 @@ class AncillaPerCheckExtractor(SyndromeExtractor):
 
     def do_controlled_gate(
             self,
-            pauli: Pauli | None,
+            pauli: Union[Pauli, None],
             check: Check,
             tick: int,
             circuit: Circuit,
