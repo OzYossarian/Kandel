@@ -74,4 +74,3 @@ wcwidth==0.2.5
 wheel==0.37.1
 wk==1.0
 alive-progress==2.4.1
-future_typing==0.4.1
