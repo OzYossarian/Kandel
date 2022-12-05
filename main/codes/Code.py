@@ -90,8 +90,8 @@ class Code:
         """
         Set the code's check schedule and detector schedule.
         TODO - this design (calling this method later after partially
-         instantiating a Code) just feels awkward and clumsy. Can't think
-         of anything better though! Keep pondering.
+        instantiating a Code) just feels awkward and clumsy. Can't think
+        of anything better though! Keep pondering.
 
         Args:
             check_schedule:

@@ -56,7 +56,10 @@ class Printer2D(Printer):
             self, code: Code, round: int, print_logicals: bool,
             printout: Printout):
         # First print the checks
-        checks = code.check_schedule[round % code.schedule_length]
+        if code.schedule_length != None:
+            checks = code.check_schedule[round % code.schedule_length]
+        else:
+            checks = code.checks
         for check in sorted(checks, key=lambda check: -check.weight):
             self._print_check(check, printout)
 
@@ -180,9 +183,14 @@ class Printer2D(Printer):
         size = self.scale(unscaled_size, buffer)
         # Make a separate printout for each round - e.g. Floquet
         # codes measure different stabilizers in each round.
-        rounds = 1 \
-            if len(codes) == 0 \
-            else max([code.schedule_length for code in codes], default=1)
+        print(max([code.schedule_length for code in codes],default=1))
+
+        max_rounds = max([code.schedule_length for code in codes])
+        
+        if max_rounds == None or max_rounds==0:
+            rounds=1
+        else:
+            rounds = max_rounds
         printouts = [
             Printout(Image.new('RGB', size, White.rgb), offset)
             for _ in range(rounds)]
