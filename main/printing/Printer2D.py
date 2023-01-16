@@ -36,7 +36,7 @@ class Printer2D(Printer):
         return printouts
 
     def print_code(
-            self, code: Code, filename: str, print_logicals: bool = True):
+            self, code: Code, filename: str, print_logicals: bool = True, layers: int = 1):
         # Going to need to print all the data qubits
         coords = list(code.data_qubits)
         # But if code has periodic geometry, might need a slightly bigger
@@ -45,7 +45,7 @@ class Printer2D(Printer):
             coords.append(check.anchor)
             for offset in check.paulis:
                 coords.append(coords_sum(check.anchor, offset))
-        printouts = self.get_printouts(coords, [code])
+        printouts = self.get_printouts(coords, [code], layers)
 
         for round, printout in enumerate(printouts):
             self.print_code_round(code, round, print_logicals, printout)
@@ -163,13 +163,13 @@ class Printer2D(Printer):
             self, operator: LogicalOperator, round: int, printout: Printout,
             diameter: float):
         if operator is not None:
-            paulis = operator.at_round(round)
+            paulis = operator.at_round(round-1)
             for pauli in paulis:
                 colour = self.operator_colours[pauli.letter.letter]
                 self._print_qubit(pauli.qubit, printout, diameter, colour)
 
     def get_printouts(
-            self, coords: List[Tuple[int, int]], codes: List[Code]):
+            self, coords: List[Tuple[int, int]], codes: List[Code], layers: int):
         # coords should be a list of all locations on which something will
         # be printed.
         x_max = max(x for (x, y) in coords)
@@ -185,7 +185,7 @@ class Printer2D(Printer):
         # codes measure different stabilizers in each round.
         print(max([code.schedule_length for code in codes],default=1))
 
-        max_rounds = max([code.schedule_length for code in codes])
+        max_rounds = max([code.schedule_length for code in codes])*layers
         
         if max_rounds == None or max_rounds==0:
             rounds=1

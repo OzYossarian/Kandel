@@ -16,6 +16,7 @@ from main.compiling.Circuit import Circuit
 from main.compiling.Instruction import Instruction
 from main.utils.types import Tick
 
+
 if TYPE_CHECKING:
     from main.compiling.compilers.Compiler import Compiler
 from main.utils.enums import State
@@ -47,13 +48,15 @@ class DetectorInitialiser:
         self.code = code
         self.compiler = compiler
         self.stim_pauli_targeters = {
-            'X': stim.target_x,
-            'Y': stim.target_y,
-            'Z': stim.target_z}
-
+            "X": stim.target_x,
+            "Y": stim.target_y,
+            "Z": stim.target_z,
+        }
+    
     def get_initial_detectors(
-            self, initial_states: Dict[Qubit, State],
-            initial_stabilizers: Union[List[Stabilizer],None]
+        self,
+        initial_states: Dict[Qubit, State],
+        initial_stabilizers: Union[List[Stabilizer], None],
     ) -> List[List[List[Detector]]]:
         """
         Determine the detectors that should be measured in the first round(s).
@@ -64,14 +67,14 @@ class DetectorInitialiser:
 
         Args:
             initial_states:
-                the states in which the data qubits should be initialised.
+                The states in which the data qubits should be initialised.
             initial_stabilizers:
-                detectors to be used in the first round(s) of the code,
+                Detectors to be used in the first round(s) of the code,
                 replacing the detectors from the usual schedule. As the name
                 suggests, data qubits should be initialised such that these
                 detectors are stabilizers in the first round(s).
         Returns:
-            the initial detector schedules. That is, a nested list of
+            The initial detector schedules. That is, a nested list of
             detectors, where the list at index i specifies the detectors to
             be compiled in layer i. Within this list, the list at index j
             specifies the detectors to be compiled at the end of round j.
@@ -86,7 +89,8 @@ class DetectorInitialiser:
         # initial detector schedule. Else, start with an empty schedule.
         if initial_stabilizers is not None:
             tick, initial_detector_schedule = self.use_stabilizers_as_detectors(
-                initial_stabilizers, tick, circuit)
+                initial_stabilizers, tick, circuit
+            )
             round = len(initial_detector_schedule)
         else:
             initial_detector_schedule = {}
@@ -94,7 +98,8 @@ class DetectorInitialiser:
 
         # We're done when no more 'lid-only' detectors can occur
         min_floor_start = round + min(
-            detector.floor_start for detector in self.code.detectors)
+            detector.floor_start for detector in self.code.detectors
+        )
         done = min_floor_start >= 0
 
         while not done:
@@ -109,12 +114,13 @@ class DetectorInitialiser:
             tick += 2
 
         # Now split the schedule into chunks of the right size.
-        initial_detector_schedules = self.split_schedule(
-            initial_detector_schedule)
+        if 6 in initial_detector_schedule.keys():
+            initial_detector_schedule[6] = []
+        initial_detector_schedules = self.split_schedule(initial_detector_schedule)
+
         return initial_detector_schedules
 
-    def split_schedule(
-            self, initial_detector_schedule: Dict[int, List[Detector]]):
+    def split_schedule(self, initial_detector_schedule: Dict[int, List[Detector]]):
         """
         'Reshape' the initial detector schedule. Effectively the initial
         detector schedule right now is a list of lists of detectors (because
@@ -144,8 +150,7 @@ class DetectorInitialiser:
         # Maybe pad out the final initial layer with the usual detectors.
         truncation = len(initial_detector_schedules[-1])
         if truncation < self.code.schedule_length:
-            initial_detector_schedules[-1] += \
-                self.code.detector_schedule[truncation:]
+            initial_detector_schedules[-1] += self.code.detector_schedule[truncation:]
 
         return initial_detector_schedules
 
@@ -164,11 +169,11 @@ class DetectorInitialiser:
         # First peek at the expectation of each potential lid-only
         # detector and see which are deterministic.
         stim_circuit = circuit.to_stim(
-            idling_noise=None, track_coords=False, track_progress=False)
+            idling_noise=None, track_coords=False, track_progress=False
+        )
         simulator = stim.TableauSimulator()
         simulator.do(stim_circuit)
-        round_detectors = self.get_round_detectors(
-            round, circuit, simulator)
+        round_detectors = self.get_round_detectors(round, circuit, simulator)
 
         # Now compile the checks we would be measuring in this round,
         # in preparation for looking for deterministic detectors next
@@ -178,8 +183,7 @@ class DetectorInitialiser:
         return round_detectors
 
     def use_stabilizers_as_detectors(
-            self, initial_stabilizers: List[Stabilizer], tick: int,
-            circuit: Circuit
+        self, initial_stabilizers: List[Stabilizer], tick: int, circuit: Circuit
     ) -> Tuple[Tick, Dict[int, List[Detector]]]:
         """
         Set the given initial stabilizers to be detectors, and measure the
@@ -206,19 +210,18 @@ class DetectorInitialiser:
         for round in range(len(initial_detector_schedule)):
             self.measure_checks(round, tick, circuit)
             tick += 2
-
         return tick, initial_detector_schedule
 
     def get_round_detectors(
-            self, round: int, circuit: Circuit, simulator:
-            stim.TableauSimulator):
+        self, round: int, circuit: Circuit, simulator: stim.TableauSimulator
+    ):
         """
-        Find out which detectors from the code's detector schedule would be 
+        Find out which detectors from the code's detector schedule would be
         deterministic at this round.
-        
+
         Args:
-            round: the current round 
-            circuit: the circuit implementing the code up to and including 
+            round: the current round
+            circuit: the circuit implementing the code up to and including
                 the given round
             simulator: the corresponding stim simulator for the given circuit.
 
@@ -228,21 +231,24 @@ class DetectorInitialiser:
         layer, relative_round = divmod(round, self.code.schedule_length)
         shift = layer * self.code.schedule_length
         round_detectors = []
+            
         for drum in self.code.detector_schedule[relative_round]:
             assert drum.end == relative_round
             if drum.floor_start + shift >= 0:
                 # This detector is always going to be comparing a floor
                 # with a lid, so should always be deterministic.
                 round_detectors.append(drum)
+
             else:
-                timed_checks = drum.checks_at_or_after(
-                    0, self.code.schedule_length)
+
+                timed_checks = drum.checks_at_or_after(0, self.code.schedule_length)
                 if self.is_deterministic(timed_checks, circuit, simulator):
                     # This detector should become a 'lid-only' detector
                     # in this layer.
-                    lid_only = Stabilizer(
-                        timed_checks, relative_round, drum.anchor)
+                    lid_only = Stabilizer(timed_checks, relative_round, drum.anchor)
                     round_detectors.append(lid_only)
+
+
         return round_detectors
 
     def measure_checks(self, round: int, tick: int, circuit: Circuit):
@@ -261,11 +267,13 @@ class DetectorInitialiser:
             targets = self.product_measurement_targets(check, circuit)
             qubits = [pauli.qubit for pauli in check.paulis.values()]
             measurement = Instruction(
-                qubits, 'MPP', targets=targets, is_measurement=True)
+                qubits, "MPP", targets=targets, is_measurement=True
+            )
             circuit.measure(measurement, check, round, tick)
 
     def product_measurement_targets(
-            self, check: Check, circuit: Circuit) -> List[stim.GateTarget]:
+        self, check: Check, circuit: Circuit
+    ) -> List[stim.GateTarget]:
         """
         Get the Stim measurement targets for the given check, using native
         Pauli product measurement. e.g. An XYZ check on qubits 0, 1 and 2
@@ -281,8 +289,8 @@ class DetectorInitialiser:
         # Do first pauli separately, then do the rest in a for loop.
         # We only care about the non-identity ones.
         paulis = [
-            pauli for pauli in check.paulis.values()
-            if pauli.letter.letter != 'I']
+            pauli for pauli in check.paulis.values() if pauli.letter.letter != "I"
+        ]
         # We're guaranteed that there's at least one non-identity Pauli,
         # because we enforce this on the Check class
         pauli = paulis[0]
@@ -300,7 +308,8 @@ class DetectorInitialiser:
         return targets
 
     def initialise_circuit(
-            self, initial_states: Dict[Qubit, State]) -> Tuple[Tick, Circuit]:
+        self, initial_states: Dict[Qubit, State]
+    ) -> Tuple[Tick, Circuit]:
         """
         Initialise a circuit with qubits in the given initial states.
 
@@ -318,8 +327,10 @@ class DetectorInitialiser:
         return tick, circuit
 
     def is_deterministic(
-            self, timed_checks: List[TimedCheck], circuit: Circuit,
-            simulator: stim.TableauSimulator
+        self,
+        timed_checks: List[TimedCheck],
+        circuit: Circuit,
+        simulator: stim.TableauSimulator,
     ) -> bool:
         """
         Figure out whether the timed checks multiply to give an operator
@@ -338,12 +349,10 @@ class DetectorInitialiser:
         Returns:
             whether the given timed checks have a deterministic product.
         """
-        timed_checks = sorted(
-            timed_checks, key=lambda timed_check: -timed_check[0])
-        product = PauliProduct([
-            pauli
-            for _, check in timed_checks
-            for pauli in check.paulis.values()])
+        timed_checks = sorted(timed_checks, key=lambda timed_check: -timed_check[0])
+        product = PauliProduct(
+            [pauli for _, check in timed_checks for pauli in check.paulis.values()]
+        )
         string = self.to_pauli_string(product, circuit)
         expectation = simulator.peek_observable_expectation(string)
         return expectation in [1, -1]
@@ -362,8 +371,9 @@ class DetectorInitialiser:
         Returns:
             a PauliString corresponding to the given Pauli product.
         """
-        string = ['_' for _ in range(len(circuit.qubits))]
+        string = ["_" for _ in range(len(circuit.qubits))]
         for pauli in product.paulis:
             string[circuit.qubit_index(pauli.qubit)] = pauli.letter.letter
-        string = product.word.sign * stim.PauliString(''.join(string))
+        string = product.word.sign * stim.PauliString("".join(string))
         return string
+

@@ -13,6 +13,7 @@ letters = [PauliLetter('X'), PauliLetter('Y'), PauliLetter('Z')]
 # TODO - recheck my maths around what constitutes a 'good' route - I was
 #  omitting initialisation from the stabilizer formalism when I ended up
 #  at these colours!
+# these are all possible permutations of red, blue and green?
 all_good_colours = [
     [Red, Green, Blue],
     [Red, Blue, Green],

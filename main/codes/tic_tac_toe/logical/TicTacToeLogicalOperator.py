@@ -49,35 +49,41 @@ class TicTacToeLogicalOperator(LogicalOperator):
         if round not in self._at_round:
             # If there's nothing stored yet for this round, figure out what
             # the logical at this point should be.
+            # need to do something with a loop?
+            if round-1 not in self._at_round:
+                raise ValueError(
+                    'The logical operator has not yet been compiled in the previous round.'
+                )
+
             for r in range(self.last_updated + 1, round + 1):
                 self.update(r)
         return self._at_round[round]
 
-    def update(self, round: int):
-        """Updates 
+    def update(self, just_measured_round: int):
+        """Updates the logical operator.
 
         Args:
-            round: _description_
+            just_measured_round: The index of the round that has just been measured.
 
         Returns:
-            checks_multiplied in: TODO: Do we need this here? 
-                                  As far as I can see, when we call this function we don't use this variable
+            checks_multiplied_in: Checks with which the logical operator has been multiplied.
         """
-        prev_x_type, prev_z_type = self.logical_qubit.get_types(round - 1)
-        next_x_type, next_z_type = self.logical_qubit.get_types(round)
+        prev_x_boson = self.logical_qubit.x_boson
+        prev_z_boson = self.logical_qubit.z_boson
 
+        next_x_boson, next_z_boson = self.logical_qubit.get_next_bosons(just_measured_round)
         if self.logical_letter == PauliLetter('X'):
-            next_type, prev_type = next_x_type, prev_x_type
+            next_boson, prev_boson = next_x_boson, prev_x_boson
         else:
-            next_type, prev_type = next_z_type, prev_z_type
+            next_boson, prev_boson = next_z_boson, prev_z_boson
 
-        if next_type != prev_type:
-            checks_multiplied_in = self.multiply_by_checks(round)
+        if next_boson != prev_boson:
+            checks_multiplied_in = self.multiply_by_checks(just_measured_round)
         else:
             # Nothing to be done! All stays the same.
-            self._at_round[round] = self.at_round(round-1)
+            self._at_round[just_measured_round] = self.at_round(just_measured_round-1)
             checks_multiplied_in = []
-
+            self.last_updated += 1
         return checks_multiplied_in
 
     def multiply_by_checks(self, round: int):

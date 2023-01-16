@@ -36,6 +36,7 @@ class Detector(NiceRepr):
         self._assert_timed_checks_valid(timed_checks)
 
         self.timed_checks = timed_checks
+        
         self.final_checks = [check for t, check in self.timed_checks if t == 0]
         self.product = self.timed_checks_product(self.timed_checks)
 
@@ -46,7 +47,7 @@ class Detector(NiceRepr):
 
         # Including the same check twice in a detector does nothing - note
         # down the checks modulo pairs of duplicates.
-        self.timed_checks_mod_2 = modulo_duplicates(self.timed_checks, 2)
+        self.timed_checks_mod_2 =  modulo_duplicates(self.timed_checks, 2)
 
         # Note down when the first and last checks were measured
         first_check_rounds_ago = min(

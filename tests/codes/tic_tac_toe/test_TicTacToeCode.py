@@ -1,13 +1,19 @@
 import random
+from main.codes.tic_tac_toe.HoneycombCode import HoneycombCode
 
 from main.utils.Colour import Red, Green, Blue
 from main.building_blocks.pauli.PauliLetter import PauliLetter
 from main.codes.tic_tac_toe.TicTacToeCode import TicTacToeCode
-from main.codes.tic_tac_toe.utils import random_valid_route, random_valid_route_chunk, all_good_colours, \
-    random_good_route
+from main.codes.tic_tac_toe.utils import (
+    random_valid_route,
+    random_valid_route_chunk,
+    all_good_colours,
+    random_good_route,
+)
 
 colours = [Red, Green, Blue]
-letters = [PauliLetter('X'), PauliLetter('Y'), PauliLetter('Z')]
+letters = [PauliLetter("X"), PauliLetter("Y"), PauliLetter("Z")]
+hcc_code = HoneycombCode(4)
 
 
 def test_follows_tic_tac_toe_rules():
@@ -16,7 +22,8 @@ def test_follows_tic_tac_toe_rules():
     assert all(
         not TicTacToeCode.follows_tic_tac_toe_rules([(c, l)])
         for c in colours
-        for l in letters)
+        for l in letters
+    )
 
     # Test that valid routes are indeed valid.
     repeat = 100
@@ -31,9 +38,9 @@ def test_follows_tic_tac_toe_rules():
         route = random_valid_route_chunk(fail_at)
 
         # ... but now pick a bad square to end with.
-        bad_squares = \
-            [(c, route[-1][1]) for c in colours] + \
-            [(route[-1][0], l) for l in letters]
+        bad_squares = [(c, route[-1][1]) for c in colours] + [
+            (route[-1][0], l) for l in letters
+        ]
         route.append(random.choice(bad_squares))
 
         assert not TicTacToeCode.follows_tic_tac_toe_rules(route)
@@ -68,16 +75,17 @@ def test_is_good_code():
             # still represents exactly the same thing.
             route = route + route
         start_colours = [c for c, l in route[:4]]
-        is_good = \
-            start_colours[0] == start_colours[3] and \
-            start_colours[:3] in all_good_colours
+        is_good = (
+            start_colours[0] == start_colours[3]
+            and start_colours[:3] in all_good_colours
+        )
         if not is_good:
             assert not TicTacToeCode.is_good_code(route)
 
 
 def test_create_checks():
     for n in [1, 2, 3, 4, 5]:
-        distance = 4*n
+        distance = 4 * n
         length = None
         while length in [None, 4]:
             length = random.randint(3, 20)
@@ -102,8 +110,10 @@ def test_create_checks():
                     v = (u[0] + diff[0], u[1] + diff[1])
                     (u, v) = code.wrap_coords(u), code.wrap_coords(v)
                     matches = [
-                        check for check in checks
-                        if check_is_of_type(check, colour, letter, u, v)]
+                        check
+                        for check in checks
+                        if check_is_of_type(check, colour, letter, u, v)
+                    ]
                     # Should just be one check matching this spec.
                     assert len(matches) == 1
                     # Remove this check from the list of all checks of this
@@ -115,15 +125,12 @@ def test_create_checks():
 def check_is_of_type(check, colour, letter, u, v):
     qubit_coords = {pauli.qubit.coords for pauli in check.paulis.values()}
     pauli_word = {pauli.letter for pauli in check.paulis.values()}
-    return \
-        qubit_coords == {u, v} and \
-        check.colour == colour and \
-        pauli_word == {letter}
+    return qubit_coords == {u, v} and check.colour == colour and pauli_word == {letter}
 
 
 def test_create_borders():
     for n in [1, 2, 3, 4, 5]:
-        distance = 4*n
+        distance = 4 * n
         length = None
         # Get a random good route (none of length 4 exist)
         while length in [None, 4]:
@@ -148,18 +155,18 @@ def test_create_borders():
                         # There should be exactly one whose qubits are along
                         # the edge (u, v)
                         matches = [
-                            check for check in checks
-                            if check_is_of_type(check, c, l, u, v)]
+                            check
+                            for check in checks
+                            if check_is_of_type(check, c, l, u, v)
+                        ]
                         assert len(matches) == 1
 
         for i in range(3):
             colour = colours[i]
             # Plaquettes of colour i are bordered by checks of colour i+1
             # and i-1 (if these checks are indeed measured)
-            borders_plus = \
-                set((c, l) for c, l in route if c == colours[(i+1) % 3])
-            borders_minus = \
-                set((c, l) for c, l in route if c == colours[(i-1) % 3])
+            borders_plus = set((c, l) for c, l in route if c == colours[(i + 1) % 3])
+            borders_minus = set((c, l) for c, l in route if c == colours[(i - 1) % 3])
             anchors = code.colourful_plaquette_anchors[colour]
             if borders_plus:
                 assert_plaquette_borders_correct(anchors, borders_plus, 1)
@@ -167,62 +174,202 @@ def test_create_borders():
                 assert_plaquette_borders_correct(anchors, borders_minus, -1)
 
 
+def test_find_stabilized_plaquettes():
+    stabilized, relearned = hcc_code.find_stabilized_plaquettes()
+
+    # test that after measuring rXX we learn GX and BX
+    for stabilized_plaquette, teaching_measurement in stabilized[0].items():
+        if stabilized_plaquette == (
+            Green,
+            PauliLetter("X"),
+        ) or stabilized_plaquette == (Blue, PauliLetter("X")):
+            assert teaching_measurement == [(0, Red, PauliLetter("X"))]
+        else:
+            assert teaching_measurement == []
+
+    for stabilized_plaquette, teaching_measurement in stabilized[1].items():
+        if stabilized_plaquette == (Blue, PauliLetter("Z")):
+            assert teaching_measurement == [
+                (0, Red, PauliLetter("X")),
+                (1, Green, PauliLetter("Y")),
+            ]
+        elif stabilized_plaquette == (Blue, PauliLetter("X")):
+            assert teaching_measurement == [(0, Red, PauliLetter("X"))]
+        elif stabilized_plaquette == (
+            Red,
+            PauliLetter("Y"),
+        ) or stabilized_plaquette == (Blue, PauliLetter("Y")):
+            assert teaching_measurement == [(1, Green, PauliLetter("Y"))]
+        else:
+            assert teaching_measurement == []
+
+    for stabilized_plaquette, bool_relearned in relearned[0].items():
+        if stabilized_plaquette in set(
+            ((Green, PauliLetter("X")), (Blue, PauliLetter("X")))
+        ):
+            assert bool_relearned == True
+        else:
+            assert bool_relearned == False
+
+    for stabilized_plaquette, bool_relearned in relearned[1].items():
+        if stabilized_plaquette in set(
+            (
+                (Red, PauliLetter("Y")),
+                (Blue, PauliLetter("Y")),
+                (Blue, PauliLetter("Z")),
+            )
+        ):
+            assert bool_relearned == True
+        else:
+            assert bool_relearned == False
+
+
+def test_plan_detectors():
+    stabilizers, relearned = hcc_code.find_stabilized_plaquettes()
+    detector_blueprints = hcc_code.plan_detectors(stabilizers, relearned)
+    for drum in detector_blueprints[Red]:
+        assert drum.learned == 2
+
+
+    for drum in detector_blueprints[Blue]:
+        assert drum.learned == 1
+
+    for drum in detector_blueprints[Green]:
+        assert drum.learned == 0
+
+
+
+
+def test_create_detectors():
+    checks, borders = hcc_code.create_checks()
+    stabilizers, relearned = hcc_code.find_stabilized_plaquettes()
+    detector_blueprints = hcc_code.plan_detectors(stabilizers, relearned)
+    detector_schedule = hcc_code.create_detectors(detector_blueprints, borders)
+
+    for timestep, detectors_at_timestep in enumerate(detector_schedule):
+        print(timestep, "timestep")
+        for index in range(1, len(detectors_at_timestep)):
+            print(
+                detectors_at_timestep[index].start,
+                detectors_at_timestep[index].end,
+                "start and end",
+            )
+
+            print(detectors_at_timestep[index].floor_product.word.word)
+            print(len(detectors_at_timestep))
+
+            print(detectors_at_timestep[index])
+
+            stop
+    # write test for this and at the same time for gauge honeycomb code.
+
+
+test_create_detectors()
+
+"""
 def test_get_init_logical_qubits():
     # Here I use the smallest Honeycomb code because I'm comparing by hand.
     # Ideally I would use a mock class here, but the init function is complicated.
 
     tic_tac_toe_route = [
-            (Red, PauliLetter('X')),
-            (Green, PauliLetter('Y')),
-            (Blue, PauliLetter('Z'))]
+        (Red, PauliLetter("X")),
+        (Green, PauliLetter("Y")),
+        (Blue, PauliLetter("Z")),
+    ]
     code = TicTacToeCode(4, tic_tac_toe_route)
-    
-    coords_logical_z_horizontal_t0 = set(qubit.qubit.coords for qubit in code.logical_qubits[1].z.at_round(-1))
-    coords_logical_z_horizontal_t1 = set(qubit.qubit.coords for qubit in code.logical_qubits[1].z.at_round(0))
-    coords_logical_z_horizontal_t2 = set(qubit.qubit.coords for qubit in code.logical_qubits[1].z.at_round(1))
 
-    assert coords_logical_z_horizontal_t0 == {(8,2),(0,2),(20,2),(12,2)} 
-    assert coords_logical_z_horizontal_t1 == {(8,2),(0,2),(20,2),(12,2)}
-    assert coords_logical_z_horizontal_t2 == {(2,4),(6,4),(14,4),(18,4)}
+    coords_logical_z_horizontal_t0 = set(
+        qubit.qubit.coords for qubit in code.logical_qubits[1].z.at_round(-1)
+    )
+    coords_logical_z_horizontal_t1 = set(
+        qubit.qubit.coords for qubit in code.logical_qubits[1].z.at_round(0)
+    )
+    coords_logical_z_horizontal_t2 = set(
+        qubit.qubit.coords for qubit in code.logical_qubits[1].z.at_round(1)
+    )
 
-    coords_logical_x_horizontal_t0 = set(qubit.qubit.coords for qubit in code.logical_qubits[1].x.at_round(-1))
-    coords_logical_x_horizontal_t1 = set(qubit.qubit.coords for qubit in code.logical_qubits[1].x.at_round(0))
-    coords_logical_x_horizontal_t2 = set(qubit.qubit.coords for qubit in code.logical_qubits[1].x.at_round(1))
+    assert coords_logical_z_horizontal_t0 == {(8, 2), (0, 2), (20, 2), (12, 2)}
+    assert coords_logical_z_horizontal_t1 == {(8, 2), (0, 2), (20, 2), (12, 2)}
+    assert coords_logical_z_horizontal_t2 == {(2, 4), (6, 4), (14, 4), (18, 4)}
 
-    assert coords_logical_x_horizontal_t0 == {(6,0),(8,2),(8,6),(6,8)} #XX
-    assert coords_logical_x_horizontal_t1 == {(6,4),(8,2),(8,10),(6,8)} #XX
-    assert coords_logical_x_horizontal_t2 == {(6,4),(8,2),(8,10), (6,8)} # ZZ
+    coords_logical_x_horizontal_t0 = set(
+        qubit.qubit.coords for qubit in code.logical_qubits[1].x.at_round(-1)
+    )
+    coords_logical_x_horizontal_t1 = set(
+        qubit.qubit.coords for qubit in code.logical_qubits[1].x.at_round(0)
+    )
+    coords_logical_x_horizontal_t2 = set(
+        qubit.qubit.coords for qubit in code.logical_qubits[1].x.at_round(1)
+    )
+
+    assert coords_logical_x_horizontal_t0 == {(6, 0), (8, 2), (8, 6), (6, 8)}  # XX
+    assert coords_logical_x_horizontal_t1 == {(6, 4), (8, 2), (8, 10), (6, 8)}  # XX
+    assert coords_logical_x_horizontal_t2 == {(6, 4), (8, 2), (8, 10), (6, 8)}  # ZZ
 
     assert len(coords_logical_x_horizontal_t0 & coords_logical_z_horizontal_t0) == 1
     assert len(coords_logical_x_horizontal_t1 & coords_logical_z_horizontal_t1) == 1
     assert len(coords_logical_x_horizontal_t2 & coords_logical_z_horizontal_t2) == 1
 
-    coords_logical_z_vertical_t0 = set(qubit.qubit.coords for qubit in code.logical_qubits[0].z.at_round(-1))
-#    print(code.checks,'checks')
-#    print(code.logical_qubits[0].z.at_round(-1))
+    coords_logical_z_vertical_t0 = set(
+        qubit.qubit.coords for qubit in code.logical_qubits[0].z.at_round(-1)
+    )
+    #    print(code.checks,'checks')
+    #    print(code.logical_qubits[0].z.at_round(-1))
     checks_multiplied_in = code.logical_qubits[0].z.update(0)
-    coords_of_checks_multiplied_in = set(pauli.qubit.coords for pauli in checks_multiplied_in[0].paulis.values())
-    coords_of_checks_multiplied_in.update(set(pauli.qubit.coords for pauli in checks_multiplied_in[1].paulis.values()))
+    assert checks_multiplied_in[0].product.word.word == "XX"
+    coords_of_checks_multiplied_in = set(
+        pauli.qubit.coords for pauli in checks_multiplied_in[0].paulis.values()
+    )
+    coords_of_checks_multiplied_in.update(
+        set(pauli.qubit.coords for pauli in checks_multiplied_in[1].paulis.values())
+    )
     assert coords_of_checks_multiplied_in == {(8, 10), (6, 4), (8, 6), (6, 0)}
 
     checks_multiplied_in = code.logical_qubits[0].z.update(1)
-    coords_of_checks_multiplied_in = set(pauli.qubit.coords for pauli in checks_multiplied_in[0].paulis.values())
-    coords_of_checks_multiplied_in.update(set(pauli.qubit.coords for pauli in checks_multiplied_in[1].paulis.values()))
-    assert coords_of_checks_multiplied_in == {(8,2),(6,8),(8,10),(6,4)}
+    assert checks_multiplied_in[0].product.word.word == "YY"
+    coords_of_checks_multiplied_in = set(
+        pauli.qubit.coords for pauli in checks_multiplied_in[0].paulis.values()
+    )
+    coords_of_checks_multiplied_in.update(
+        set(pauli.qubit.coords for pauli in checks_multiplied_in[1].paulis.values())
+    )
+    assert coords_of_checks_multiplied_in == {(8, 2), (6, 8), (8, 10), (6, 4)}
 
     checks_multiplied_in = code.logical_qubits[0].z.update(2)
-    coords_of_checks_multiplied_in = set(pauli.qubit.coords for pauli in checks_multiplied_in[0].paulis.values())
-    coords_of_checks_multiplied_in.update(set(pauli.qubit.coords for pauli in checks_multiplied_in[1].paulis.values()))
-    assert coords_of_checks_multiplied_in == {(8,2),(6,8),(8,6),(6,0)}
-
+    assert checks_multiplied_in[0].product.word.word == "ZZ"
+    coords_of_checks_multiplied_in = set(
+        pauli.qubit.coords for pauli in checks_multiplied_in[0].paulis.values()
+    )
+    coords_of_checks_multiplied_in.update(
+        set(pauli.qubit.coords for pauli in checks_multiplied_in[1].paulis.values())
+    )
+    assert coords_of_checks_multiplied_in == {(8, 2), (6, 8), (8, 6), (6, 0)}
 
     checks_multiplied_in = code.logical_qubits[0].z.update(3)
-    coords_of_checks_multiplied_in = set(pauli.qubit.coords for pauli in checks_multiplied_in[0].paulis.values())
-    coords_of_checks_multiplied_in.update(set(pauli.qubit.coords for pauli in checks_multiplied_in[1].paulis.values()))
+    assert checks_multiplied_in[0].product.word.word == "XX"
+    coords_of_checks_multiplied_in = set(
+        pauli.qubit.coords for pauli in checks_multiplied_in[0].paulis.values()
+    )
+    coords_of_checks_multiplied_in.update(
+        set(pauli.qubit.coords for pauli in checks_multiplied_in[1].paulis.values())
+    )
     assert coords_of_checks_multiplied_in == {(8, 10), (6, 4), (8, 6), (6, 0)}
 
-# def test_find_stabilized_plaquettes():
-#     assert False
+
+def test_create_detectors():
+    hcc_code = HoneycombCode(4)
+    checks, borders = hcc_code.create_checks()
+    hcc_code.checks_by_type = checks
+    stabilizers, relearned = hcc_code.find_stabilized_plaquettes()
+    detector_blueprints = hcc_code.plan_detectors(stabilizers, relearned)
+    detector_schedule = hcc_code.create_detectors(detector_blueprints, borders)
+    print(detector_schedule,'schedule')
+    print(detector_blueprints)
+"""
+
+# test_create_detectors()
+# test_get_init_logical_qubits()
+
 #
 #
 # def test_reinfer_plaquettes():

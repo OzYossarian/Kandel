@@ -361,9 +361,10 @@ class Circuit:
                 progress_bar()
 
             if most_recent_tick in self.shift_ticks:
-                circuit.append(
-                    stim.CircuitInstruction("SHIFT_COORDS", (), shift_coords)
-                )
+                if shift_coords != None:
+                    circuit.append(
+                        stim.CircuitInstruction("SHIFT_COORDS", (), shift_coords)
+                    )
 
             if tick != final_tick:
                 circuit.append("TICK")

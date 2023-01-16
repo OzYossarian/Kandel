@@ -31,7 +31,7 @@ class Drum(Detector):
         """
         self._assert_lid_valid(lid)
         self._assert_floor_valid(floor)
-
+        
         super().__init__(floor + lid, end, anchor)
         self.floor = floor
         self.lid = lid

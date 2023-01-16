@@ -10,7 +10,7 @@ from main.compiling.Instruction import Instruction
 from main.utils.types import Coordinates
 
 
-Trigger = Union[Detector,LogicalOperator]
+Trigger = Union[Detector, LogicalOperator]
 
 
 class Measurer:
@@ -50,8 +50,7 @@ class Measurer:
         # being updated - we track which measurements trigger what.
         # Keys are (check, round) pairs, and values are lists whose elements
         # are detectors or observables.
-        self.triggers: Dict[Tuple[Check, int], List[Trigger]] = \
-            defaultdict(list)
+        self.triggers: Dict[Tuple[Check, int], List[Trigger]] = defaultdict(list)
         # To prevent duplicate detectors being compiled, track those that we've
         # already made.
         self.detectors_compiled: Dict[Tuple[int], bool] = defaultdict(bool)
@@ -60,6 +59,7 @@ class Measurer:
         self.measurement_checks[measurement] = (check, round)
 
     def add_detectors(self, detectors: Iterable[Detector], round: int):
+
         for detector in detectors:
             for check in detector.final_checks:
                 self.triggers[(check, round)].append(detector)
@@ -71,7 +71,9 @@ class Measurer:
             self.triggers[(check, round)].append(observable)
 
     def measurement_triggers_to_stim(
-        self, measurements: List[Instruction], shift_coords: Union[Tuple[Coordinates], None]
+        self,
+        measurements: List[Instruction],
+        shift_coords: Union[Tuple[Coordinates], None],
     ):
         # TODO - have just realised that everything triggered by measurements
         #  (detectors, observable updates, shift coords) can probably all be
@@ -104,6 +106,7 @@ class Measurer:
                         # assigned (at the end of the outer for loop we're in)
                         # before turning this detector into a Stim instruction
                         detectors.append((detector, round))
+
                 else:
                     # Must be an observable update.
                     assert isinstance(trigger, LogicalOperator)
@@ -116,6 +119,7 @@ class Measurer:
         instructions = []
         for detector, round in detectors:
             instructions.append(self.detector_to_stim(detector, round, track_coords))
+            #   stop
         for observable, checks in observable_multipliers.items():
             targets = [self.measurement_target(check, round) for check, round in checks]
             index = self.observable_index(observable)
@@ -128,7 +132,8 @@ class Measurer:
     def detector_to_stim(self, detector: Detector, round: int, track_coords: bool):
         targets = [
             self.measurement_target(check, round + rounds_ago)
-            for rounds_ago, check in detector.timed_checks_mod_2]
+            for rounds_ago, check in detector.timed_checks_mod_2
+        ]
         # Anchor needs to now be a tuple for Stim to accept it.
         if track_coords and isinstance(detector.anchor, tuple):
             anchor = detector.anchor
@@ -142,20 +147,32 @@ class Measurer:
         # Only compile this detector if all the final checks have
         # actually been measured, and if we haven't already compiled an
         # equivalent detector (one that compares the exact same measurements).
-        final_checks_measured = all([
-            (check, round) in self.measurement_numbers
-            for check in detector.final_checks])
+        final_checks_measured = all(
+            [
+                (check, round) in self.measurement_numbers
+                for check in detector.final_checks
+            ]
+        )
         if final_checks_measured:
             # First criteria met...
-            measurement_numbers = tuple(sorted([
-                self.measurement_numbers[(check, round + rounds_ago)]
-                for rounds_ago, check in detector.timed_checks_mod_2]))
+
+            measurement_numbers = tuple(
+                sorted(
+                    [
+                        self.measurement_numbers[(check, round + rounds_ago)]
+                        for rounds_ago, check in detector.timed_checks_mod_2
+                    ]
+                )
+            )
 
             already_compiled = self.detectors_compiled[measurement_numbers]
             if not already_compiled:
+                # oh this never occurs why not? whats changed????
+
                 # Second criteria met - can compile this detector!
                 self.detectors_compiled[measurement_numbers] = True
                 return True
+
         return False
 
     def measurement_target(self, check: Check, round: int):
@@ -175,8 +192,7 @@ class Measurer:
         return index
 
     def reset_compilation(self):
-        """
-        """
+        """ """
         self.measurement_numbers = {}
         self.detectors_compiled = defaultdict(bool)
         self.total_measurements = 0
