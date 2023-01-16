@@ -7,12 +7,11 @@ from main.compiling.noise.noises.TwoQubitNoise import TwoQubitNoise
 
 class CircuitLevelNoise(NoiseModel):
     def __init__(
-            self, initialisation: Union[OneQubitNoise,float,None],
-            idling: Union[OneQubitNoise,float ,None],
-            one_qubit_gate: Union[OneQubitNoise, float , None],
-            two_qubit_gate: Union[TwoQubitNoise , float , None],
-            measurement: Union[OneBitNoise , float , None]):
-
+            self, initialisation: Union[OneQubitNoise, float, None] = None,
+            idling: Union[OneQubitNoise, float, None] = None,
+            one_qubit_gate: Union[OneQubitNoise, float, None] = None,
+            two_qubit_gate: Union[TwoQubitNoise, float, None] = None,
+            measurement: Union[OneBitNoise, float, None] = None):
         super().__init__(
             initialisation=initialisation,
             idling=idling,

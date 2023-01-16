@@ -287,7 +287,7 @@ class Compiler(ABC):
                 circuit.add_instruction(tick + 1, noise_instruction)
             # Now apply the remaining gates, again adding noise if needed
             remainder = init_instructions[1:]
-            self.compile_one_qubit_gates(remainder, tick + 2, circuit)
+            self.compile_gates(remainder, tick + 2, circuit)
             ticks_needed = max(ticks_needed, 2 * len(init_instructions))
 
         return tick + ticks_needed
@@ -531,7 +531,7 @@ class Compiler(ABC):
             ]
             gates = instructions[:-1]
             # Compile gates needed before the measurement
-            measurement_tick = self.compile_one_qubit_gates(gates, tick, circuit)
+            measurement_tick = self.compile_gates(gates, tick, circuit)
             # Now do the actual measurement.
             measurement = instructions[-1]
             measurement.is_measurement = True
@@ -544,37 +544,25 @@ class Compiler(ABC):
 
         return tick + ticks_needed
 
-    def compile_one_qubit_gates(
+    def compile_gates(
         self, gates: List[Instruction], tick: Tick, circuit: Circuit
     ) -> Tick:
-        return self._compile_gates(
-            gates, self.noise_model.one_qubit_gate, 1, tick, circuit
-        )
-
-    def compile_two_qubit_gates(
-        self, gates: List[Instruction], tick: int, circuit: Circuit
-    ) -> Tick:
-        return self._compile_gates(
-            gates, self.noise_model.two_qubit_gate, 2, tick, circuit
-        )
-
-    def _compile_gates(
-        self,
-        gates: List[Instruction],
-        noise: Noise,
-        gate_size: int,
-        tick: int,
-        circuit: Circuit,
-    ) -> Tick:
-        """For compiling a list of gates IN SEQUENCE. i.e. Even if the gates
+        """For compiling a list of gates sequentially. i.e. Even if the gates
         apply to different qubits, they will be compiled one after the other.
 
         Returns: next usable even tick after these gates have been compiled.
         """
         for i, gate in enumerate(gates):
-            assert len(gate.qubits) == gate_size
             gate_tick = tick + 2 * i
             circuit.add_instruction(gate_tick, gate)
+            gate_size = len(gate.qubits)
+            if gate_size not in [1, 2]:
+                raise ValueError(
+                    f'Can only compile one- or two-qubit gates.'
+                    f'Instead, was asked to compile the following: {gate}.')
+            noise = self.noise_model.one_qubit_gate \
+                if gate_size == 1 \
+                else self.noise_model.two_qubit_gate
             if noise is not None:
                 noise_instruction = noise.instruction(gate.qubits)
                 circuit.add_instruction(gate_tick + 1, noise_instruction)

@@ -1,3 +1,5 @@
+import random
+
 import stim
 import pytest
 from _pytest.monkeypatch import MonkeyPatch
@@ -8,6 +10,8 @@ from main.building_blocks.Qubit import Qubit
 from main.building_blocks.detectors.Stabilizer import Stabilizer
 from main.building_blocks.pauli.Pauli import Pauli
 from main.building_blocks.pauli.PauliLetter import PauliLetter
+from main.compiling.Circuit import Circuit
+from main.compiling.Instruction import Instruction
 from main.compiling.compilers.AncillaPerCheckCompiler import AncillaPerCheckCompiler
 from main.QPUs.SquareLatticeQPU import SquareLatticeQPU
 from main.codes.RepetitionCode import RepetitionCode
@@ -21,6 +25,8 @@ from main.compiling.syndrome_extraction.controlled_gate_orderers.TrivialOrderer 
 from main.compiling.syndrome_extraction.extractors.ancilla_per_check.mixed.CnotExtractor import CnotExtractor
 from main.compiling.syndrome_extraction.extractors.ancilla_per_check.mixed.CxCyCzExtractor import CxCyCzExtractor
 from main.utils.enums import State
+from tests.compiling.utils_instructions import MockInstruction
+from tests.utils.utils_numbers import default_test_repeats_small
 
 test_qpu = SquareLatticeQPU((3, 1))
 rep_code = RepetitionCode(2)
@@ -52,8 +58,9 @@ rep_logicals = [rep_code.logical_qubits[0].z]
 # - compile_final_detectors_from_measurements
 # - compile_initial_logical_observables
 # - measure_qubits
-# - compile_one_qubit_gates
-# - compile_two_qubit_gates
+# - X compile_gates
+# - X - fails if gate size not 1 or 2
+# - X - handles noise correctly
 # - compile_to_circuit
 # - compile_to_stim
 
@@ -133,8 +140,99 @@ def test_compiler_get_measurement_bases_and_initial_states_returns_positive_sign
     assert initial_states == {qubit: State.Plus}
 
 
-def test_compiler_compile_one_qubit_gates(monkeypatch: MonkeyPatch):
-    pass
+def test_compiler_compile_gates_fails_if_gate_size_not_one_or_two(
+        monkeypatch: MonkeyPatch, mocker: MockerFixture):
+    expected_error = 'Can only compile one- or two-qubit gates'
+
+    # Patch over the abstract methods so that we can instantiate a Compiler
+    monkeypatch.setattr(Compiler, '__abstractmethods__', set())
+    compiler = Compiler()
+
+    # An explicit test
+    qubits = [Qubit(i) for i in range(3)]
+    tick = 0
+    circuit = mocker.Mock(spec=Circuit)
+    gate = mocker.Mock(spec=Instruction)
+    gate.qubits = qubits
+
+    with pytest.raises(ValueError, match=expected_error):
+        compiler.compile_gates([gate], tick, circuit)
+
+    # Random tests
+    for i in range(default_test_repeats_small):
+        num_qubits = 10
+        qubits = [Qubit(i) for i in range(num_qubits)]
+        num_gates = random.randint(1, 10)
+        gate_sizes = [random.randint(1, 10) for _ in range(num_gates)]
+        if all([size <= 2 for size in gate_sizes]):
+            break
+        gate_qubit_indexes = [
+            random.sample(range(num_qubits), k=size) for size in gate_sizes]
+        gates = [mocker.Mock(spec=Instruction) for _ in range(num_gates)]
+        for gate, indexes in zip(gates, gate_qubit_indexes):
+            gate.qubits = [qubits[i] for i in indexes]
+
+        tick = random.randint(0, 100)
+        circuit = mocker.Mock(spec=Circuit)
+        with pytest.raises(ValueError, match=expected_error):
+            compiler.compile_gates(gates, tick, circuit)
+
+
+def test_compiler_compile_gates_when_noise_is_none(
+        monkeypatch: MonkeyPatch, mocker: MockerFixture):
+    # Patch over the abstract methods so that we can instantiate a Compiler
+    monkeypatch.setattr(Compiler, '__abstractmethods__', set())
+    compiler = Compiler()
+    compiler.noise_model = NoNoise()
+
+    # An explicit test
+    qubits = [Qubit(i) for i in range(3)]
+    tick = 0
+    circuit = mocker.Mock(spec=Circuit)
+    gates = [
+        Instruction(qubits[:1], 'ONE_QUBIT_GATE'),
+        Instruction(qubits[1:], 'TWO_QUBIT_GATE')]
+    next_tick = compiler.compile_gates(gates, tick, circuit)
+
+    circuit.add_instruction.assert_has_calls([
+        mocker.call(tick, gates[0]),
+        mocker.call(tick + 2, gates[1])])
+    assert next_tick == tick + 2 * len(gates)
+
+
+def test_compiler_compile_gates_when_noise_not_none(
+        monkeypatch: MonkeyPatch, mocker: MockerFixture):
+    # Patch over the abstract methods so that we can instantiate a Compiler
+    monkeypatch.setattr(Compiler, '__abstractmethods__', set())
+    compiler = Compiler()
+    one_qubit_noise_param = 0.1
+    two_qubit_noise_param = 0.2
+    compiler.noise_model = CircuitLevelNoise(
+        one_qubit_gate=one_qubit_noise_param,
+        two_qubit_gate=two_qubit_noise_param)
+
+    # An explicit test
+    qubits = [Qubit(i) for i in range(3)]
+    tick = 0
+    circuit = mocker.Mock(spec=Circuit)
+    gates = [
+        Instruction(qubits[:1], 'ONE_QUBIT_GATE'),
+        Instruction(qubits[1:], 'TWO_QUBIT_GATE')]
+    next_tick = compiler.compile_gates(gates, tick, circuit)
+
+    one_qubit_noise = compiler.noise_model.one_qubit_gate
+    expected_one_qubit_noise_instruction = MockInstruction(
+        qubits[:1], one_qubit_noise.name, one_qubit_noise.params, is_noise=True)
+    two_qubit_noise = compiler.noise_model.two_qubit_gate
+    expected_two_qubit_noise_instruction = MockInstruction(
+        qubits[1:], two_qubit_noise.name, two_qubit_noise.params, is_noise=True)
+
+    circuit.add_instruction.assert_has_calls([
+        mocker.call(tick, gates[0]),
+        mocker.call(tick + 1, expected_one_qubit_noise_instruction),
+        mocker.call(tick + 2, gates[1]),
+        mocker.call(tick + 3, expected_two_qubit_noise_instruction)])
+    assert next_tick == tick + 2 * len(gates)
 
 
 def test_compile_initialisation():

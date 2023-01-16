@@ -229,7 +229,7 @@ class AncillaPerCheckExtractor(SyndromeExtractor):
             # Nothing to do for this check at this step.
             return tick
         pre_rotations = get_rotations(pauli, check)
-        tick = compiler.compile_one_qubit_gates(
+        tick = compiler.compile_gates(
             pre_rotations, tick, circuit)
         return tick
 
@@ -244,7 +244,7 @@ class AncillaPerCheckExtractor(SyndromeExtractor):
         if pauli is not None:
             controlled_gate = self.get_controlled_gate(pauli, check)
             if controlled_gate is not None:
-                compiler.compile_two_qubit_gates(
+                compiler.compile_gates(
                     [controlled_gate], tick, circuit)
 
     @abstractmethod
