@@ -10,6 +10,7 @@ from main.building_blocks.Qubit import Qubit
 from main.building_blocks.detectors.Stabilizer import Stabilizer
 from main.building_blocks.pauli.Pauli import Pauli
 from main.building_blocks.pauli.PauliLetter import PauliLetter
+from main.codes.Code import Code
 from main.compiling.Circuit import Circuit
 from main.compiling.Instruction import Instruction
 from main.compiling.compilers.AncillaPerCheckCompiler import AncillaPerCheckCompiler
@@ -17,7 +18,7 @@ from main.QPUs.SquareLatticeQPU import SquareLatticeQPU
 from main.codes.RepetitionCode import RepetitionCode
 from main.codes.RotatedSurfaceCode import RotatedSurfaceCode
 from main.compiling.compilers.Compiler import Compiler
-from main.compiling.noise.models import CircuitLevelNoise, CodeCapacityBitFlipNoise
+from main.compiling.noise.models import CircuitLevelNoise, CodeCapacityBitFlipNoise, PhenomenologicalNoise
 from main.compiling.noise.models.NoNoise import NoNoise
 from main.compiling.syndrome_extraction.controlled_gate_orderers.RotatedSurfaceCodeOrderer import \
     RotatedSurfaceCodeOrderer
@@ -233,6 +234,43 @@ def test_compiler_compile_gates_when_noise_not_none(
         mocker.call(tick + 2, gates[1]),
         mocker.call(tick + 3, expected_two_qubit_noise_instruction)])
     assert next_tick == tick + 2 * len(gates)
+
+
+def test_compiler_add_start_of_round_noise_does_nothing_when_no_noise(
+        monkeypatch: MonkeyPatch, mocker: MockerFixture):
+    # Patch over the abstract methods so that we can instantiate a Compiler
+    monkeypatch.setattr(Compiler, '__abstractmethods__', set())
+    compiler = Compiler()
+    compiler.noise_model = NoNoise()
+
+    tick = 0
+    circuit = mocker.Mock(spec=Circuit)
+    code = mocker.Mock(spec=Code)
+
+    compiler.add_start_of_round_noise(tick, circuit, code)
+    circuit.add_instruction.assert_not_called()
+
+
+def test_compiler_add_start_of_round_noise_works_otherwise(
+        monkeypatch: MonkeyPatch, mocker: MockerFixture):
+    # Patch over the abstract methods so that we can instantiate a Compiler
+    monkeypatch.setattr(Compiler, '__abstractmethods__', set())
+    compiler = Compiler()
+    compiler.noise_model = PhenomenologicalNoise(
+        data_qubit=0.1, measurement=None)
+
+    tick = 0
+    circuit = mocker.Mock(spec=Circuit)
+    data_qubits = {i: Qubit(i) for i in range(10)}
+    code = mocker.Mock(spec=Code)
+    code.data_qubits = data_qubits
+
+    compiler.add_start_of_round_noise(tick, circuit, code)
+    noise = compiler.noise_model.data_qubit_start_round
+    circuit.add_instruction.assert_has_calls([
+        mocker.call(tick, MockInstruction(
+            [qubit], noise.name, noise.params, is_noise=True))
+        for qubit in data_qubits.values()])
 
 
 def test_compile_initialisation():
