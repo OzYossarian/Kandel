@@ -54,15 +54,6 @@ class TicTacToeLogicalOperator(LogicalOperator):
         return self._at_round[round]
 
     def update(self, round: int):
-        """Updates 
-
-        Args:
-            round: _description_
-
-        Returns:
-            checks_multiplied in: TODO: Do we need this here? 
-                                  As far as I can see, when we call this function we don't use this variable
-        """
         prev_x_type, prev_z_type = self.logical_qubit.get_types(round - 1)
         next_x_type, next_z_type = self.logical_qubit.get_types(round)
 
