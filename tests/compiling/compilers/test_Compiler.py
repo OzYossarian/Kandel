@@ -8,11 +8,13 @@ from pytest_mock import MockerFixture
 from main.building_blocks.Check import Check
 from main.building_blocks.Qubit import Qubit
 from main.building_blocks.detectors.Stabilizer import Stabilizer
+from main.building_blocks.logical.LogicalOperator import LogicalOperator
 from main.building_blocks.pauli.Pauli import Pauli
 from main.building_blocks.pauli.PauliLetter import PauliLetter
 from main.codes.Code import Code
 from main.compiling.Circuit import Circuit
 from main.compiling.Instruction import Instruction
+from main.compiling.Measurer import Measurer
 from main.compiling.compilers.AncillaPerCheckCompiler import AncillaPerCheckCompiler
 from main.QPUs.SquareLatticeQPU import SquareLatticeQPU
 from main.codes.RepetitionCode import RepetitionCode
@@ -58,8 +60,8 @@ rep_logicals = [rep_code.logical_qubits[0].z]
 # - compile_final_detectors
 # - compile_final_detectors_from_stabilizers
 # - compile_final_detectors_from_measurements
-# - compile_initial_logical_observables
-# - measure_qubits
+# - compile_final_logical_operators
+# - X measure_qubits
 # - X compile_gates
 # - X - fails if gate size not 1 or 2
 # - X - handles noise correctly
@@ -552,6 +554,69 @@ def test_compiler_compile_gates_when_noise_not_none(
     assert next_tick == tick + 2 * len(gates)
 
 
+def test_compiler_compile_final_logical_operators_raises_error_if_final_checks_wrong(
+        monkeypatch: MonkeyPatch, mocker: MockerFixture):
+    # Patch over the abstract methods so that we can instantiate a Compiler
+    monkeypatch.setattr(Compiler, '__abstractmethods__', set())
+    compiler = Compiler()
+
+    # Explicit test
+    qubit = Qubit(0)
+    observable = LogicalOperator([Pauli(qubit, PauliLetter('Z'))])
+    check = Check([Pauli(qubit, PauliLetter('X'))])
+    final_checks = {qubit: check}
+    round = 0
+    circuit = mocker.Mock(spec=Circuit)
+
+    expected_error = "Expected to include a final measurement of"
+    with pytest.raises(ValueError, match=expected_error):
+        compiler.compile_final_logical_operators(
+            [observable], final_checks, round, circuit)
+
+
+def test_compiler_compile_final_logical_operators_does_not_raise_error_if_final_checks_only_wrong_up_to_sign(
+        monkeypatch: MonkeyPatch, mocker: MockerFixture):
+    # Patch over the abstract methods so that we can instantiate a Compiler
+    monkeypatch.setattr(Compiler, '__abstractmethods__', set())
+    compiler = Compiler()
+
+    # Explicit test
+    qubit = Qubit(0)
+    observable = LogicalOperator([Pauli(qubit, PauliLetter('Z'))])
+    check = Check([Pauli(qubit, PauliLetter('Z', sign=-1))])
+    final_checks = {qubit: check}
+    round = 0
+    circuit = mocker.Mock(spec=Circuit)
+    circuit.measurer = mocker.Mock(spec=Measurer)
+
+    compiler.compile_final_logical_operators(
+        [observable], final_checks, round, circuit)
+    circuit.measurer.multiply_observable.assert_called_with(
+        [check], observable, round)
+
+
+def test_compiler_compile_final_logical_operators_works_otherwise(
+        monkeypatch: MonkeyPatch, mocker: MockerFixture):
+    # Patch over the abstract methods so that we can instantiate a Compiler
+    monkeypatch.setattr(Compiler, '__abstractmethods__', set())
+    compiler = Compiler()
+
+    # Explicit test
+    qubits = [Qubit(i) for i in range(3)]
+    observable = LogicalOperator(
+        [Pauli(qubit, PauliLetter('Z')) for qubit in qubits])
+    checks = [Check([Pauli(qubit, PauliLetter('Z'))]) for qubit in qubits]
+    final_checks = dict(zip(qubits, checks))
+    round = 10
+    circuit = mocker.Mock(spec=Circuit)
+    circuit.measurer = mocker.Mock(spec=Measurer)
+
+    compiler.compile_final_logical_operators(
+        [observable], final_checks, round, circuit)
+    circuit.measurer.multiply_observable.assert_called_with(
+        checks, observable, round)
+
+
 def test_compile_initialisation():
     _, _, circuit = test_compiler.compile_initialisation(
         rep_code, rep_initials_zero, None
@@ -667,7 +732,7 @@ def test_compile_code(code, distance, num_detectors, num_measurements):
         distance,
         initial_states=rsc_initials,
         final_measurements=rsc_finals,
-        logical_observables=rsc_logicals,
+        observables=rsc_logicals,
     )
     assert rsc_circuit.num_detectors == num_detectors
 

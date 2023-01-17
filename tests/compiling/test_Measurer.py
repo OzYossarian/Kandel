@@ -69,14 +69,14 @@ def test_measurer_add_detectors():
         assert measurer.triggers == expected
 
 
-def test_measurer_multiply_logical_observable(mocker: MockerFixture):
+def test_measurer_multiply_observable(mocker: MockerFixture):
     measurer = Measurer()
     num_checks = random.randint(0, 10)
     checks = [mocker.Mock(spec=Check) for _ in range(num_checks)]
     observable = mocker.Mock(spec=LogicalOperator)
     round = 0
 
-    measurer.multiply_logical_observable(checks, observable, round)
+    measurer.multiply_observable(checks, observable, round)
 
     expected = {(check, round): [observable] for check in checks}
     assert measurer.triggers == expected

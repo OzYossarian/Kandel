@@ -51,7 +51,7 @@ def tic_tac_toe_phenom_task(
         layers=distance,
         initial_states=initial_states,
         final_measurements=final_measurements,
-        logical_observables=observables)
+        observables=observables)
     return sinter.Task(
         circuit=circuit,
         json_metadata={

@@ -104,7 +104,7 @@ class Compiler(ABC):
             initial_stabilizers: List[Stabilizer] = None,
             final_measurements: List[Pauli] = None,
             final_stabilizers: List[Stabilizer] = None,
-            logical_observables: List[LogicalOperator] = None,
+            observables: List[LogicalOperator] = None,
     ) -> Circuit():
 
         # TODO - actually might make more sense to only allow
@@ -137,14 +137,14 @@ class Compiler(ABC):
         # Compile these initial layers.
         for layer, detector_schedule in enumerate(initial_detector_schedules):
             tick = self.compile_layer(
-                layer, detector_schedule, logical_observables, tick, circuit, code
+                layer, detector_schedule, observables, tick, circuit, code
             )
 
         # Compile the remaining layers.
         layer = initial_layers
         while layer < layers:
             tick = self.compile_layer(
-                layer, code.detector_schedule, logical_observables, tick, circuit, code
+                layer, code.detector_schedule, observables, tick, circuit, code
             )
             layer += 1
 
@@ -153,7 +153,7 @@ class Compiler(ABC):
         self.compile_final_measurements(
             final_measurements,
             final_stabilizers,
-            logical_observables,
+            observables,
             layer,
             tick,
             circuit,
@@ -169,7 +169,7 @@ class Compiler(ABC):
             initial_stabilizers: List[Stabilizer] = None,
             final_measurements: List[Pauli] = None,
             final_stabilizers: List[Stabilizer] = None,
-            logical_observables: List[LogicalOperator] = None,
+            observables: List[LogicalOperator] = None,
     ) -> stim.Circuit():
         circuit = self.compile_to_circuit(
             code=code,
@@ -178,7 +178,7 @@ class Compiler(ABC):
             initial_stabilizers=initial_stabilizers,
             final_measurements=final_measurements,
             final_stabilizers=final_stabilizers,
-            logical_observables=logical_observables)
+            observables=observables)
         return circuit.to_stim(self.noise_model.idling)
 
     def compile_initialisation(
@@ -338,11 +338,11 @@ class Compiler(ABC):
         detectors = detector_schedule[relative_round]
         circuit.measurer.add_detectors(detectors, round)
 
-        # And likewise note down any logical observables that need updating.
+        # And likewise note down any observables that need updating.
         if observables is not None:
             for observable in observables:
                 checks_to_multiply_in = observable.update(round)
-                circuit.measurer.multiply_logical_observable(
+                circuit.measurer.multiply_observable(
                     checks_to_multiply_in, observable, round)
 
         circuit.end_round(tick - 2)
@@ -358,8 +358,8 @@ class Compiler(ABC):
     def compile_final_measurements(
             self,
             final_measurements: Union[List[Pauli], None],
-            final_stabilizers: Union[Stabilizer, None],
-            logical_observables: Union[LogicalOperator, None],
+            final_stabilizers: Union[List[Stabilizer], None],
+            observables: Union[LogicalOperator, None],
             layer: int,
             tick: int,
             circuit: Circuit,
@@ -391,14 +391,14 @@ class Compiler(ABC):
                 final_checks, final_stabilizers, layer, circuit, code
             )
 
-            # Finally, define the logical observables we want to measure
-            self.compile_initial_logical_observables(
-                logical_observables, final_checks, round, circuit
+            # Finally, define the observables we want to measure
+            self.compile_final_logical_operators(
+                observables, final_checks, round, circuit
             )
 
-        elif logical_observables is not None:
+        elif observables is not None:
             raise ValueError(
-                "Can't measure any logical observables if no method is given "
+                "Can't measure any observables if no method is given "
                 "for performing final measurements! Please provide one of "
                 "final_measurements or final_stabilizers."
             )
@@ -480,28 +480,34 @@ class Compiler(ABC):
 
         return final_detectors
 
-    def compile_initial_logical_observables(
+    def compile_final_logical_operators(
             self,
-            logical_observables: Union[List[LogicalOperator], None],
+            observables: Union[List[LogicalOperator], None],
             final_checks: Union[Dict[Qubit, Check], None],
             round: int,
             circuit: Circuit,
     ):
-        # The Paulis that initially made up the logical observables that we
-        # want to measure should be a subset of the final individual data
+        # The Paulis that currently constitute the logical operators
+        # we want to measure should be a subset of the final individual data
         # qubit measurements.
-        if logical_observables is not None:
-            for observable in logical_observables:
-                logical_checks = []
-                for pauli in observable.at_round(-1):
+        if observables is not None:
+            for observable in observables:
+                observable_checks = []
+                for observable_pauli in observable.at_round(round):
                     # Just double check that what we measured is actually what we
-                    # want to use to form the logical observable.
-                    check = final_checks[pauli.qubit]
-                    assert list(check.paulis.values())[0].letter == pauli.letter
-                    logical_checks.append(check)
+                    # want to use to form the logical operator.
+                    check = final_checks[observable_pauli.qubit]
+                    check_pauli = list(check.paulis.values())[0]
+                    if check_pauli.letter.letter != observable_pauli.letter.letter:
+                        raise ValueError(
+                            f"Expected to include a final measurement of "
+                            f"{observable_pauli} into an observable, but the "
+                            f"final measurement at this qubit was instead "
+                            f"{check_pauli}!")
+                    observable_checks.append(check)
                 # Compile to the circuit.
-                circuit.measurer.multiply_logical_observable(
-                    logical_checks, observable, round
+                circuit.measurer.multiply_observable(
+                    observable_checks, observable, round
                 )
 
     # TODO - generalise for native multi-qubit measurements.

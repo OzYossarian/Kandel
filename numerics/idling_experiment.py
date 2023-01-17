@@ -40,7 +40,7 @@ class IdlingExperiment():
                 layers=1,
                 initial_states=code_initials,
                 final_measurements=code_finals,
-                logical_observables=code_logicals)
+                observables=code_logicals)
         else:
             circuit = compiler.compile_to_stim(
                 code, 3)

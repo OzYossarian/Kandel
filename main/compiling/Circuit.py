@@ -347,7 +347,7 @@ class Circuit:
 
             # Let the measurer determine if these measurements trigger any
             # further instructions - e.g. compiling detectors, adding checks
-            # into logical observables, etc.
+            # into observables, etc.
             further_instructions = (
                 self.measurer.measurement_triggers_to_stim(
                     measurements, shift_coords

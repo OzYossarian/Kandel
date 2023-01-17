@@ -76,7 +76,7 @@ def get_bias_tasks(constructor: Callable[[int], TicTacToeCode]):
             initial_states = {qubit: State.Plus for qubit in data_qubits}
             final_measurements = [
                 Pauli(qubit, PauliLetter('X')) for qubit in data_qubits]
-            logical_observables = [code.logical_qubits[1].x]
+            observables = [code.logical_qubits[1].x]
             # For FCC, because schedule is length 6
             # layers = distance
             # For HCC, because schedule is length 3
@@ -86,7 +86,7 @@ def get_bias_tasks(constructor: Callable[[int], TicTacToeCode]):
                 layers=layers,
                 initial_states=initial_states,
                 final_measurements=final_measurements,
-                logical_observables=logical_observables)
+                observables=observables)
             pre_circuit.add_idling_noise(pre_compiler.noise_model.idling)
             M = pre_circuit.number_of_instructions(['MZ', 'MX', 'MY'])
             Q = pre_circuit.number_of_instructions(['PAULI_CHANNEL_1', 'PAULI_CHANNEL_2'])
@@ -107,7 +107,7 @@ def get_bias_tasks(constructor: Callable[[int], TicTacToeCode]):
                     layers=layers,
                     initial_states=initial_states,
                     final_measurements=final_measurements,
-                    logical_observables=logical_observables)
+                    observables=observables)
                 tasks[bias].append(sinter.Task(
                     circuit=stim_circuit,
                     json_metadata={
@@ -172,7 +172,7 @@ def load_or_create_stim_circuit(
         layers,
         initial_states,
         final_measurements,
-        logical_observables):
+        observables):
     # Save time by saving these circuits locally.
     noise_params = (q, None, q, q, m)
     hash_fields = (type(code).__name__, code.distance, layers, noise_params)
@@ -190,7 +190,7 @@ def load_or_create_stim_circuit(
             layers=layers,
             initial_states=initial_states,
             final_measurements=final_measurements,
-            logical_observables=logical_observables)
+            observables=observables)
         stim_circuit.to_file(filepath)
     return stim_circuit
 
