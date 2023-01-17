@@ -49,10 +49,11 @@ rep_logicals = [rep_code.logical_qubits[0].z]
 # - X test fails if measurement instructions don't end with M_
 # - X get_measurement_bases
 # - X get_initial_states
-# - initialize_qubits
+# - compile_initialisation
+# - X initialize_qubits
 # - compile_layer
 # - compile_round
-# - add_start_of_round_noise
+# - X add_start_of_round_noise
 # - compile_final_measurements
 # - compile_final_detectors
 # - compile_final_detectors_from_stabilizers
@@ -139,6 +140,321 @@ def test_compiler_get_measurement_bases_and_initial_states_returns_positive_sign
 
     assert measurement_bases == [Pauli(qubit, PauliLetter('X'))]
     assert initial_states == {qubit: State.Plus}
+
+
+def test_compiler_initialize_qubits_defaults_to_correct_initialisation_instructions(
+        monkeypatch: MonkeyPatch, mocker: MockerFixture):
+    # Patch over the abstract methods so that we can instantiate a Compiler
+    monkeypatch.setattr(Compiler, '__abstractmethods__', set())
+    initialisation_instructions = {
+        State.Zero: ['RZ'],
+        State.Plus: ['RZ', 'H']}
+    compiler = Compiler(initialisation_instructions=initialisation_instructions)
+    compiler.compile_gates = mocker.Mock()
+
+    # Explicit test
+    qubits = [Qubit(0), Qubit(1)]
+    initial_states = {
+        qubits[0]: State.Zero,
+        qubits[1]: State.Plus}
+    tick = 0
+    circuit = mocker.Mock(spec=Circuit)
+    compiler.initialize_qubits(
+        initial_states, tick, circuit, initialisation_instructions=None)
+
+    # Assert correct instructions passed to circuit.
+    circuit.initialise.has_calls([
+        mocker.call(tick, MockInstruction(qubits[:1], 'RZ')),
+        mocker.call(tick, MockInstruction(qubits[1:], 'RZ'))])
+    compiler.compile_gates.assert_any_call(
+        [MockInstruction(qubits[1:], 'H')], tick + 2, circuit)
+
+
+def test_compiler_initialize_qubits_otherwise_uses_given_initialisation_instructions(
+        monkeypatch: MonkeyPatch, mocker: MockerFixture):
+    # Patch over the abstract methods so that we can instantiate a Compiler
+    monkeypatch.setattr(Compiler, '__abstractmethods__', set())
+    compiler_initialisation_instructions = {
+        State.Zero: ['RZ'],
+        State.Plus: ['RZ', 'H']}
+    compiler = Compiler(
+        initialisation_instructions=compiler_initialisation_instructions)
+    compiler.compile_gates = mocker.Mock()
+
+    # Explicit test
+    qubits = [Qubit(0), Qubit(1)]
+    initial_states = {
+        qubits[0]: State.Zero,
+        qubits[1]: State.Plus}
+    tick = 0
+    circuit = mocker.Mock(spec=Circuit)
+    initialisation_instructions = {
+        State.Zero: ['RX', 'H'],
+        State.Plus: ['RX']}
+    compiler.initialize_qubits(
+        initial_states, tick, circuit, initialisation_instructions)
+
+    # Assert correct instructions passed to circuit.
+    circuit.initialise.has_calls([
+        mocker.call(tick, MockInstruction(qubits[:1], 'RX')),
+        mocker.call(tick, MockInstruction(qubits[1:], 'RX'))])
+    compiler.compile_gates.assert_any_call(
+        [MockInstruction(qubits[:1], 'H')], tick + 2, circuit)
+
+
+def test_compiler_initialize_qubits_returns_correct_tick(
+        monkeypatch: MonkeyPatch, mocker: MockerFixture):
+    # Patch over the abstract methods so that we can instantiate a Compiler
+    monkeypatch.setattr(Compiler, '__abstractmethods__', set())
+    compiler = Compiler()
+
+    # Explicit test
+    qubits = [Qubit(0), Qubit(1)]
+    initial_states = {
+        qubits[0]: State.Zero,
+        qubits[1]: State.Plus}
+    tick = 0
+    circuit = mocker.Mock(spec=Circuit)
+    initialisation_instructions = {
+        State.Zero: ['RZ', 'H', 'H'],
+        State.Plus: ['RZ', 'H']}
+    next_tick = compiler.initialize_qubits(
+        initial_states, tick, circuit, initialisation_instructions)
+
+    # Assert correct instructions passed to circuit.
+    assert next_tick == tick + 6
+
+
+def test_compiler_initialize_qubits_works_when_no_noise(
+        monkeypatch: MonkeyPatch, mocker: MockerFixture):
+    # Patch over the abstract methods so that we can instantiate a Compiler
+    monkeypatch.setattr(Compiler, '__abstractmethods__', set())
+    compiler = Compiler(noise_model=NoNoise())
+
+    # Explicit test
+    qubits = [Qubit(0), Qubit(1)]
+    initial_states = {
+        qubits[0]: State.Zero,
+        qubits[1]: State.Plus}
+    tick = 0
+    circuit = mocker.Mock(spec=Circuit)
+    initialisation_instructions = {
+        State.Zero: ['RZ'],
+        State.Plus: ['RZ', 'H']}
+    compiler.initialize_qubits(
+        initial_states, tick, circuit, initialisation_instructions)
+
+    # Assert no noise applied.
+    assert all([
+        call.args[1].name != 'PAULI_CHANNEL_1'
+        for call in circuit.add_instruction.call_args_list])
+
+
+def test_compiler_initialize_qubits_applies_noise_if_given(
+        monkeypatch: MonkeyPatch, mocker: MockerFixture):
+    # Patch over the abstract methods so that we can instantiate a Compiler
+    monkeypatch.setattr(Compiler, '__abstractmethods__', set())
+    noise_model = CircuitLevelNoise(
+        initialisation=0.1,
+        one_qubit_gate=0.2)
+    compiler = Compiler(noise_model=noise_model)
+
+    # Explicit test
+    qubits = [Qubit(0), Qubit(1)]
+    initial_states = {
+        qubits[0]: State.Zero,
+        qubits[1]: State.Plus}
+    tick = 0
+    circuit = mocker.Mock(spec=Circuit)
+    initialisation_instructions = {
+        State.Zero: ['RZ'],
+        State.Plus: ['RZ', 'H']}
+    compiler.initialize_qubits(
+        initial_states, tick, circuit, initialisation_instructions)
+
+    # Assert correct noise applied.
+    initialisation_noise = compiler.noise_model.initialisation
+    one_qubit_gate_noise = compiler.noise_model.one_qubit_gate
+
+    circuit.add_instruction.assert_any_call(tick + 1, MockInstruction(
+        qubits[:1], initialisation_noise.name, initialisation_noise.params, is_noise=True))
+    circuit.add_instruction.assert_any_call(tick + 1, MockInstruction(
+        qubits[1:], initialisation_noise.name, initialisation_noise.params, is_noise=True))
+    circuit.add_instruction.assert_any_call(tick + 3, MockInstruction(
+        qubits[1:], one_qubit_gate_noise.name, one_qubit_gate_noise.params, is_noise=True))
+
+
+def test_compiler_add_start_of_round_noise_does_nothing_when_no_noise(
+        monkeypatch: MonkeyPatch, mocker: MockerFixture):
+    # Patch over the abstract methods so that we can instantiate a Compiler
+    monkeypatch.setattr(Compiler, '__abstractmethods__', set())
+    compiler = Compiler()
+    compiler.noise_model = NoNoise()
+
+    # Explicit test
+    tick = 0
+    circuit = mocker.Mock(spec=Circuit)
+    code = mocker.Mock(spec=Code)
+    compiler.add_start_of_round_noise(tick, circuit, code)
+
+    # Assert nothing happens!
+    circuit.add_instruction.assert_not_called()
+
+
+def test_compiler_add_start_of_round_noise_works_otherwise(
+        monkeypatch: MonkeyPatch, mocker: MockerFixture):
+    # Patch over the abstract methods so that we can instantiate a Compiler
+    monkeypatch.setattr(Compiler, '__abstractmethods__', set())
+    compiler = Compiler()
+    compiler.noise_model = PhenomenologicalNoise(
+        data_qubit=0.1, measurement=None)
+
+    # Explicit test
+    tick = 0
+    circuit = mocker.Mock(spec=Circuit)
+    data_qubits = {i: Qubit(i) for i in range(10)}
+    code = mocker.Mock(spec=Code)
+    code.data_qubits = data_qubits
+    compiler.add_start_of_round_noise(tick, circuit, code)
+
+    # Assert noise added to data qubits.
+    noise = compiler.noise_model.data_qubit_start_round
+    circuit.add_instruction.assert_has_calls([
+        mocker.call(tick, MockInstruction(
+            [qubit], noise.name, noise.params, is_noise=True))
+        for qubit in data_qubits.values()])
+
+
+def test_compiler_measure_qubits_defaults_to_compiler_measurement_instructions(
+        monkeypatch: MonkeyPatch, mocker: MockerFixture):
+    # Patch over the abstract methods so that we can instantiate a Compiler
+    monkeypatch.setattr(Compiler, '__abstractmethods__', set())
+    compiler_measurement_instructions = {
+        PauliLetter('Z'): ['MZ'],
+        PauliLetter('X'): ['H', 'MZ']}
+    compiler = Compiler(
+        noise_model=NoNoise(),
+        measurement_instructions=compiler_measurement_instructions)
+    compiler.compile_gates = mocker.Mock(
+        side_effect=lambda gates, _, __: 2 * len(gates))
+
+    # Explicit test
+    qubits = [Qubit(0), Qubit(1)]
+    paulis = [
+        Pauli(qubits[0], PauliLetter('Z')),
+        Pauli(qubits[1], PauliLetter('X'))]
+    checks = [mocker.Mock(spec=Check) for _ in paulis]
+    circuit = mocker.Mock(spec=Circuit)
+    tick = 0
+    round = 0
+    compiler.measure_qubits(paulis, checks, round, tick, circuit)
+
+    # Assert compiler measurement instructions were used:
+    measurements = [
+        MockInstruction(qubits[:1], 'MZ', is_measurement=True),
+        MockInstruction(qubits[1:], 'MZ', is_measurement=True)]
+    circuit.measure.assert_has_calls([
+        mocker.call(measurements[0], checks[0], round, 0),
+        mocker.call(measurements[1], checks[1], round, 2)])
+    compiler.compile_gates.assert_any_call(
+        [MockInstruction(qubits[1:], 'H')], tick, circuit)
+
+
+def test_compiler_measure_qubits_otherwise_uses_given_measurement_instructions(
+        monkeypatch: MonkeyPatch, mocker: MockerFixture):
+    # Patch over the abstract methods so that we can instantiate a Compiler
+    monkeypatch.setattr(Compiler, '__abstractmethods__', set())
+    compiler_measurement_instructions = {
+        PauliLetter('Z'): ['MZ'],
+        PauliLetter('X'): ['H', 'MZ']}
+    compiler = Compiler(
+        noise_model=NoNoise(),
+        measurement_instructions=compiler_measurement_instructions)
+    compiler.compile_gates = mocker.Mock(
+        side_effect=lambda gates, _, __: 2 * len(gates))
+
+    # Explicit test
+    qubits = [Qubit(0), Qubit(1)]
+    paulis = [
+        Pauli(qubits[0], PauliLetter('Z')),
+        Pauli(qubits[1], PauliLetter('X'))]
+    checks = [mocker.Mock(spec=Check) for _ in paulis]
+    circuit = mocker.Mock(spec=Circuit)
+    tick = 0
+    round = 0
+    measurement_instructions = {
+        PauliLetter('Z'): ['H', 'MX'],
+        PauliLetter('X'): ['MX']}
+    compiler.measure_qubits(
+        paulis, checks, round, tick, circuit, measurement_instructions)
+
+    # Assert given measurement instructions were used:
+    measurements = [
+        MockInstruction(qubits[:1], 'MX', is_measurement=True),
+        MockInstruction(qubits[1:], 'MX', is_measurement=True)]
+    circuit.measure.assert_has_calls([
+        mocker.call(measurements[0], checks[0], round, 2),
+        mocker.call(measurements[1], checks[1], round, 0)])
+    compiler.compile_gates.assert_any_call(
+        [MockInstruction(qubits[:1], 'H')], tick, circuit)
+
+
+def test_compiler_measure_qubits_applies_measurement_noise_correctly(
+        monkeypatch: MonkeyPatch, mocker: MockerFixture):
+    # Patch over the abstract methods so that we can instantiate a Compiler
+    monkeypatch.setattr(Compiler, '__abstractmethods__', set())
+    noise_model = PhenomenologicalNoise(measurement=0.1)
+    compiler = Compiler(noise_model=noise_model)
+
+    # Explicit test
+    qubits = [Qubit(0), Qubit(1)]
+    paulis = [
+        Pauli(qubits[0], PauliLetter('Z')),
+        Pauli(qubits[1], PauliLetter('X'))]
+    checks = [mocker.Mock(spec=Check) for _ in paulis]
+    circuit = mocker.Mock(spec=Circuit)
+    tick = 0
+    round = 0
+    measurement_instructions = {
+        PauliLetter('Z'): ['H', 'MX'],
+        PauliLetter('X'): ['MX']}
+    compiler.measure_qubits(
+        paulis, checks, round, tick, circuit, measurement_instructions)
+
+    # Assert given measurement instructions were used:
+    measurements = [
+        MockInstruction(qubits[:1], 'MX', 0.1, is_measurement=True),
+        MockInstruction(qubits[1:], 'MX', 0.1, is_measurement=True)]
+    circuit.measure.assert_has_calls([
+        mocker.call(measurements[0], checks[0], round, 2),
+        mocker.call(measurements[1], checks[1], round, 0)])
+
+
+def test_compiler_measure_qubits_returns_correct_tick(
+        monkeypatch: MonkeyPatch, mocker: MockerFixture):
+    # Patch over the abstract methods so that we can instantiate a Compiler
+    monkeypatch.setattr(Compiler, '__abstractmethods__', set())
+    compiler = Compiler()
+    compiler.compile_gates = mocker.Mock(
+        side_effect=lambda gates, _, __: 2 * len(gates))
+
+    # Explicit test
+    qubits = [Qubit(0), Qubit(1)]
+    paulis = [
+        Pauli(qubits[0], PauliLetter('Z')),
+        Pauli(qubits[1], PauliLetter('X'))]
+    checks = [mocker.Mock(spec=Check) for _ in paulis]
+    circuit = mocker.Mock(spec=Circuit)
+    tick = 0
+    round = 0
+    measurement_instructions = {
+        PauliLetter('Z'): ['H', 'MX'],
+        PauliLetter('X'): ['MX']}
+    next_tick = compiler.measure_qubits(
+        paulis, checks, round, tick, circuit, measurement_instructions)
+
+    # Assert circuit returns correct tick:
+    assert next_tick == tick + 4
 
 
 def test_compiler_compile_gates_fails_if_gate_size_not_one_or_two(
@@ -234,43 +550,6 @@ def test_compiler_compile_gates_when_noise_not_none(
         mocker.call(tick + 2, gates[1]),
         mocker.call(tick + 3, expected_two_qubit_noise_instruction)])
     assert next_tick == tick + 2 * len(gates)
-
-
-def test_compiler_add_start_of_round_noise_does_nothing_when_no_noise(
-        monkeypatch: MonkeyPatch, mocker: MockerFixture):
-    # Patch over the abstract methods so that we can instantiate a Compiler
-    monkeypatch.setattr(Compiler, '__abstractmethods__', set())
-    compiler = Compiler()
-    compiler.noise_model = NoNoise()
-
-    tick = 0
-    circuit = mocker.Mock(spec=Circuit)
-    code = mocker.Mock(spec=Code)
-
-    compiler.add_start_of_round_noise(tick, circuit, code)
-    circuit.add_instruction.assert_not_called()
-
-
-def test_compiler_add_start_of_round_noise_works_otherwise(
-        monkeypatch: MonkeyPatch, mocker: MockerFixture):
-    # Patch over the abstract methods so that we can instantiate a Compiler
-    monkeypatch.setattr(Compiler, '__abstractmethods__', set())
-    compiler = Compiler()
-    compiler.noise_model = PhenomenologicalNoise(
-        data_qubit=0.1, measurement=None)
-
-    tick = 0
-    circuit = mocker.Mock(spec=Circuit)
-    data_qubits = {i: Qubit(i) for i in range(10)}
-    code = mocker.Mock(spec=Code)
-    code.data_qubits = data_qubits
-
-    compiler.add_start_of_round_noise(tick, circuit, code)
-    noise = compiler.noise_model.data_qubit_start_round
-    circuit.add_instruction.assert_has_calls([
-        mocker.call(tick, MockInstruction(
-            [qubit], noise.name, noise.params, is_noise=True))
-        for qubit in data_qubits.values()])
 
 
 def test_compile_initialisation():

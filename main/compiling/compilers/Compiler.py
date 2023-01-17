@@ -97,14 +97,14 @@ class Compiler(ABC):
         self.measurement_instructions = measurement_instructions
 
     def compile_to_circuit(
-        self,
-        code: Code,
-        layers: int,
-        initial_states: Dict[Qubit, State] = None,
-        initial_stabilizers: List[Stabilizer] = None,
-        final_measurements: List[Pauli] = None,
-        final_stabilizers: List[Stabilizer] = None,
-        logical_observables: List[LogicalOperator] = None,
+            self,
+            code: Code,
+            layers: int,
+            initial_states: Dict[Qubit, State] = None,
+            initial_stabilizers: List[Stabilizer] = None,
+            final_measurements: List[Pauli] = None,
+            final_stabilizers: List[Stabilizer] = None,
+            logical_observables: List[LogicalOperator] = None,
     ) -> Circuit():
 
         # TODO - actually might make more sense to only allow
@@ -182,10 +182,10 @@ class Compiler(ABC):
         return circuit.to_stim(self.noise_model.idling)
 
     def compile_initialisation(
-        self,
-        code: Code,
-        initial_states: Dict[Qubit, State],
-        initial_stabilizers: List[Stabilizer],
+            self,
+            code: Code,
+            initial_states: Dict[Qubit, State],
+            initial_stabilizers: List[Stabilizer],
     ):
         # For now, always start a new circuit from scratch. Later, allow
         # compilation onto an existing circuit (e.g. in a lattice surgery or
@@ -258,12 +258,12 @@ class Compiler(ABC):
         return paulis
 
     def initialize_qubits(
-        self,
-        initial_states: Dict[Qubit, State],
-        tick: int,
-        circuit: Circuit,
-        initialisation_instructions: Dict[State, List[str]] = None,
-    ):
+            self,
+            initial_states: Dict[Qubit, State],
+            tick: int,
+            circuit: Circuit,
+            initialisation_instructions: Dict[State, List[str]] = None
+    ) -> Tick:
         # This method can also be used by a syndrome extractor, which might
         # have its own initialisation instructions.
         if initialisation_instructions is None:
@@ -286,8 +286,8 @@ class Compiler(ABC):
                 noise_instruction = noise.instruction([qubit])
                 circuit.add_instruction(tick + 1, noise_instruction)
             # Now apply the remaining gates, again adding noise if needed
-            remainder = init_instructions[1:]
-            self.compile_gates(remainder, tick + 2, circuit)
+            if len(init_instructions) > 1:
+                self.compile_gates(init_instructions[1:], tick + 2, circuit)
             ticks_needed = max(ticks_needed, 2 * len(init_instructions))
 
         return tick + ticks_needed
@@ -296,7 +296,7 @@ class Compiler(ABC):
             self,
             layer: int,
             detector_schedule: List[List[Detector]],
-            observables: Union[List[LogicalOperator],None],
+            observables: Union[List[LogicalOperator], None],
             tick: int,
             circuit: Circuit,
             code: Code
@@ -317,14 +317,14 @@ class Compiler(ABC):
         return tick
 
     def compile_round(
-        self,
-        round: int,
-        relative_round: int,
-        detector_schedule: List[List[Detector]],
-        observables: Union[List[LogicalOperator],None],
-        tick: int,
-        circuit: Circuit,
-        code: Code,
+            self,
+            round: int,
+            relative_round: int,
+            detector_schedule: List[List[Detector]],
+            observables: Union[List[LogicalOperator], None],
+            tick: int,
+            circuit: Circuit,
+            code: Code,
     ):
         self.add_start_of_round_noise(tick - 1, circuit, code)
 
@@ -356,14 +356,14 @@ class Compiler(ABC):
                 circuit.add_instruction(tick, noise.instruction([qubit]))
 
     def compile_final_measurements(
-        self,
-        final_measurements: Union[List[Pauli],None],
-        final_stabilizers: Union[Stabilizer,None],
-        logical_observables: Union[LogicalOperator ,None],
-        layer: int,
-        tick: int,
-        circuit: Circuit,
-        code: Code,
+            self,
+            final_measurements: Union[List[Pauli], None],
+            final_stabilizers: Union[Stabilizer, None],
+            logical_observables: Union[LogicalOperator, None],
+            layer: int,
+            tick: int,
+            circuit: Circuit,
+            code: Code,
     ):
         # TODO - allow measurements other than single data qubits
         #  measurements at the end? e.g. Pauli product measurements.
@@ -404,12 +404,12 @@ class Compiler(ABC):
             )
 
     def compile_final_detectors(
-        self,
-        final_checks: Dict[Qubit, Check],
-        final_stabilizers: List[Stabilizer],
-        layer: int,
-        circuit: Circuit,
-        code: Code,
+            self,
+            final_checks: Dict[Qubit, Check],
+            final_stabilizers: List[Stabilizer],
+            layer: int,
+            circuit: Circuit,
+            code: Code,
     ):
         round = layer * code.schedule_length
         if final_stabilizers is None:
@@ -425,7 +425,7 @@ class Compiler(ABC):
         circuit.measurer.add_detectors(final_detectors, round)
 
     def compile_final_detectors_from_stabilizers(
-        self, final_checks: Dict[Qubit, Check], final_stabilizers: List[Stabilizer]
+            self, final_checks: Dict[Qubit, Check], final_stabilizers: List[Stabilizer]
     ):
         final_detectors = []
         for stabilizer in final_stabilizers:
@@ -481,11 +481,11 @@ class Compiler(ABC):
         return final_detectors
 
     def compile_initial_logical_observables(
-        self,
-        logical_observables: Union[List[LogicalOperator],None],
-        final_checks: Union[Dict[Qubit, Check],None],
-        round: int,
-        circuit: Circuit,
+            self,
+            logical_observables: Union[List[LogicalOperator], None],
+            final_checks: Union[Dict[Qubit, Check], None],
+            round: int,
+            circuit: Circuit,
     ):
         # The Paulis that initially made up the logical observables that we
         # want to measure should be a subset of the final individual data
@@ -506,13 +506,13 @@ class Compiler(ABC):
 
     # TODO - generalise for native multi-qubit measurements.
     def measure_qubits(
-        self,
-        paulis: Iterable[Pauli],
-        checks: Iterable[Check],
-        round: int,
-        tick: Tick,
-        circuit: Circuit,
-        measurement_instructions: Dict[PauliLetter, List[str]] = None,
+            self,
+            paulis: Iterable[Pauli],
+            checks: Iterable[Check],
+            round: int,
+            tick: Tick,
+            circuit: Circuit,
+            measurement_instructions: Dict[PauliLetter, List[str]] = None,
     ):
         # This method can also be used by a syndrome extractor, which might
         # have its own measurement instructions.
@@ -527,17 +527,16 @@ class Compiler(ABC):
             # measured using an ancilla.
             instructions = [
                 Instruction([pauli.qubit], name)
-                for name in measurement_instructions[pauli.letter]
-            ]
-            gates = instructions[:-1]
+                for name in measurement_instructions[pauli.letter]]
             # Compile gates needed before the measurement
+            gates = instructions[:-1]
             measurement_tick = self.compile_gates(gates, tick, circuit)
             # Now do the actual measurement.
             measurement = instructions[-1]
             measurement.is_measurement = True
-            measurement.params = (
-                measurement_noise.params if measurement_noise is not None else ()
-            )
+            measurement.params = measurement_noise.params \
+                if measurement_noise is not None \
+                else ()
             circuit.measure(measurement, check, round, measurement_tick)
 
             ticks_needed = max(ticks_needed, 2 * len(instructions))
@@ -545,7 +544,7 @@ class Compiler(ABC):
         return tick + ticks_needed
 
     def compile_gates(
-        self, gates: List[Instruction], tick: Tick, circuit: Circuit
+            self, gates: List[Instruction], tick: Tick, circuit: Circuit
     ) -> Tick:
         """For compiling a list of gates sequentially. i.e. Even if the gates
         apply to different qubits, they will be compiled one after the other.

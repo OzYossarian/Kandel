@@ -8,12 +8,12 @@ from main.compiling.noise.noises.TwoQubitNoise import TwoQubitNoise
 
 class NoiseModel:
     def __init__(
-            self, initialisation: Union[OneQubitNoise , float , int] = None,
-            idling: Union[OneQubitNoise , float , int] = None,
-            data_qubit_start_round: Union[OneQubitNoise , float , int] = None,
-            one_qubit_gate: Union[OneQubitNoise , float , int] = None,
+            self, initialisation: Union[OneQubitNoise, float, int] = None,
+            idling: Union[OneQubitNoise, float, int] = None,
+            data_qubit_start_round: Union[OneQubitNoise, float, int] = None,
+            one_qubit_gate: Union[OneQubitNoise, float, int] = None,
             two_qubit_gate: Union[TwoQubitNoise, float, int] = None,
-            measurement: Union[OneBitNoise,float,int] = None):
+            measurement: Union[OneBitNoise, float, int] = None):
 
         self.initialisation: Union[OneQubitNoise, None] = \
             self.default_to_uniform_noise(initialisation, OneQubitNoise)
@@ -34,8 +34,8 @@ class NoiseModel:
         # noise of the required type with the given float/int as argument.
         # If not, user must have given either a Noise object or None; in
         # both cases, just return this.
-        if not isinstance(arg,float) and not isinstance(arg,int):
-           return arg #if not isintance
+        if not isinstance(arg, float) and not isinstance(arg, int):
+            return arg
         else:
             return noise.uniform(arg)
 
