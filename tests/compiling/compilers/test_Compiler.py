@@ -7,6 +7,7 @@ from pytest_mock import MockerFixture
 
 from main.building_blocks.Check import Check
 from main.building_blocks.Qubit import Qubit
+from main.building_blocks.detectors.Drum import Drum
 from main.building_blocks.detectors.Stabilizer import Stabilizer
 from main.building_blocks.logical.LogicalOperator import LogicalOperator
 from main.building_blocks.pauli.Pauli import Pauli
@@ -52,15 +53,15 @@ rep_logicals = [rep_code.logical_qubits[0].z]
 # - X test fails if measurement instructions don't end with M_
 # - X get_measurement_bases
 # - X get_initial_states
-# - compile_initialisation
+# - X compile_initialisation
 # - X initialize_qubits
 # - compile_layer
 # - compile_round
 # - X add_start_of_round_noise
 # - compile_final_measurements
 # - compile_final_detectors
-# - compile_final_detectors_from_stabilizers
-# - compile_final_detectors_from_measurements
+# - X compile_final_detectors_from_stabilizers
+# - X compile_final_detectors_from_measurements
 # - X compile_final_logical_operators
 # - X measure_qubits
 # - X compile_gates
@@ -483,6 +484,246 @@ def test_compiler_add_start_of_round_noise_works_otherwise(
         mocker.call(tick, MockInstruction(
             [qubit], noise.name, noise.params, is_noise=True))
         for qubit in data_qubits.values()])
+
+
+def test_compiler_compile_final_detectors_uses_stabilizers_when_given(
+        monkeypatch: MonkeyPatch, mocker: MockerFixture):
+    # Patch over the abstract methods so that we can instantiate a Compiler
+    monkeypatch.setattr(Compiler, '__abstractmethods__', set())
+    compiler = Compiler()
+    compiler.compile_final_detectors_from_stabilizers = mocker.Mock()
+    compiler.compile_final_detectors_from_measurements = mocker.Mock()
+
+    # Set final stabilizers to None
+    final_checks = {}
+    final_stabilizers = None
+    layer = 10
+
+    # Create mock objects as needed
+    circuit = mocker.Mock(spec=Circuit)
+    circuit.measurer = mocker.Mock(spec=Measurer)
+    code = mocker.Mock(spec=Code)
+    code.schedule_length = 5
+
+    # Call the method
+    compiler.compile_final_detectors(
+        final_checks, final_stabilizers, layer, circuit, code)
+
+    # Assert the right helper method was used
+    compiler.compile_final_detectors_from_stabilizers.assert_not_called()
+    compiler.compile_final_detectors_from_measurements.assert_called_with(
+        final_checks, 50, code)
+
+
+def test_compiler_compile_final_detectors_uses_measurements_otherwise(
+        monkeypatch: MonkeyPatch, mocker: MockerFixture):
+    # Patch over the abstract methods so that we can instantiate a Compiler
+    monkeypatch.setattr(Compiler, '__abstractmethods__', set())
+    compiler = Compiler()
+    compiler.compile_final_detectors_from_stabilizers = mocker.Mock()
+    compiler.compile_final_detectors_from_measurements = mocker.Mock()
+
+    # Set final checks to None
+    final_checks = None
+    final_stabilizers = []
+    layer = 10
+
+    # Create mock objects as needed
+    circuit = mocker.Mock(spec=Circuit)
+    circuit.measurer = mocker.Mock(spec=Measurer)
+    code = mocker.Mock(spec=Code)
+    code.schedule_length = 5
+
+    # Call the method
+    compiler.compile_final_detectors(
+        final_checks, final_stabilizers, layer, circuit, code)
+
+    # Assert the right helper method was used
+    compiler.compile_final_detectors_from_stabilizers.assert_called_with(
+        final_checks, final_stabilizers, code)
+    compiler.compile_final_detectors_from_measurements.assert_not_called()
+
+
+def test_compiler_compile_final_detectors_adds_detectors(
+        monkeypatch: MonkeyPatch, mocker: MockerFixture):
+    # Patch over the abstract methods so that we can instantiate a Compiler
+    monkeypatch.setattr(Compiler, '__abstractmethods__', set())
+    compiler = Compiler()
+    compiler.compile_final_detectors_from_stabilizers = mocker.Mock(
+        return_value=[])
+    compiler.compile_final_detectors_from_measurements = mocker.Mock(
+        return_value=[])
+
+    # Create data needed to call the method
+    final_checks = {}
+    final_stabilizers = None
+    layer = 10
+    circuit = mocker.Mock(spec=Circuit)
+    circuit.measurer = mocker.Mock(spec=Measurer)
+    circuit.measurer.add_detectors = mocker.Mock()
+    code = mocker.Mock(spec=Code)
+    code.schedule_length = 5
+
+    # Call the method
+    compiler.compile_final_detectors(
+        final_checks, final_stabilizers, layer, circuit, code)
+
+    circuit.measurer.add_detectors.assert_called_with([], 50)
+
+
+def test_compiler_compile_final_detectors_from_measurements_returns_empty_list_when_no_open_lids(
+        monkeypatch: MonkeyPatch, mocker: MockerFixture):
+    # Patch over the abstract methods so that we can instantiate a Compiler
+    monkeypatch.setattr(Compiler, '__abstractmethods__', set())
+    compiler = Compiler()
+
+    code = mocker.Mock(spec=Code)
+    code.schedule_length = 10
+
+    # Set up a detector with a closed lid
+    detector = mocker.Mock(spec=Drum)
+    detector.has_open_lid = mocker.Mock(return_value=(False, None))
+    code.detectors = [detector]
+
+    # Imagine we measure data qubits in Z basis at the end
+    qubits = [Qubit(0), Qubit(1)]
+    final_checks = {
+        qubit: Check([Pauli(qubit, PauliLetter('Z'))])
+        for qubit in qubits}
+
+    final_detectors = compiler.compile_final_detectors_from_measurements(
+        final_checks, 0, code)
+    assert final_detectors == []
+
+
+def test_compiler_compile_final_detectors_from_measurements_returns_empty_list_when_open_lid_has_wrong_product(
+        monkeypatch: MonkeyPatch, mocker: MockerFixture):
+    # Patch over the abstract methods so that we can instantiate a Compiler
+    monkeypatch.setattr(Compiler, '__abstractmethods__', set())
+    compiler = Compiler()
+
+    code = mocker.Mock(spec=Code)
+    code.schedule_length = 10
+    qubits = [Qubit(0), Qubit(1)]
+
+    # Set up a detector whose floor has product XX
+    detector = mocker.Mock(spec=Drum)
+    detector_check = Check([
+        Pauli(qubit, PauliLetter('X')) for qubit in qubits])
+    detector_checks = [(-1, detector_check)]
+    detector.has_open_lid = mocker.Mock(return_value=(True, detector_checks))
+    code.detectors = [detector]
+
+    # Imagine we measure data qubits in Z basis at the end
+    final_checks = {
+        qubit: Check([Pauli(qubit, PauliLetter('Z'))])
+        for qubit in qubits}
+
+    # No detector should be built, because one can't stick a ZZ lid on an XX floor.
+    final_detectors = compiler.compile_final_detectors_from_measurements(
+        final_checks, 0, code)
+    assert final_detectors == []
+
+
+def test_compiler_compile_final_detectors_from_measurements_builds_detector_otherwise(
+        monkeypatch: MonkeyPatch, mocker: MockerFixture):
+    # Patch over the abstract methods so that we can instantiate a Compiler
+    monkeypatch.setattr(Compiler, '__abstractmethods__', set())
+    compiler = Compiler()
+
+    final_detector = mocker.Mock()
+    drum_initialiser = mocker.Mock(return_value=final_detector)
+    monkeypatch.setattr(
+        'main.compiling.compilers.Compiler.Drum',
+        drum_initialiser)
+
+    code = mocker.Mock(spec=Code)
+    code.schedule_length = 10
+    qubits = [Qubit(0), Qubit(1)]
+
+    # Set up a detector whose floor has product ZZ
+    detector = mocker.Mock(spec=Drum)
+    detector.lid_end = 2
+    detector.anchor = None
+    detector_check = Check([
+        Pauli(qubit, PauliLetter('Z')) for qubit in qubits])
+    # Suppose this check is measured 4 rounds before the last check in the lid
+    detector_checks = [(-4, detector_check)]
+    detector.has_open_lid = mocker.Mock(return_value=(True, detector_checks))
+    code.detectors = [detector]
+
+    # Imagine we measure data qubits in Z basis at the end
+    final_checks = {
+        qubit: Check([Pauli(qubit, PauliLetter('Z'))])
+        for qubit in qubits}
+
+    # Should be able to build a final ZZ detector!
+    final_detectors = compiler.compile_final_detectors_from_measurements(
+        final_checks, 0, code)
+
+    # Check the detector is actually the one we were expecting
+    expected_floor = [(-2, detector_check)]
+    expected_lid = [(0, final_check) for final_check in final_checks.values()]
+    drum_initialiser.assert_called_with(
+        expected_floor, expected_lid, 0, detector.anchor)
+
+    assert final_detectors == [final_detector]
+
+
+def test_compiler_compile_final_detectors_from_stabilizers(
+        monkeypatch: MonkeyPatch, mocker: MockerFixture):
+
+    # Patch over the abstract methods so that we can instantiate a Compiler
+    monkeypatch.setattr(Compiler, '__abstractmethods__', set())
+    compiler = Compiler()
+
+    code = mocker.Mock(spec=Code)
+    code.schedule_length = 3
+    qubits = [Qubit(0), Qubit(1)]
+    final_checks = {
+        qubit: Check([Pauli(qubit, PauliLetter('Z'))])
+        for qubit in qubits}
+    check_in_final_stabilizer = Check([
+        Pauli(qubit, PauliLetter('Z')) for qubit in qubits])
+    # Suppose the check in this stabilizer is measured in the last round
+    # of the code's check schedule
+    final_stabilizers = [Stabilizer([(0, check_in_final_stabilizer)], 2)]
+
+    result = compiler.compile_final_detectors_from_stabilizers(
+        final_checks, final_stabilizers, code)
+
+    assert len(result) == 1
+    final_detector = result[0]
+    assert final_detector.floor == [(-1, check_in_final_stabilizer)]
+    assert final_detector.lid == [
+        (0, final_check) for final_check in final_checks.values()]
+    assert final_detector.end == 0
+
+
+def test_compiler_compile_final_detectors_from_stabilizers_raises_error_if_floor_and_lid_mismatch(
+        monkeypatch: MonkeyPatch, mocker: MockerFixture):
+    # Patch over the abstract methods so that we can instantiate a Compiler
+    monkeypatch.setattr(Compiler, '__abstractmethods__', set())
+    compiler = Compiler()
+
+    code = mocker.Mock(spec=Code)
+    code.schedule_length = 3
+    qubits = [Qubit(0), Qubit(1)]
+    # Measure all data qubits in X basis...
+    final_checks = {
+        qubit: Check([Pauli(qubit, PauliLetter('X'))])
+        for qubit in qubits}
+    # ... but try to build a detector with a ZZ floor
+    check_in_final_stabilizer = Check([
+        Pauli(qubit, PauliLetter('Z')) for qubit in qubits])
+    final_stabilizers = [Stabilizer([(0, check_in_final_stabilizer)], 2)]
+
+    expected_error = \
+        "Can't create a Drum where the floor and lid don't compare the same " \
+        "two Pauli products at different timesteps \(up to sign\)"
+    with pytest.raises(ValueError, match=expected_error):
+        compiler.compile_final_detectors_from_stabilizers(
+            final_checks, final_stabilizers, code)
 
 
 def test_compiler_measure_qubits_defaults_to_compiler_measurement_instructions(

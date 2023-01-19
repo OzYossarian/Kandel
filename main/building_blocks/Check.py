@@ -10,7 +10,7 @@ from main.utils.utils import coords_mid, coords_length, coords_minus, xor
 
 class Check(NiceRepr):
     def __init__(
-            self, paulis: Union[List[Pauli],Dict[Coordinates, Pauli]],
+            self, paulis: Union[List[Pauli], Dict[Coordinates, Pauli]],
             anchor: Coordinates = None, colour: Colour = None):
         """A Pauli operator to measure.
         

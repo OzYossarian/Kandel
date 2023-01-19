@@ -11,7 +11,8 @@ TimedCheck = Tuple[int, Check]
 
 
 class Detector(NiceRepr):
-    """A set of checks whose Pauli product should be deterministic in the absence of any noise."""
+    """A set of checks whose measurement outcomes' product should be
+    deterministic in the absence of any noise."""
     
     def __init__(
             self,

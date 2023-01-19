@@ -117,6 +117,12 @@ class Compiler(ABC):
                 "final_stabilizers - pick one!"
             )
 
+        if final_stabilizers is not None:
+            # Checks within final stabilizers should be things we'll
+            # actually measure as part of the code's check schedule.
+            self._assert_final_stabilizers_valid(final_stabilizers)
+
+
         initial_detector_schedules, tick, circuit = self.compile_initialisation(
             code, initial_states, initial_stabilizers)
 
@@ -357,7 +363,7 @@ class Compiler(ABC):
             self,
             final_measurements: Union[List[Pauli], None],
             final_stabilizers: Union[List[Stabilizer], None],
-            observables: Union[LogicalOperator, None],
+            observables: Union[List[LogicalOperator], None],
             layer: int,
             tick: int,
             circuit: Circuit,
@@ -403,8 +409,8 @@ class Compiler(ABC):
 
     def compile_final_detectors(
             self,
-            final_checks: Dict[Qubit, Check],
-            final_stabilizers: List[Stabilizer],
+            final_checks: Union[Dict[Qubit, Check], None],
+            final_stabilizers: Union[List[Stabilizer], None],
             layer: int,
             circuit: Circuit,
             code: Code,
@@ -412,26 +418,31 @@ class Compiler(ABC):
         round = layer * code.schedule_length
         if final_stabilizers is None:
             final_detectors = self.compile_final_detectors_from_measurements(
-                final_checks, round, code
-            )
+                final_checks, round, code)
         else:
             final_detectors = self.compile_final_detectors_from_stabilizers(
-                final_checks, final_stabilizers
-            )
+                final_checks, final_stabilizers, code)
 
         # Finally, compile these detectors to the circuit.
         circuit.measurer.add_detectors(final_detectors, round)
 
     def compile_final_detectors_from_stabilizers(
-            self, final_checks: Dict[Qubit, Check], final_stabilizers: List[Stabilizer]
-    ):
+            self, final_checks: Dict[Qubit, Check],
+            final_stabilizers: List[Stabilizer],
+            code: Code):
+        # Note - no need for extra validation here. We checked earlier that
+        # the final stabilizers actually consist of checks from the code's
+        # check schedule. And we derived the required single qubit data
+        # measurements from these final stabilizers.
         final_detectors = []
         for stabilizer in final_stabilizers:
             qubits = [pauli.qubit for pauli in stabilizer.product.paulis]
             measurements = [(0, final_checks[qubit]) for qubit in qubits]
-            # TODO - some sanity checks here perhaps, that the checks in the
-            #  drum's floor actually exist, etc.
-            floor = stabilizer.timed_checks
+            floor = [
+                # Figure out how many rounds ago each check was measured
+                (stabilizer.end + t - code.schedule_length, check)
+                for (t, check) in
+                stabilizer.timed_checks]
             drum = Drum(floor, measurements, 0, stabilizer.anchor)
             final_detectors.append(drum)
         return final_detectors
@@ -571,3 +582,16 @@ class Compiler(ABC):
                 circuit.add_instruction(gate_tick + 1, noise_instruction)
         # Return the next usable even tick
         return tick + 2 * len(gates)
+
+    def _assert_final_stabilizers_valid(
+            self, final_stabilizers: List[Stabilizer], code: Code):
+        for stabilizer in final_stabilizers:
+            for t, check in stabilizer.timed_checks:
+                if check not in code.check_schedule[stabilizer.end + t]:
+                    raise ValueError(
+                        f"Requested that a final detector is built using a "
+                        f"check that isn't in the code's check schedule! "
+                        f"The check is {check}, and is part of stabilizer "
+                        f"{stabilizer}. The code's check schedule is "
+                        f"{code.check_schedule}.")
+

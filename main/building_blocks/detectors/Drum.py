@@ -12,8 +12,9 @@ class Drum(Detector):
         """Detector with a drum shape.
 
         Specific type of Detector, where the same Pauli product (up to +/-
-        sign) is measured in two different rounds. Comparing these two
-        outcomes should thus give a deterministic result.
+        sign) is measured across different rounds, and is not destabilized
+        in the meantime. Comparing these two outcomes should thus give a
+        deterministic result.
 
         Args:
             floor: 
