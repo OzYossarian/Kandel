@@ -16,10 +16,6 @@ from main.compiling.Circuit import Circuit
 from main.compiling.compilers.DetectorInitialiser import DetectorInitialiser
 from main.compiling.noise.models.NoNoise import NoNoise
 from main.compiling.noise.models.NoiseModel import NoiseModel
-from main.compiling.noise.noises.Noise import Noise
-from main.compiling.syndrome_extraction.controlled_gate_orderers.TrivialOrderer import (
-    TrivialOrderer,
-)
 from main.compiling.syndrome_extraction.extractors.SyndromeExtractor import (
     SyndromeExtractor,
 )
@@ -184,8 +180,8 @@ class Compiler(ABC):
     def compile_initialisation(
             self,
             code: Code,
-            initial_states: Dict[Qubit, State],
-            initial_stabilizers: List[Stabilizer],
+            initial_states: Union[Dict[Qubit, State], None],
+            initial_stabilizers: Union[List[Stabilizer], None],
     ):
         # For now, always start a new circuit from scratch. Later, allow
         # compilation onto an existing circuit (e.g. in a lattice surgery or
@@ -199,13 +195,15 @@ class Compiler(ABC):
         if initial_stabilizers is not None:
             initial_states = self.get_initial_states(initial_stabilizers)
 
-        if len(initial_states) != len(code.data_qubits):
+        if set(initial_states.keys()) != set(code.data_qubits.keys()):
             raise ValueError(
-                "Some data qubits' initial states either aren't given or "
-                "aren't determined by the given initial stabilizers! Please "
-                "give a complete set of desired initial states or desired "
-                "stabilizers for the first round of measurements."
-            )
+                f"Set of data qubits whose initial states were either given "
+                f"or could be determined differs from the set of all data "
+                f"qubits. Please give a complete set of desired initial states "
+                f"or desired stabilizers for the first round of measurements. "
+                f"Set of all data qubits is {list(code.data_qubits.keys())}. "
+                f"Set of data qubits whose initial states could be determined "
+                f"is {list(initial_states.keys())}")
 
         # Initialise data qubits, and set the 'current' tick to be the tick
         # we're on after all data qubits have been initialised.

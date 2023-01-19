@@ -20,6 +20,7 @@ from main.QPUs.SquareLatticeQPU import SquareLatticeQPU
 from main.codes.RepetitionCode import RepetitionCode
 from main.codes.RotatedSurfaceCode import RotatedSurfaceCode
 from main.compiling.compilers.Compiler import Compiler
+from main.compiling.compilers.DetectorInitialiser import DetectorInitialiser
 from main.compiling.noise.models import CircuitLevelNoise, CodeCapacityBitFlipNoise, PhenomenologicalNoise
 from main.compiling.noise.models.NoNoise import NoNoise
 from main.compiling.syndrome_extraction.controlled_gate_orderers.RotatedSurfaceCodeOrderer import \
@@ -60,7 +61,7 @@ rep_logicals = [rep_code.logical_qubits[0].z]
 # - compile_final_detectors
 # - compile_final_detectors_from_stabilizers
 # - compile_final_detectors_from_measurements
-# - compile_final_logical_operators
+# - X compile_final_logical_operators
 # - X measure_qubits
 # - X compile_gates
 # - X - fails if gate size not 1 or 2
@@ -142,6 +143,163 @@ def test_compiler_get_measurement_bases_and_initial_states_returns_positive_sign
 
     assert measurement_bases == [Pauli(qubit, PauliLetter('X'))]
     assert initial_states == {qubit: State.Plus}
+
+
+def test_compiler_compile_initialisation_adds_ancilla_qubits(
+        monkeypatch: MonkeyPatch, mocker: MockerFixture):
+    # Patch over the abstract methods so that we can instantiate a Compiler
+    monkeypatch.setattr(Compiler, '__abstractmethods__', set())
+    compiler = Compiler()
+    compiler.add_ancilla_qubits = mocker.Mock()
+    compiler.initialize_qubits = mocker.Mock()
+    detector_initialiser = mocker.Mock(spec=DetectorInitialiser)
+    monkeypatch.setattr(
+        'main.compiling.compilers.Compiler.DetectorInitialiser',
+        mocker.Mock(return_value=detector_initialiser))
+
+    # Set up data to pass to method
+    code = mocker.Mock(spec=Code)
+    code.data_qubits = {}
+    initial_states = {}
+    initial_stabilizers = None
+    compiler.compile_initialisation(code, initial_states, initial_stabilizers)
+
+    compiler.add_ancilla_qubits.assert_called_with(code)
+
+
+def test_compiler_compile_initialisation_gets_initial_states_if_stabilizers_given(
+        monkeypatch: MonkeyPatch, mocker: MockerFixture):
+    # Patch over the abstract methods so that we can instantiate a Compiler
+    monkeypatch.setattr(Compiler, '__abstractmethods__', set())
+    compiler = Compiler()
+    compiler.add_ancilla_qubits = mocker.Mock()
+    compiler.initialize_qubits = mocker.Mock()
+    detector_initialiser = mocker.Mock(spec=DetectorInitialiser)
+    monkeypatch.setattr(
+        'main.compiling.compilers.Compiler.DetectorInitialiser',
+        mocker.Mock(return_value=detector_initialiser))
+
+    # Pass 'None' as initial states: instead use a list of stabilizers
+    code = mocker.Mock(spec=Code)
+    code.data_qubits = {}
+    initial_states = None
+    initial_stabilizers = []
+    # Want get_initial_states to return an empty dictionary,
+    # to match the code's data qubits
+    compiler.get_initial_states = mocker.Mock(return_value={})
+    compiler.compile_initialisation(code, initial_states, initial_stabilizers)
+
+    compiler.get_initial_states.assert_called_with(initial_stabilizers)
+
+
+def test_compiler_compile_initialisation_raises_error_if_initial_states_wrong(
+        monkeypatch: MonkeyPatch, mocker: MockerFixture):
+    # Patch over the abstract methods so that we can instantiate a Compiler
+    monkeypatch.setattr(Compiler, '__abstractmethods__', set())
+    compiler = Compiler()
+    compiler.add_ancilla_qubits = mocker.Mock()
+    compiler.initialize_qubits = mocker.Mock()
+    detector_initialiser = mocker.Mock(spec=DetectorInitialiser)
+    monkeypatch.setattr(
+        'main.compiling.compilers.Compiler.DetectorInitialiser',
+        mocker.Mock(return_value=detector_initialiser))
+
+    code = mocker.Mock(spec=Code)
+    # Make initial states different to code's data qubits
+    code.data_qubits = {0: Qubit(0)}
+    initial_states = {}
+    initial_stabilizers = None
+
+    expected_error = \
+        "Set of data qubits whose initial states were either given or " \
+        "could be determined differs from the set of all data qubits"
+    with pytest.raises(ValueError, match=expected_error):
+        compiler.compile_initialisation(
+            code, initial_states, initial_stabilizers)
+
+
+def test_compiler_compile_initialisation_initialises_qubits(
+        monkeypatch: MonkeyPatch, mocker: MockerFixture):
+    # Patch over the abstract methods so that we can instantiate a Compiler
+    monkeypatch.setattr(Compiler, '__abstractmethods__', set())
+    compiler = Compiler()
+    compiler.add_ancilla_qubits = mocker.Mock()
+    compiler.initialize_qubits = mocker.Mock()
+    detector_initialiser = mocker.Mock(spec=DetectorInitialiser)
+    circuit = mocker.Mock(spec=Circuit)
+    monkeypatch.setattr(
+        'main.compiling.compilers.Compiler.DetectorInitialiser',
+        mocker.Mock(return_value=detector_initialiser))
+    monkeypatch.setattr(
+        'main.compiling.compilers.Compiler.Circuit',
+        mocker.Mock(return_value=circuit))
+
+    code = mocker.Mock(spec=Code)
+    code.data_qubits = {}
+    initial_states = {}
+    initial_stabilizers = None
+    compiler.compile_initialisation(code, initial_states, initial_stabilizers)
+
+    compiler.initialize_qubits.assert_called_with(initial_states, 0, circuit)
+
+
+def test_compiler_compile_initialisation_gets_initial_detectors(
+        monkeypatch: MonkeyPatch, mocker: MockerFixture):
+    # Patch over the abstract methods so that we can instantiate a Compiler
+    monkeypatch.setattr(Compiler, '__abstractmethods__', set())
+    compiler = Compiler()
+    compiler.add_ancilla_qubits = mocker.Mock()
+    compiler.initialize_qubits = mocker.Mock()
+    detector_initialiser = mocker.Mock(spec=DetectorInitialiser)
+    monkeypatch.setattr(
+        'main.compiling.compilers.Compiler.DetectorInitialiser',
+        mocker.Mock(return_value=detector_initialiser))
+
+    # Set up data to pass to method
+    code = mocker.Mock(spec=Code)
+    code.data_qubits = {}
+    initial_states = {}
+    initial_stabilizers = None
+    compiler.compile_initialisation(code, initial_states, initial_stabilizers)
+
+    detector_initialiser.get_initial_detectors.assert_called_with(
+        initial_states, initial_stabilizers)
+
+
+def test_compiler_compile_initialisation_returns_correct_data(
+        monkeypatch: MonkeyPatch, mocker: MockerFixture):
+    # Patch over the abstract methods so that we can instantiate a Compiler
+    monkeypatch.setattr(Compiler, '__abstractmethods__', set())
+    compiler = Compiler()
+    compiler.add_ancilla_qubits = mocker.Mock()
+
+    # Set up mock return values from a few methods
+    tick = 10
+    compiler.initialize_qubits = mocker.Mock(return_value=tick)
+
+    detector_initialiser = mocker.Mock(spec=DetectorInitialiser)
+    initial_detector_schedules = [[], []]
+    detector_initialiser.get_initial_detectors = mocker.Mock(
+        return_value=initial_detector_schedules)
+    monkeypatch.setattr(
+        'main.compiling.compilers.Compiler.DetectorInitialiser',
+        mocker.Mock(return_value=detector_initialiser))
+
+    circuit = mocker.Mock(spec=Circuit)
+    monkeypatch.setattr(
+        'main.compiling.compilers.Compiler.Circuit',
+        mocker.Mock(return_value=circuit))
+
+    # Set up data to pass to method
+    code = mocker.Mock(spec=Code)
+    code.data_qubits = {}
+    initial_states = {}
+    initial_stabilizers = None
+
+    result = compiler.compile_initialisation(
+        code, initial_states, initial_stabilizers)
+    expected = (initial_detector_schedules, tick, circuit)
+    assert result == expected
 
 
 def test_compiler_initialize_qubits_defaults_to_correct_initialisation_instructions(
