@@ -13,8 +13,6 @@ from main.utils.utils import coords_mid, xor, coords_minus, embed_coords
 from main.codes.tic_tac_toe.TicTacToeCode import TicTacToeCode
 from main.utils.Colour import Red, Green, Blue
 
-def isprime(number):
-    
 class GaugeTicTacToeCode(ToricHexagonalCode):
     def __init__(self, distance: int, tic_tac_toe_route: TicTacToeRoute):
         # Initialise parent class immediately so that we have data qubits
