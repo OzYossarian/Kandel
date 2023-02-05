@@ -33,6 +33,11 @@ import stim
 
 
 class Compiler(ABC):
+    """Base class for all compilers.
+
+    At the moment, this compiler can be used to create a memory experiment 
+    using the function compile_to_circuit.
+    """
     def __init__(
             self,
             noise_model: NoiseModel = None,
@@ -106,6 +111,38 @@ class Compiler(ABC):
         final_stabilizers: List[Stabilizer] = None,
         logical_observables: List[LogicalOperator] = None,
     ) -> Circuit():
+        """Compiles a circuit for the given code.
+
+        Args:
+            code: The code to compile a circuit for.
+            layers: The number of layers to compile. One layers consits of
+                performing the entire check schedule of a code once.
+            initial_states: The initial states of the data qubits. If not
+                provided, will use initial_stabilizers to determine the
+                initial state.
+            initial_stabilizers: If initial_states is not provided,
+                this can be used to determine the initial states of the data
+                qubits.
+            final_measurements: The measurements to perform at the end of the
+                circuit. If not provided, will use final_stabilizers to
+                determine the measurements.
+            final_stabilizers: If final_measurements is not provided, this can
+                be used to determine the measurements to perform at the end of
+                the circuit.
+            logical_observables: The logical observables to construnct from
+                the final measurements.
+
+                                
+        Raises:
+            ValueError: If neither initial_states nor initial_stabilizers are
+                provided.
+            ValueError: If both final_measurements and final_stabilizers are
+                provided.
+            ValueError: If the number of layers is not a positive integer.
+
+        Returns:
+            An instance of the Circuit class.
+        """
 
         # TODO - actually might make more sense to only allow
         #  initial_stabilizers and final_stabilizers?? Is more general! But no
@@ -187,6 +224,24 @@ class Compiler(ABC):
         initial_states: Dict[Qubit, State],
         initial_stabilizers: List[Stabilizer],
     ):
+        """Compiles the initialisation of the circuit.
+
+        Args:
+            code: The code to compile an initialisation circuit for.
+            initial_states: The initial states of the data qubits. If not
+                provided, will use initial_stabilizers to determine the
+                initial state.
+            initial_stabilizers: If initial_states is not provided,
+                this can be used to determine the initial states of the data
+                qubits.
+    
+        Returns:
+            A tuple containing:
+                - A list of detector schedules, one for each layer in which
+                    'lid-only' detectors exist.
+                - The tick at which the circuit should start.
+                - The circuit to compile the initialisation onto.
+        """
         # For now, always start a new circuit from scratch. Later, allow
         # compilation onto an existing circuit (e.g. in a lattice surgery or
         # gauge fixing protocol),
@@ -264,6 +319,17 @@ class Compiler(ABC):
         circuit: Circuit,
         initialisation_instructions: Dict[State, List[str]] = None,
     ):
+        """Initialises the data qubits in the given states.
+        
+        Args:
+            initial_states: The states to initialise the data qubits in.
+            tick: The tick at which to start initialising the qubits.
+            circuit: The circuit to initialise the qubits on.
+            initialisation_instructions: The instructions to use to initialise
+                the qubits in the given states. If not provided, will use the
+                default initialisation instructions specified in
+                self.initialisation_instructions
+        """
         # This method can also be used by a syndrome extractor, which might
         # have its own initialisation instructions.
         if initialisation_instructions is None:
@@ -301,6 +367,21 @@ class Compiler(ABC):
             circuit: Circuit,
             code: Code
     ) -> int:
+        """Compiles one layer of a code's check schedule.
+
+        Args:
+            layer: The layer of the check schedule to compile.
+            detector_schedule: The detector schedule to compile. This is not
+                fixed as the detector schedule of the first round is different
+                then subsequent rounds.
+            observables: The logical observables to measure.
+            tick: The tick at which to start compiling the layer.
+            circuit: The circuit to compile the layer on.
+            code: The code to compile the layer for.
+
+        Returns:
+            The tick at which the last gates of the layer were compiled.
+        """
         for relative_round in range(code.schedule_length):
             # Compile one round of checks, and note down the final tick
             # used, then start the next round of checks from this tick.
@@ -365,6 +446,30 @@ class Compiler(ABC):
         circuit: Circuit,
         code: Code,
     ):
+        """Compile the final measurements of the circuit.
+        
+        This method is called at the end of compile_to_circuit. It is
+        assumed that the circuit has already been compiled up to this point,
+        and that the circuit is in the ground state of the final stabilizers.
+
+        Args:
+            final_measurements: The single qubit Paulis to measure at the end
+                of the circuit. If None, the final measurements depend on the
+                given final stabilizers.
+            final_stabilizers: The stabilizers to measure at the end of the
+                circuit. If None, the final measurements are given by
+                final_measurements. Note that not both final_measurements and
+                final_stabilizers can be None.
+            logical_observables: The logical observables to construct from the
+                final measurements.
+            layer: The layer of the circuit to compile.
+            tick: The tick to start compiling at.
+            circuit: The circuit to compile to.
+            code: The code to compile for.
+
+        Returns:
+            The tick after the final measurements have been compiled.
+        """
         # TODO - allow measurements other than single data qubits
         #  measurements at the end? e.g. Pauli product measurements.
         round = layer * code.schedule_length
@@ -514,6 +619,19 @@ class Compiler(ABC):
         circuit: Circuit,
         measurement_instructions: Dict[PauliLetter, List[str]] = None,
     ):
+        """
+
+        Args:
+            paulis: 
+            checks: _description_
+            round: _description_
+            tick: _description_
+            circuit: _description_
+            measurement_instructions: _description_. Defaults to None.
+
+        Returns:
+            _description_
+        """
         # This method can also be used by a syndrome extractor, which might
         # have its own measurement instructions.
         if measurement_instructions is None:
@@ -549,6 +667,11 @@ class Compiler(ABC):
     ) -> Tick:
         """For compiling a list of gates sequentially. i.e. Even if the gates
         apply to different qubits, they will be compiled one after the other.
+
+        Args:
+            gates: List of gates to compile.
+            tick: Tick to start compiling from.
+            circuit: Circuit to compile to.
 
         Returns: next usable even tick after these gates have been compiled.
         """
