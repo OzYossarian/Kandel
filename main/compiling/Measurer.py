@@ -117,16 +117,19 @@ class Measurer:
 
         # Can now actually create corresponding Stim instructions.
         instructions = []
+
         for detector, round in detectors:
             instructions.append(self.detector_to_stim(detector, round, track_coords))
-            #   stop
+
         for observable, checks in observable_multipliers.items():
             targets = [self.measurement_target(check, round) for check, round in checks]
             index = self.observable_index(observable)
             instructions.append(
                 stim.CircuitInstruction("OBSERVABLE_INCLUDE", targets, [index])
             )
-
+        def sum_of_coords(instruction):
+            return(sum(instruction.gate_args_copy()))
+        instructions.sort(key=sum_of_coords)
         return instructions
 
     def detector_to_stim(self, detector: Detector, round: int, track_coords: bool):
@@ -155,7 +158,6 @@ class Measurer:
         )
         if final_checks_measured:
             # First criteria met...
-
             measurement_numbers = tuple(
                 sorted(
                     [

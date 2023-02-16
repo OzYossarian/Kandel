@@ -70,6 +70,8 @@ class TicTacToeLogicalQubit(LogicalQubit):
             Z_boson_init: Colour and pauli letter of logical Z boson.
         """
         boson_colour, boson_letter = self.code.tic_tac_toe_route[0]
+
+        # In gauge tictactoe codes the same boson can be condonsed in the first two rounds.
         if self.code.tic_tac_toe_route[0] == self.code.tic_tac_toe_route[1]:
             (next_colour, next_letter) = self.code.tic_tac_toe_route[2]
         else:
@@ -78,7 +80,7 @@ class TicTacToeLogicalQubit(LogicalQubit):
         next_row = rest_of_row(next_colour, next_letter)
         next_column = rest_of_column(next_colour, next_letter)
 
-        if boson_letter.letter == "X":
+        if boson_letter.letter == "X" or boson_letter.letter == "Y":
             X_equivalent_bosons = rest_of_row(boson_colour, boson_letter)
             X_boson_init = set(X_equivalent_bosons).intersection(next_column).pop()
 

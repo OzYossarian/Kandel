@@ -13,7 +13,7 @@ from main.utils.utils import coords_mid, xor, coords_minus, embed_coords
 from main.codes.tic_tac_toe.TicTacToeCode import TicTacToeCode
 from main.utils.Colour import Red, Green, Blue
 
-class GaugeTicTacToeCode(ToricHexagonalCode):
+class GaugeColourTicTacToeCode(ToricHexagonalCode):
     def __init__(self, distance: int, tic_tac_toe_route: TicTacToeRoute):
         # Initialise parent class immediately so that we have data qubits
         # etc. available for use in the rest of this init.
@@ -277,16 +277,17 @@ class GaugeTicTacToeCode(ToricHexagonalCode):
                         # This is the 'bottom' of a potential detector cell
                         floor = []
                         for index,edge in enumerate(stabilizing_edges):
+                            
                             if index>1:
                                     floor.extend([
                                         ((t + edge[0] - u), edge[1], edge[2])])
                             else:
-                                if (t/2) % 2 == 0:
-                                    floor.extend([
-                                        ((t + edge[0] - u), edge[1], edge[2])])
-                                else:
-                                    floor.extend([
-                                        ((t + edge[0] - u + 1), edge[1], edge[2])])
+#                                if (t/2) % 2 == 0:
+ #                                   floor.extend([
+  #                                      ((t + edge[0] - u), edge[1], edge[2])])
+   #                             else:
+                                floor.extend([
+                                    ((t + edge[0] - u + 1), edge[1], edge[2])])
                     else:
                         # This is the 'lid' of a detector cell and the
                         # 'bottom' of a potential next detector cell.
@@ -295,7 +296,6 @@ class GaugeTicTacToeCode(ToricHexagonalCode):
                             for v, c, l in stabilizing_edges]
                         lid=detector_face
                         blueprint = TicTacToeDrumBlueprint(length_tic_tac_toe_route, t, floor, lid)
-
                         detector_blueprints.append(blueprint)
 
                         if floor[0][0] % 2==0:
@@ -355,7 +355,10 @@ class GaugeTicTacToeCode(ToricHexagonalCode):
                     drum_anchor = embed_coords(anchor, 3)
 
                     detector = Drum(floor, lid, blueprint.learned, drum_anchor)
-                    detectors[blueprint.learned].append(detector)
+                    if detector.floor_product.word.word[0] == 'Y':
+                        pass
+                    else:
+                        detectors[blueprint.learned].append(detector)
 
         return detectors
 

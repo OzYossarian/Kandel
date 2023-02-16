@@ -292,11 +292,13 @@ class Compiler(ABC):
         for qubit, state in initial_states.items():
             # Get the instructions needed to initialise in the given state
             init_instructions = [
-                Instruction([qubit], name)
+                Instruction([qubit], name, is_initialization=True)
                 for name in initialisation_instructions[state]
             ]
+
             # Initialise with a reset gate and add noise if needed
             circuit.initialise(tick, init_instructions[0])
+            
             if noise is not None:
                 noise_instruction = noise.instruction([qubit])
                 circuit.add_instruction(tick + 1, noise_instruction)
@@ -330,6 +332,7 @@ class Compiler(ABC):
                 code,
             )
         return tick
+
 
     def compile_round(
         self,

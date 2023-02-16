@@ -41,7 +41,7 @@ def test_update():
     pauli_letter_of_checks = set((pauli.letter for check in checks_t1 for pauli in check.paulis.values())).pop()
     assert coords_of_checks == {(6,4),(8,2),(6,8),(8,10)}
 
-    gauge_hcc_code = GaugeHoneycombCode(4) 
+    gauge_hcc_code = GaugeHoneycombCode(4,2) 
     logical_qubit_gauge_hcc_Z_vert = TicTacToeLogicalQubit(vertical_pauli_letter=PauliLetter('Z'),
                                                             horizontal_pauli_letter=PauliLetter('X'), code=gauge_hcc_code)
     logical_op_gauge_hcc_X_hor = logical_qubit_gauge_hcc_Z_vert.x
@@ -58,8 +58,6 @@ def test_update():
     coords_of_checks = set((pauli.qubit.coords for check in checks_t2 for pauli in check.paulis.values()))
 
     assert coords_of_checks == {(0,6),(8,6),(12,6),(20,6)}
-    # hm not good!
-
 
 hcc_code = HoneycombCode(4) 
 logical_qubit_hcc_Z_vert = TicTacToeLogicalQubit(vertical_pauli_letter=PauliLetter('Z'),horizontal_pauli_letter=PauliLetter('X'), code=hcc_code)
@@ -72,7 +70,7 @@ def test_at_round():
     coords_of_logical = set((pauli.qubit.coords for pauli in logical_op_hcc_X_hor.at_round(1)))
     assert coords_of_logical == {(0,6),(8,6),(12,6),(20,6)}
 
-    gauge_hcc_code = GaugeHoneycombCode(4) 
+    gauge_hcc_code = GaugeHoneycombCode(4,2) 
     logical_qubit_gauge_hcc_Z_vert = TicTacToeLogicalQubit(vertical_pauli_letter=PauliLetter('Z'),
                                                             horizontal_pauli_letter=PauliLetter('X'), code=gauge_hcc_code)
     logical_op_gauge_hcc_X_hor = logical_qubit_gauge_hcc_Z_vert.x
@@ -101,7 +99,7 @@ def test_at_round():
         coords_of_logical = set((pauli.qubit.coords for pauli in logical_op_gauge_hcc_X_hor.at_round(i)))
 
 
-    gauge_hcc_code = GaugeHoneycombCode(4) 
+    gauge_hcc_code = GaugeHoneycombCode(4,2) 
     logical_qubit_gauge_hcc_Z_vert = TicTacToeLogicalQubit(vertical_pauli_letter=PauliLetter('Z'),
                                                             horizontal_pauli_letter=PauliLetter('X'), code=gauge_hcc_code)
     logical_op_gauge_hcc_X_hor = logical_qubit_gauge_hcc_Z_vert.x

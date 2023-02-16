@@ -10,7 +10,8 @@ class Instruction(NiceRepr):
     def __init__(
             self, qubits: List[Qubit], name: str,
             params: Tuple[float, ...] = (), is_measurement: bool = False,
-            is_noise: bool = False, targets: List[stim.GateTarget] = None):
+            is_initialization: bool = False, is_noise: bool = False,
+            targets: List[stim.GateTarget] = None):
         """
 
         Args:
@@ -26,7 +27,12 @@ class Instruction(NiceRepr):
                 Defaults to ().
             is_measurement:
                 Whether this instruction represents a measurement.
-                Defaults to False.
+                Defaults to False. If the name is equal MX, MY or MZ, then
+                this is set to True.
+            is_initialization:
+                Whether this instruction represents an initialization.
+                Defaults to False. If the name is equal to R, RX, RY or RZ,
+                then this is set to True.
             is_noise:
                 Whether this instruction represents a noise channel.
                 Defaults to False.
@@ -45,12 +51,16 @@ class Instruction(NiceRepr):
         self.name = name
         self.params = params
         self.is_measurement = is_measurement
+        if self.name in ['MX', 'MY', 'MZ']:
+            self.is_measurement = True
+
+        self.is_initialization = is_initialization
+        if self.name in ['R', 'RX', 'RY', 'RZ']:
+            self.is_initialization = True
         self.is_noise = is_noise
         self.targets = targets
         # TODO - if targets is not None, should we check that its length is
         #  equal to the qubit length?
-        # TODO - add a 'duration' attribute and adjust idling noise
-        #  accordingly
 
         repr_keys = ['name', 'params', 'qubits']
         if self.targets is not None:

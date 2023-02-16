@@ -17,53 +17,50 @@ from main.compiling.noise.noises.OneQubitNoise import OneQubitNoise
 from main.compiling.syndrome_extraction.controlled_gate_orderers.RotatedSurfaceCodeOrderer import (
     RotatedSurfaceCodeOrderer,
 )
-from main.compiling.syndrome_extraction.extractors.ancilla_per_check.mixed.CxCyCzExtractor import CxCyCzExtractor
+from main.compiling.syndrome_extraction.extractors.ancilla_per_check.mixed.CxCyCzExtractor import (
+    CxCyCzExtractor,
+)
 from main.utils.enums import State
+
 
 single_qubit_circuit = Circuit()
 qubit = Qubit(1)
-single_qubit_circuit.initialise(0, Instruction([qubit], "R"))
+single_qubit_circuit.initialise(0, Instruction([qubit], "R", is_initialization=True))
 single_qubit_circuit.add_instruction(2, Instruction([qubit], "Z"))
 
 two_qubit_circuit = Circuit()
 qubit_1 = Qubit(1)
 qubit_2 = Qubit(2)
-two_qubit_circuit.initialise(0, Instruction([qubit_1], "R"))
+two_qubit_circuit.initialise(0, Instruction([qubit_1], "R", is_initialization=True))
 two_qubit_circuit.add_instruction(2, Instruction([qubit_1], "Z"))
-two_qubit_circuit.initialise(0, Instruction([qubit_2], "R"))
+two_qubit_circuit.initialise(0, Instruction([qubit_2], "R", is_initialization=True))
 
 
-def create_rsc_circuit():
-    code = RotatedSurfaceCode(3)
-    syndrome_extractor = CxCyCzExtractor(RotatedSurfaceCodeOrderer())
-    noise_model = CodeCapacityBitFlipNoise(0.1)
-    rsc_qubits = list(code.data_qubits.values())
-    rsc_initials = {qubit: State.Zero for qubit in rsc_qubits}
-    compiler = AncillaPerCheckCompiler(noise_model, syndrome_extractor)
-    initial_detector_schedules, tick, rsc_circuit = compiler.compile_initialisation(
-        code, rsc_initials, None
-    )
+circuit_with_resonator_idling = Circuit()
+qubit_1 = Qubit(1)
+qubit_2 = Qubit(2)
+pauli_q1 = Pauli(qubit_1, PauliLetter("Z", 1))
+pauli_q2 = Pauli(qubit_2, PauliLetter("Z", 1))
+check_q1_Z = Check([pauli_q1], anchor=None)
+check_q2_Z = Check([pauli_q2], anchor=None)
 
-    rsc_finals = [Pauli(qubit, PauliLetter('Z')) for qubit in rsc_qubits]
-    tick = compiler.compile_layer(
-        0,
-        initial_detector_schedules[0],
-        [code.logical_qubits[0].z],
-        tick - 2,
-        rsc_circuit,
-        code,
-    )
-    compiler.compile_final_measurements(
-        rsc_finals,
-        None,
-        [code.logical_qubits[0].z],
-        1,
-        tick - 2,
-        rsc_circuit,
-        code,
-    )
-    return rsc_circuit
+circuit_with_resonator_idling.initialise(
+    0, Instruction([qubit_1], "R", is_initialization=True)
+)
+circuit_with_resonator_idling.add_instruction(8, Instruction([qubit_1], "Z"))
+circuit_with_resonator_idling.measure(
+    Instruction([qubit_1], "M", is_measurement=True), check_q1_Z, 0, 10
+)
+circuit_with_resonator_idling.initialise(
+    2, Instruction([qubit_2], "R", is_initialization=True)
+)
 
+circuit_with_resonator_idling.add_instruction(4, Instruction([qubit_1], "Z"))
+
+
+circuit_with_resonator_idling.measure(
+    Instruction([qubit_2], "M", is_measurement=True), check_q2_Z, 0, 6
+)
 
 def test_to_circ_string():
     assert single_qubit_circuit.to_cirq_string() == "1: ───R───Z───"
@@ -93,14 +90,19 @@ def test_initialise():
     q_1 = Qubit(1)
     q_2 = Qubit(2)
     q_3 = Qubit(3)
-    with pytest.raises(Exception, match='The instruction has to act on 1 qubit'):
-        three_qubit_circuit.initialise(0, Instruction([q_1, q_2], "R"))
-    with pytest.raises(Exception, match='The instruction has to be an initialize instruction starting with \"R\"'):
+    with pytest.raises(Exception, match="The instruction has to act on 1 qubit"):
+        three_qubit_circuit.initialise(
+            0, Instruction([q_1, q_2], "R", is_initialization=True)
+        )
+    with pytest.raises(
+        Exception,
+        match="The instruction has to be an instance of the Instruction class with is_initialization set to True.",
+    ):
         three_qubit_circuit.initialise(0, Instruction([q_1], "X"))
 
-    three_qubit_circuit.initialise(0, Instruction([q_1], "R"))
-    three_qubit_circuit.initialise(12, Instruction([q_3], "R"))
-    three_qubit_circuit.initialise(4, Instruction([q_3], "R"))
+    three_qubit_circuit.initialise(0, Instruction([q_1], "R", is_initialization=True))
+    three_qubit_circuit.initialise(12, Instruction([q_3], "R", is_initialization=True))
+    three_qubit_circuit.initialise(4, Instruction([q_3], "R", is_initialization=True))
 
     init_ticks_test = defaultdict(list)
     init_ticks_test[q_1] = [0]
@@ -112,11 +114,11 @@ def test_measure():
     single_measurement_circuit = copy.deepcopy(two_qubit_circuit)
 
     qubit_to_measure = list(single_measurement_circuit.qubits)[0]
-    m_instruction = Instruction([qubit_to_measure], "M")
+    m_instruction = Instruction([qubit_to_measure], "M", is_measurement=True)
 
     m_instruction.is_measurement = True
     m_instruction.params = ()
-    check = Check([Pauli(qubit_to_measure, PauliLetter('Z'))])
+    check = Check([Pauli(qubit_to_measure, PauliLetter("Z"))])
     single_measurement_circuit.measure(m_instruction, check, round=0, tick=4)
     correct_dict = defaultdict(list)
     correct_dict[qubit_to_measure] = [m_instruction]
@@ -138,10 +140,10 @@ def test_measure():
     qubit_1 = list(two_measurements_circuit.qubits)[0]
     qubit_2 = list(two_measurements_circuit.qubits)[1]
 
-    m_instruction = Instruction([qubit_1, qubit_2], "M")
+    m_instruction = Instruction([qubit_1, qubit_2], "M", is_measurement=True)
 
     m_instruction.params = ()
-    check = Check([Pauli(qubit_1, PauliLetter('Z')), Pauli(qubit_2, PauliLetter('Z'))])
+    check = Check([Pauli(qubit_1, PauliLetter("Z")), Pauli(qubit_2, PauliLetter("Z"))])
     two_measurements_circuit.measure(m_instruction, check, round=0, tick=6)
     correct_dict = {}
     correct_dict[qubit_2] = [m_instruction]
@@ -173,7 +175,7 @@ def test_to_stim(capfd):
 
 
 def test__to_stim():
-    circuit = single_qubit_circuit._to_stim(None, True, None)
+    circuit = single_qubit_circuit._to_stim(None, None, True, None)
     assert stim.Circuit(str(circuit)) == stim.Circuit(
         """QUBIT_COORDS(1) 0
             R 0
@@ -181,29 +183,54 @@ def test__to_stim():
             Z 0"""
     )
 
-    rsc_circuit_one_layer = create_rsc_circuit()
-    stim_rsc_circuit_one_layer = rsc_circuit_one_layer._to_stim(None, True, None)
 
-    # testing if the properties of the measurer class are reset
-    assert rsc_circuit_one_layer.measurer.measurement_numbers == {}
-    assert rsc_circuit_one_layer.measurer.detectors_compiled == defaultdict(bool)
-    assert rsc_circuit_one_layer.measurer.total_measurements == 0
+def test_add_iddling_noise_to_circuit_tick():
+    two_qubit_circuit = Circuit()
+    qubit_1 = Qubit(1)
+    qubit_2 = Qubit(2)
+    two_qubit_circuit.initialise(0, Instruction([qubit_1], "R", is_initialization=True))
+    two_qubit_circuit.add_instruction(2, Instruction([qubit_1], "Z"))
+    two_qubit_circuit.initialise(0, Instruction([qubit_2], "R", is_initialization=True))
 
-    # test number of measurements
-    assert stim_rsc_circuit_one_layer.num_measurements == 17
-    assert stim_rsc_circuit_one_layer.num_detectors == 8
+    two_qubit_circuit.add_idling_noise_to_circuit_tick(two_qubit_circuit.instructions[2], OneQubitNoise(0.1, 0.1, 0.1), set([qubit_1, qubit_2]), 2)
+    assert two_qubit_circuit.number_of_instructions("PAULI_CHANNEL_1")  == 1
 
 
-def add_iddle_noise():
+def test_add_iddling_noise_to_circuit():
     # test if no noise is added
-    single_qubit_circuit.add_idling_noise(None)
-    n_idling_gates = single_qubit_circuit.number_of_instructions(
-        "PAULI_CHANNEL_I"
-    )
+    single_qubit_circuit.add_idling_noise_to_circuit(None)
+    n_idling_gates = single_qubit_circuit.number_of_instructions("PAULI_CHANNEL_I")
     assert n_idling_gates == 0
 
-    two_qubit_circuit.add_idling_noise(OneQubitNoise(0.1, 0.1, 0.1))
-    n_idling_errors = two_qubit_circuit.number_of_instructions(
-        "PAULI_CHANNEL_1"
-    )
+    two_qubit_circuit.add_idling_noise_to_circuit(OneQubitNoise(0.1, 0.1, 0.1))
+    n_idling_errors = two_qubit_circuit.number_of_instructions("PAULI_CHANNEL_1")
     assert n_idling_errors == 1
+
+
+def test_add_resonator_and_gate_idling_noise_to_circuit():
+    circuit_with_resonator_idling.add_resonator_and_gate_idling_noise_to_circuit(
+        OneQubitNoise(0.1, 0.1, 0.1), OneQubitNoise(0.2, 0.2, 0.2)
+    )
+    assert circuit_with_resonator_idling.to_stim(None) == stim.Circuit(
+        """ 
+    QUBIT_COORDS(1) 0
+    QUBIT_COORDS(2) 1
+    R 0
+    TICK
+    R 1
+    TICK
+    PAULI_CHANNEL_1(0.2, 0.2, 0.2) 0
+    TICK
+    Z 0
+    TICK
+    PAULI_CHANNEL_1(0.1, 0.1, 0.1) 1
+    TICK
+    M 1
+    TICK
+    PAULI_CHANNEL_1(0.2, 0.2, 0.2) 0
+    TICK
+    Z 0
+    TICK
+    M 0
+    """
+    )

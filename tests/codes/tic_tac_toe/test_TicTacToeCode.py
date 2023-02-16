@@ -230,14 +230,11 @@ def test_plan_detectors():
     for drum in detector_blueprints[Red]:
         assert drum.learned == 2
 
-
     for drum in detector_blueprints[Blue]:
         assert drum.learned == 1
 
     for drum in detector_blueprints[Green]:
         assert drum.learned == 0
-
-
 
 
 def test_create_detectors():
@@ -246,27 +243,17 @@ def test_create_detectors():
     detector_blueprints = hcc_code.plan_detectors(stabilizers, relearned)
     detector_schedule = hcc_code.create_detectors(detector_blueprints, borders)
 
+    assert len(detector_schedule) == 3  # honeycomb code has 3 timesteps
+
     for timestep, detectors_at_timestep in enumerate(detector_schedule):
-        print(timestep, "timestep")
+        assert len(detectors_at_timestep) == 8
         for index in range(1, len(detectors_at_timestep)):
-            print(
-                detectors_at_timestep[index].start,
-                detectors_at_timestep[index].end,
-                "start and end",
-            )
 
-            print(detectors_at_timestep[index].floor_product.word.word)
-            print(len(detectors_at_timestep))
-
-            print(detectors_at_timestep[index])
-
-            stop
-    # write test for this and at the same time for gauge honeycomb code.
+            # in the honeycomb code there are 5 timesteps between floor and lid
+            assert detectors_at_timestep[index].start == -4
+            assert detectors_at_timestep[index].end == 0
 
 
-test_create_detectors()
-
-"""
 def test_get_init_logical_qubits():
     # Here I use the smallest Honeycomb code because I'm comparing by hand.
     # Ideally I would use a mock class here, but the init function is complicated.
@@ -356,22 +343,6 @@ def test_get_init_logical_qubits():
     assert coords_of_checks_multiplied_in == {(8, 10), (6, 4), (8, 6), (6, 0)}
 
 
-def test_create_detectors():
-    hcc_code = HoneycombCode(4)
-    checks, borders = hcc_code.create_checks()
-    hcc_code.checks_by_type = checks
-    stabilizers, relearned = hcc_code.find_stabilized_plaquettes()
-    detector_blueprints = hcc_code.plan_detectors(stabilizers, relearned)
-    detector_schedule = hcc_code.create_detectors(detector_blueprints, borders)
-    print(detector_schedule,'schedule')
-    print(detector_blueprints)
-"""
-
-# test_create_detectors()
-# test_get_init_logical_qubits()
-
-#
-#
 # def test_reinfer_plaquettes():
 #     assert False
 #
