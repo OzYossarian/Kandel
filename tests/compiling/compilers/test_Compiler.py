@@ -49,30 +49,6 @@ rep_finals = [Pauli(qubit, PauliLetter('Z')) for qubit in rep_qubits]
 rep_logicals = [rep_code.logical_qubits[0].z]
 
 
-# TESTS
-# - X test init and defaults
-# - X test fails if initialisation instructions don't start with R_
-# - X test fails if measurement instructions don't end with M_
-# - X get_measurement_bases
-# - X get_initial_states
-# - X compile_initialisation
-# - X initialize_qubits
-# - compile_layer
-# - X compile_round
-# - X add_start_of_round_noise
-# - X compile_final_measurements
-# - X compile_final_detectors
-# - X compile_final_detectors_from_stabilizers
-# - X compile_final_detectors_from_measurements
-# - X compile_final_logical_operators
-# - X measure_qubits
-# - X compile_gates
-# - X - fails if gate size not 1 or 2
-# - X - handles noise correctly
-# - compile_to_circuit
-# - compile_to_stim
-
-
 def test_compiler_fails_if_initialisation_instructions_invalid(
         monkeypatch: MonkeyPatch):
     # Patch over the abstract methods so that we can instantiate a Compiler
@@ -115,6 +91,308 @@ def test_compiler_init_has_correct_defaults(
         PauliLetter('X'): ["MX"],
         PauliLetter('Y'): ["MY"],
         PauliLetter('Z'): ["MZ"]}
+
+
+def test_compiler_compile_to_circuit_fails_if_no_initial_data_given(
+        mocker: MockerFixture, monkeypatch: MonkeyPatch):
+    # Patch over the abstract methods so that we can instantiate a Compiler
+    monkeypatch.setattr(Compiler, '__abstractmethods__', set())
+    compiler = Compiler()
+
+    # Set up data
+    code = mocker.Mock(spec=Code)
+    layers = 10
+    initial_states = None
+    initial_stabilizers = None
+    final_measurements = None
+    final_stabilizers = None
+    observables = None
+
+    expected_error = \
+        "Exactly one of initial_states and initial_stabilizers should be provided"
+    with pytest.raises(ValueError, match=expected_error):
+        compiler.compile_to_circuit(
+            code, layers, initial_states, initial_stabilizers,
+            final_measurements, final_stabilizers, observables)
+
+
+def test_compiler_compile_to_circuit_fails_if_both_initial_data_given(
+        mocker: MockerFixture, monkeypatch: MonkeyPatch):
+    # Patch over the abstract methods so that we can instantiate a Compiler
+    monkeypatch.setattr(Compiler, '__abstractmethods__', set())
+    compiler = Compiler()
+
+    # Set up data
+    code = mocker.Mock(spec=Code)
+    layers = 10
+    initial_states = {}
+    initial_stabilizers = []
+    final_measurements = None
+    final_stabilizers = None
+    observables = None
+
+    expected_error = \
+        "Exactly one of initial_states and initial_stabilizers should be provided"
+    with pytest.raises(ValueError, match=expected_error):
+        compiler.compile_to_circuit(
+            code, layers, initial_states, initial_stabilizers,
+            final_measurements, final_stabilizers, observables)
+
+
+def test_compiler_compile_to_circuit_fails_if_both_final_data_given(
+        mocker: MockerFixture, monkeypatch: MonkeyPatch):
+    # Patch over the abstract methods so that we can instantiate a Compiler
+    monkeypatch.setattr(Compiler, '__abstractmethods__', set())
+    compiler = Compiler()
+
+    # Set up data
+    code = mocker.Mock(spec=Code)
+    layers = 10
+    initial_states = {}
+    initial_stabilizers = None
+    final_measurements = []
+    final_stabilizers = []
+    observables = None
+
+    expected_error = \
+        "Shouldn't provide both final_measurements and final_stabilizers " \
+        "- pick one!"
+    with pytest.raises(ValueError, match=expected_error):
+        compiler.compile_to_circuit(
+            code, layers, initial_states, initial_stabilizers,
+            final_measurements, final_stabilizers, observables)
+
+
+def test_compiler_compile_to_circuit_fails_if_both_final_stabilizers_contains_unknown_checks(
+        mocker: MockerFixture, monkeypatch: MonkeyPatch):
+    # Patch over the abstract methods so that we can instantiate a Compiler
+    monkeypatch.setattr(Compiler, '__abstractmethods__', set())
+    compiler = Compiler()
+
+    # Set up data
+    code = mocker.Mock(spec=Code)
+    code.schedule_length = 3
+    code.check_schedule = [
+        [mocker.Mock(spec=Check)] for _ in range(code.schedule_length)]
+    layers = 10
+    initial_states = {}
+    initial_stabilizers = None
+    final_measurements = None
+    bad_stabilizer = mocker.Mock(spec=Stabilizer)
+    bad_stabilizer.end = 1
+    bad_stabilizer.timed_checks = [
+        (0, code.check_schedule[0]),
+        (-2, mocker.Mock(spec=Check))]
+    final_stabilizers = [bad_stabilizer]
+    observables = None
+
+    expected_error = \
+        "Requested that a final detector is built using a check that isn't " \
+        "in the code's check schedule"
+    with pytest.raises(ValueError, match=expected_error):
+        compiler.compile_to_circuit(
+            code, layers, initial_states, initial_stabilizers,
+            final_measurements, final_stabilizers, observables)
+
+
+def test_compiler_compile_to_circuit_fails_if_observables_given_but_no_final_data(
+        mocker: MockerFixture, monkeypatch: MonkeyPatch):
+    # Patch over the abstract methods so that we can instantiate a Compiler
+    monkeypatch.setattr(Compiler, '__abstractmethods__', set())
+    compiler = Compiler()
+
+    # Set up data
+    code = mocker.Mock(spec=Code)
+    layers = 10
+    initial_states = {}
+    initial_stabilizers = None
+    final_measurements = None
+    final_stabilizers = None
+    observables = []
+
+    expected_error = \
+        "Can't measure any observables if no method is given for " \
+        "performing final measurements"
+    with pytest.raises(ValueError, match=expected_error):
+        compiler.compile_to_circuit(
+            code, layers, initial_states, initial_stabilizers,
+            final_measurements, final_stabilizers, observables)
+
+
+def test_compiler_compile_to_circuit_calls_compile_initialisation_correctly(
+        mocker: MockerFixture, monkeypatch: MonkeyPatch):
+    # Patch over the abstract methods so that we can instantiate a Compiler
+    monkeypatch.setattr(Compiler, '__abstractmethods__', set())
+    compiler = Compiler()
+
+    # Mock over methods
+    initial_detector_schedules = [[]]
+    initial_tick = 10
+    circuit = mocker.Mock(spec=Circuit)
+    compiler.compile_initialisation = mocker.Mock(return_value=(
+        initial_detector_schedules, initial_tick, circuit))
+    compiler.compile_layer = mocker.Mock()
+    compiler.compile_final_measurements = mocker.Mock()
+
+    # Set up remaining data
+    code = mocker.Mock(spec=Code)
+    code.detector_schedule = [[]]
+    layers = 10
+    initial_states = {}
+    initial_stabilizers = None
+    final_measurements = []
+    final_stabilizers = None
+    observables = None
+
+    compiler.compile_to_circuit(
+        code, layers, initial_states, initial_stabilizers,
+        final_measurements, final_stabilizers, observables)
+
+    compiler.compile_initialisation.assert_called_with(
+        code, initial_states, initial_stabilizers)
+
+
+def test_compiler_compile_to_circuit_fails_if_more_initialisation_layers_than_layers(
+        mocker: MockerFixture, monkeypatch: MonkeyPatch):
+    # Patch over the abstract methods so that we can instantiate a Compiler
+    monkeypatch.setattr(Compiler, '__abstractmethods__', set())
+    compiler = Compiler()
+
+    # Mock over methods
+    initial_detector_schedules = [[] for _ in range(20)]
+    initial_tick = 10
+    circuit = mocker.Mock(spec=Circuit)
+    compiler.compile_initialisation = mocker.Mock(return_value=(
+        initial_detector_schedules, initial_tick, circuit))
+    compiler.compile_layer = mocker.Mock()
+    compiler.compile_final_measurements = mocker.Mock()
+
+    # Set up remaining data
+    code = mocker.Mock(spec=Code)
+    code.detector_schedule = [[]]
+    layers = 10
+    initial_states = {}
+    initial_stabilizers = None
+    final_measurements = []
+    final_stabilizers = None
+    observables = None
+
+    expected_error = \
+        "The number of layers required to set up the code is greater " \
+        "than the number of layers to compile"
+    with pytest.raises(ValueError, match=expected_error):
+        compiler.compile_to_circuit(
+            code, layers, initial_states, initial_stabilizers,
+            final_measurements, final_stabilizers, observables)
+
+
+def test_compiler_compile_to_circuit_calls_compile_layer_correctly(
+        mocker: MockerFixture, monkeypatch: MonkeyPatch):
+    # Patch over the abstract methods so that we can instantiate a Compiler
+    monkeypatch.setattr(Compiler, '__abstractmethods__', set())
+    compiler = Compiler()
+
+    # Mock over methods
+    initial_detectors = [mocker.Mock(spec=Detector)]
+    initial_detector_schedules = [[initial_detectors]]
+    initial_tick = 10
+    circuit = mocker.Mock(spec=Circuit)
+    compiler.compile_initialisation = mocker.Mock(return_value=(
+        initial_detector_schedules, initial_tick, circuit))
+    compiler.compile_layer = mocker.Mock(
+        side_effect=lambda _, __, ___, tick, ____, _____: tick + 10)
+    compiler.compile_final_measurements = mocker.Mock()
+
+    # Set up remaining data
+    code = mocker.Mock(spec=Code)
+    detectors = [mocker.Mock(spec=Detector)]
+    code.detector_schedule = [detectors]
+    layers = 10
+    initial_states = {}
+    initial_stabilizers = None
+    final_measurements = []
+    final_stabilizers = None
+    observables = None
+
+    compiler.compile_to_circuit(
+        code, layers, initial_states, initial_stabilizers,
+        final_measurements, final_stabilizers, observables)
+
+    # Expecting initial layers to be compiled...
+    expected_init_call = mocker.call(
+        0, [initial_detectors], observables, initial_tick, circuit, code)
+    # ... then the remaining layers.
+    expected_remaining_calls = [
+        mocker.call(
+            i+1, [detectors], observables, initial_tick + 10*(i+1), circuit, code
+        ) for i in range(layers - 1)]
+    expected_calls = [expected_init_call] + expected_remaining_calls
+
+    compiler.compile_layer.assert_has_calls(expected_calls)
+
+
+def test_compiler_compile_to_circuit_calls_compile_final_measurements_correctly(
+        mocker: MockerFixture, monkeypatch: MonkeyPatch):
+    # Patch over the abstract methods so that we can instantiate a Compiler
+    monkeypatch.setattr(Compiler, '__abstractmethods__', set())
+    compiler = Compiler()
+
+    # Mock over methods
+    circuit = mocker.Mock(spec=Circuit)
+    compiler.compile_initialisation = mocker.Mock(return_value=(
+        [[[]]], 10, circuit))
+    final_tick = 100
+    compiler.compile_layer = mocker.Mock(return_value=final_tick)
+    compiler.compile_final_measurements = mocker.Mock()
+
+    # Set up remaining data
+    code = mocker.Mock(spec=Code)
+    code.detector_schedule = []
+    layers = 10
+    initial_states = {}
+    initial_stabilizers = None
+    final_measurements = []
+    final_stabilizers = None
+    observables = None
+
+    compiler.compile_to_circuit(
+        code, layers, initial_states, initial_stabilizers,
+        final_measurements, final_stabilizers, observables)
+
+    compiler.compile_final_measurements.assert_called_with(
+        final_measurements, final_stabilizers, observables, layers,
+        final_tick, circuit, code)
+
+
+
+def test_compiler_compile_to_circuit_returns_correct_circuit(
+        mocker: MockerFixture, monkeypatch: MonkeyPatch):
+    # Patch over the abstract methods so that we can instantiate a Compiler
+    monkeypatch.setattr(Compiler, '__abstractmethods__', set())
+    compiler = Compiler()
+
+    # Mock over methods
+    circuit = mocker.Mock(spec=Circuit)
+    compiler.compile_initialisation = mocker.Mock(return_value=(
+        [[[]]], 10, circuit))
+    compiler.compile_layer = mocker.Mock(return_value=100)
+    compiler.compile_final_measurements = mocker.Mock()
+
+    # Set up remaining data
+    code = mocker.Mock(spec=Code)
+    code.detector_schedule = []
+    layers = 10
+    initial_states = {}
+    initial_stabilizers = None
+    final_measurements = []
+    final_stabilizers = None
+    observables = None
+
+    result = compiler.compile_to_circuit(
+        code, layers, initial_states, initial_stabilizers,
+        final_measurements, final_stabilizers, observables)
+
+    assert result == circuit
 
 
 def test_compiler_get_measurement_bases_and_initial_states_fails_if_stabilizers_inconsistent(
@@ -447,6 +725,70 @@ def test_compiler_initialize_qubits_applies_noise_if_given(
         qubits[1:], one_qubit_gate_noise.name, one_qubit_gate_noise.params, is_noise=True))
 
 
+def test_compiler_compile_layer_calls_compile_round_correctly(
+        monkeypatch: MonkeyPatch, mocker: MockerFixture):
+    # Patch over the abstract methods so that we can instantiate a Compiler
+    monkeypatch.setattr(Compiler, '__abstractmethods__', set())
+    compiler = Compiler()
+
+    # Set up data:
+    layer = 5
+    circuit = mocker.Mock(spec=Circuit)
+    code = mocker.Mock(spec=Code)
+    code.schedule_length = 5
+    detector_schedule = [
+        [mocker.Mock(spec=Detector)]
+        for _ in range(code.schedule_length)]
+    observables = None
+
+    # Set up ticks to be returned by each call to compile_round
+    ticks = [100 + 10 * i for i in range(code.schedule_length + 1)]
+    compiler.compile_round = mocker.Mock(side_effect=ticks[1:])
+
+    # Call the method
+    compiler.compile_layer(
+        layer, detector_schedule, observables, ticks[0], circuit, code)
+
+    compiler.compile_round.assert_has_calls([
+        mocker.call(
+            layer * code.schedule_length + relative_round,
+            relative_round,
+            detector_schedule,
+            observables,
+            ticks[relative_round],
+            circuit,
+            code)
+        for relative_round in range(code.schedule_length)])
+
+
+def test_compiler_compile_layer_returns_correct_tick(
+        monkeypatch: MonkeyPatch, mocker: MockerFixture):
+
+    # Patch over the abstract methods so that we can instantiate a Compiler
+    monkeypatch.setattr(Compiler, '__abstractmethods__', set())
+    compiler = Compiler()
+
+    # Set up data:
+    layer = 5
+    circuit = mocker.Mock(spec=Circuit)
+    code = mocker.Mock(spec=Code)
+    code.schedule_length = 5
+    detector_schedule = [
+        [mocker.Mock(spec=Detector)]
+        for _ in range(code.schedule_length)]
+    observables = None
+
+    # Set up ticks to be returned by each call to compile_round
+    ticks = [100 + 10 * i for i in range(code.schedule_length + 1)]
+    compiler.compile_round = mocker.Mock(side_effect=ticks[1:])
+
+    # Call the method
+    next_tick = compiler.compile_layer(
+        layer, detector_schedule, observables, ticks[0], circuit, code)
+
+    assert next_tick == ticks[-1]
+
+
 def test_compiler_compile_round_adds_start_of_round_noise(
         monkeypatch: MonkeyPatch, mocker: MockerFixture):
     # Patch over the abstract methods so that we can instantiate a Compiler
@@ -609,6 +951,50 @@ def test_compiler_compile_round_calls_multiply_observable_correctly(
     circuit.measurer.multiply_observable.assert_has_calls([
         mocker.call([check], observable, round)
         for check, observable in zip(checks, observables)])
+
+
+def test_compiler_compile_round_returns_correct_tick(
+        monkeypatch: MonkeyPatch, mocker: MockerFixture):
+    # Patch over the abstract methods so that we can instantiate a Compiler
+    monkeypatch.setattr(Compiler, '__abstractmethods__', set())
+    compiler = Compiler()
+
+    # Mock over submethods used by this method
+    compiler.add_start_of_round_noise = mocker.Mock()
+    compiler.syndrome_extractor = mocker.Mock(spec=SyndromeExtractor)
+    tick = 100
+    tick_after_extract_checks = tick + 10
+    compiler.syndrome_extractor.extract_checks = mocker.Mock(
+        return_value=tick_after_extract_checks)
+
+    # Add some mock data, as well as mock methods on them
+    circuit = mocker.Mock(spec=Circuit)
+    circuit.measurer = mocker.Mock(spec=Measurer)
+    circuit.measurer.add_detectors = mocker.Mock()
+    circuit.measurer.multiply_observable = mocker.Mock()
+
+    code = mocker.Mock(spec=Code)
+    code.schedule_length = 5
+    code.check_schedule = [
+        [mocker.Mock(spec=Check)]
+        for _ in range(code.schedule_length)]
+    detector_schedule = [
+        [mocker.Mock(spec=Detector)]
+        for _ in range(code.schedule_length)]
+
+    # ... set up even more data...
+    round = 7
+    relative_round = round % code.schedule_length
+    checks = [mocker.Mock(spec=Check) for _ in range(2)]
+    observables = [mocker.Mock(spec=LogicalOperator) for _ in range(2)]
+    for check, observable in zip(checks, observables):
+        observable.update = mocker.Mock(return_value=[check])
+
+    # Call the method!
+    next_tick = compiler.compile_round(
+        round, relative_round, detector_schedule, observables, tick, circuit, code)
+
+    assert next_tick == tick_after_extract_checks
 
 
 def test_compiler_add_start_of_round_noise_does_nothing_when_no_noise(

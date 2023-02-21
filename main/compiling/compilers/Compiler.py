@@ -101,11 +101,7 @@ class Compiler(ABC):
             final_measurements: List[Pauli] = None,
             final_stabilizers: List[Stabilizer] = None,
             observables: List[LogicalOperator] = None,
-    ) -> Circuit():
-
-        # TODO - actually might make more sense to only allow
-        #  initial_stabilizers and final_stabilizers?? Is more general! But no
-        #  harm keeping both for now.
+    ) -> Circuit:
         if not xor(initial_states is None, initial_stabilizers is None):
             raise ValueError(
                 "Exactly one of initial_states and initial_stabilizers "
@@ -139,10 +135,10 @@ class Compiler(ABC):
         # detectors exist.
         if initial_layers > layers:
             raise ValueError(
+                f"The number of layers required to set up the code is "
+                f"greater than the number of layers to compile!"
                 f"Requested that {layers} layer(s) are compiled, but code "
-                f"seems to take {initial_layers} layer(s) to set up! Please "
-                f"increase number of layers to compile"
-            )
+                f"seems to take {initial_layers} layer(s) to set up.")
 
         # Compile these initial layers.
         for layer, detector_schedule in enumerate(initial_detector_schedules):
@@ -588,7 +584,8 @@ class Compiler(ABC):
             self, final_stabilizers: List[Stabilizer], code: Code):
         for stabilizer in final_stabilizers:
             for t, check in stabilizer.timed_checks:
-                if check not in code.check_schedule[stabilizer.end + t]:
+                expected_round = (stabilizer.end + t) % code.schedule_length
+                if check not in code.check_schedule[expected_round]:
                     raise ValueError(
                         f"Requested that a final detector is built using a "
                         f"check that isn't in the code's check schedule! "
