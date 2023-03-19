@@ -208,12 +208,14 @@ def test_get_initial_horizontal_operator():
     coords_of_logical = set((pauli.qubit.coords for pauli in x_log_op.at_round(-1)))
     assert coords_of_logical == {(0, 6), (8, 6), (12, 6), (20, 6)}
 
+test_get_initial_horizontal_operator()
 
 def test_get_initial_vertical_operator():
-    x_log_op = logical_qubit_hcc_Z_vert.get_initial_horizontal_operator(
-        PauliLetter("Z"), (Red, PauliLetter("Z"))
+    x_log_op = logical_qubit_hcc_Z_vert.get_initial_vertical_operator(
+        PauliLetter("Z"), (Red, PauliLetter("Y"))
     )
     x_log_op_coords = set(pauli.qubit.coords for pauli in x_log_op.at_round(-1))
     x_log_op_pauli_letter = set(pauli.letter.letter for pauli in x_log_op.at_round(-1))
-    assert x_log_op_coords == {(2, 4), (6, 4), (14, 4), (18, 4)}
-    assert x_log_op_pauli_letter == {"Z"}
+    assert x_log_op_coords == {(8, 10), (8, 6), (6, 0), (6, 4)}
+    assert x_log_op_pauli_letter == {"Y"}
+

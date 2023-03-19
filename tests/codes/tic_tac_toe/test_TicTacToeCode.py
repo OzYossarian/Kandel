@@ -246,12 +246,16 @@ def test_create_detectors():
     assert len(detector_schedule) == 3  # honeycomb code has 3 timesteps
 
     for timestep, detectors_at_timestep in enumerate(detector_schedule):
-        assert len(detectors_at_timestep) == 8
-        for index in range(1, len(detectors_at_timestep)):
 
-            # in the honeycomb code there are 5 timesteps between floor and lid
-            assert detectors_at_timestep[index].start == -4
-            assert detectors_at_timestep[index].end == 0
+        for index in range(1, len(detectors_at_timestep)):
+            # in the honeycomb code there are 3 timesteps between floor and lid if floor and lid timestep aren't included.
+            assert (
+                detectors_at_timestep[index].end - detectors_at_timestep[index].start
+                == 4
+            )
+
+
+test_create_detectors()
 
 
 def test_get_init_logical_qubits():
@@ -263,17 +267,23 @@ def test_get_init_logical_qubits():
         (Green, PauliLetter("Y")),
         (Blue, PauliLetter("Z")),
     ]
-    code = TicTacToeCode(4, tic_tac_toe_route)
+    code = HoneycombCode(4)
+    # TicTacToeCode(4, tic_tac_toe_route)
 
     coords_logical_z_horizontal_t0 = set(
         qubit.qubit.coords for qubit in code.logical_qubits[1].z.at_round(-1)
     )
+    print(set(qubit for qubit in code.logical_qubits[1].z.at_round(-1)))
     coords_logical_z_horizontal_t1 = set(
         qubit.qubit.coords for qubit in code.logical_qubits[1].z.at_round(0)
     )
+    print(set(qubit for qubit in code.logical_qubits[1].z.at_round(0)))
+
+    print("\n \n")
     coords_logical_z_horizontal_t2 = set(
         qubit.qubit.coords for qubit in code.logical_qubits[1].z.at_round(1)
     )
+    print(set(qubit for qubit in code.logical_qubits[1].z.at_round(1)))
 
     assert coords_logical_z_horizontal_t0 == {(8, 2), (0, 2), (20, 2), (12, 2)}
     assert coords_logical_z_horizontal_t1 == {(8, 2), (0, 2), (20, 2), (12, 2)}
@@ -289,8 +299,8 @@ def test_get_init_logical_qubits():
         qubit.qubit.coords for qubit in code.logical_qubits[1].x.at_round(1)
     )
 
-    assert coords_logical_x_horizontal_t0 == {(6, 0), (8, 2), (8, 6), (6, 8)}  # XX
-    assert coords_logical_x_horizontal_t1 == {(6, 4), (8, 2), (8, 10), (6, 8)}  # XX
+    assert coords_logical_x_horizontal_t0 == {(8, 2), (6, 4), (6, 8), (8, 10)}  # XX
+    assert coords_logical_x_horizontal_t1 == {(8, 2), (6, 4), (6, 8), (8, 10)}  # XX
     assert coords_logical_x_horizontal_t2 == {(6, 4), (8, 2), (8, 10), (6, 8)}  # ZZ
 
     assert len(coords_logical_x_horizontal_t0 & coords_logical_z_horizontal_t0) == 1

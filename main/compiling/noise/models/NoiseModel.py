@@ -9,7 +9,8 @@ from main.compiling.noise.noises.TwoQubitNoise import TwoQubitNoise
 class NoiseModel:
     def __init__(
             self, initialisation: Union[OneQubitNoise , float , int] = None,
-            idling: Union[OneQubitNoise , float , int] = None,
+            gate_idling: Union[OneQubitNoise , float , int] = None,
+            resonator_idling: Union[OneQubitNoise , float , int] = None,
             data_qubit_start_round: Union[OneQubitNoise , float , int] = None,
             one_qubit_gate: Union[OneQubitNoise , float , int] = None,
             two_qubit_gate: Union[TwoQubitNoise, float, int] = None,
@@ -17,8 +18,10 @@ class NoiseModel:
 
         self.initialisation: Union[OneQubitNoise, None] = \
             self.default_to_uniform_noise(initialisation, OneQubitNoise)
-        self.idling: Union[OneQubitNoise, None] = \
-            self.default_to_uniform_noise(idling, OneQubitNoise)
+        self.gate_idling: Union[OneQubitNoise, None] = \
+            self.default_to_uniform_noise(gate_idling, OneQubitNoise)
+        self.resonator_idling: Union[OneQubitNoise, None] = \
+            self.default_to_uniform_noise(resonator_idling, OneQubitNoise)
         self.data_qubit_start_round: Union[OneQubitNoise, None] = \
             self.default_to_uniform_noise(data_qubit_start_round, OneQubitNoise)
         self.one_qubit_gate: Union[OneQubitNoise, None] = \

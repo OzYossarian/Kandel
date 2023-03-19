@@ -1,3 +1,5 @@
 from .CodeCapacityBitFlipNoise import CodeCapacityBitFlipNoise
 from .CircuitLevelNoise import CircuitLevelNoise
 from .PhenomenologicalNoise import PhenomenologicalNoise
+from .superconducting_inspired_noise import SuperconductingInspired
+from .code_capacity_noise import CodeCapacityNoise

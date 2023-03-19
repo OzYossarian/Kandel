@@ -41,7 +41,7 @@ class TicTacToeLogicalQubit(LogicalQubit):
             self.Z_equivalent_bosons,
             self.x_boson,
             self.z_boson,
-        ) = self.get_initial_X_and_Z_boson()
+        ) = self.get_initial_X_and_Z_boson(code.gauge_factor)
 
         if self.vertical == PauliLetter("X"):
             x_operator = self.get_initial_vertical_operator(
@@ -60,7 +60,7 @@ class TicTacToeLogicalQubit(LogicalQubit):
 
         super().__init__(x=x_operator, z=z_operator)
 
-    def get_initial_X_and_Z_boson(self):
+    def get_initial_X_and_Z_boson(self, gauge_factor=1):
         """Returns the initial colour and pauli letter of the boson of the X and Z logical.
 
         Returns:
@@ -72,10 +72,8 @@ class TicTacToeLogicalQubit(LogicalQubit):
         boson_colour, boson_letter = self.code.tic_tac_toe_route[0]
 
         # In gauge tictactoe codes the same boson can be condonsed in the first two rounds.
-        if self.code.tic_tac_toe_route[0] == self.code.tic_tac_toe_route[1]:
-            (next_colour, next_letter) = self.code.tic_tac_toe_route[2]
-        else:
-            (next_colour, next_letter) = self.code.tic_tac_toe_route[1]
+        (next_colour, next_letter) = self.code.tic_tac_toe_route[gauge_factor]
+
 
         next_row = rest_of_row(next_colour, next_letter)
         next_column = rest_of_column(next_colour, next_letter)

@@ -66,7 +66,7 @@ class Measurer:
 
     def multiply_logical_observable(
         self, checks: Iterable[Check], observable: LogicalOperator, round: int
-    ):
+    ):  
         for check in checks:
             self.triggers[(check, round)].append(observable)
 

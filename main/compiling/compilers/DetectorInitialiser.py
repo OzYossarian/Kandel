@@ -5,6 +5,7 @@ from collections import defaultdict
 from typing import List, Dict, TYPE_CHECKING, Tuple, Union
 
 import stim
+from main.codes.tic_tac_toe.gauge_honeycomb_code import GaugeHoneycombCode
 
 from main.building_blocks.Check import Check
 from main.building_blocks.Qubit import Qubit
@@ -52,7 +53,7 @@ class DetectorInitialiser:
             "Y": stim.target_y,
             "Z": stim.target_z,
         }
-    
+
     def get_initial_detectors(
         self,
         initial_states: Dict[Qubit, State],
@@ -101,7 +102,7 @@ class DetectorInitialiser:
             detector.floor_start for detector in self.code.detectors
         )
         done = min_floor_start >= 0
-
+        # done = min_floor_start >= 5
         while not done:
             round_detectors = self.simulate_round(round, tick, circuit)
             initial_detector_schedule[round] = round_detectors
@@ -109,13 +110,22 @@ class DetectorInitialiser:
             # If all floors start at a non-negative round, then we're done
             # with this special initialisation logic.
             min_floor_start += 1
-            done = min_floor_start >= 0
+            if isinstance(self.code, GaugeHoneycombCode):
+                done = min_floor_start >= 5
+            else:
+                done = min_floor_start >= 0  # ah this changed???
+            # done = min_floor_start >= 5
             round += 1
             tick += 2
 
+        if isinstance(self.code, GaugeHoneycombCode):
+            if (
+                len(self.code.tic_tac_toe_route) // 2
+                in initial_detector_schedule.keys()
+            ):
+                initial_detector_schedule[len(self.code.tic_tac_toe_route) // 2] = []
+
         # Now split the schedule into chunks of the right size.
-        if 6 in initial_detector_schedule.keys():
-            initial_detector_schedule[6] = []
         initial_detector_schedules = self.split_schedule(initial_detector_schedule)
 
         return initial_detector_schedules
@@ -151,7 +161,7 @@ class DetectorInitialiser:
         truncation = len(initial_detector_schedules[-1])
         if truncation < self.code.schedule_length:
             initial_detector_schedules[-1] += self.code.detector_schedule[truncation:]
-
+            # initial_detector_schedules[-1] += [[] for _ in range(6)]
         return initial_detector_schedules
 
     def simulate_round(self, round: int, tick: Tick, circuit: Circuit):
@@ -231,7 +241,7 @@ class DetectorInitialiser:
         layer, relative_round = divmod(round, self.code.schedule_length)
         shift = layer * self.code.schedule_length
         round_detectors = []
-            
+
         for drum in self.code.detector_schedule[relative_round]:
             assert drum.end == relative_round
             if drum.floor_start + shift >= 0:
@@ -247,7 +257,6 @@ class DetectorInitialiser:
                     # in this layer.
                     lid_only = Stabilizer(timed_checks, relative_round, drum.anchor)
                     round_detectors.append(lid_only)
-
 
         return round_detectors
 
@@ -376,4 +385,3 @@ class DetectorInitialiser:
             string[circuit.qubit_index(pauli.qubit)] = pauli.letter.letter
         string = product.word.sign * stim.PauliString("".join(string))
         return string
-

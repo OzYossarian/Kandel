@@ -2,7 +2,7 @@ from main.building_blocks.pauli import Pauli
 from main.building_blocks.pauli.PauliLetter import PauliLetter
 from main.codes.RotatedSurfaceCode import RotatedSurfaceCode
 from main.compiling.compilers.AncillaPerCheckCompiler import AncillaPerCheckCompiler
-from main.compiling.noise.models import PhenomenologicalNoise, CircuitLevelNoise
+from main.compiling.noise.models import PhenomenologicalNoise, CircuitLevelNoise, SuperconductingInspired
 from main.compiling.syndrome_extraction.controlled_gate_orderers.RotatedSurfaceCodeOrderer import (
     RotatedSurfaceCodeOrderer,
 )
@@ -1024,3 +1024,33 @@ DETECTOR(3, 2, 0) rec[-12] rec[-5] rec[-3] rec[-2] rec[-1]
 DETECTOR(3, 4, 0) rec[-11] rec[-4] rec[-2]"""
 
     assert str(stim_circuit) == expected
+
+
+def test_rotated_surface_code_compilation_end_to_end_7():
+    """
+    Distance: 3
+    Noise model: SuperconductingInspired
+    Syndrome extractor: CzExtractor
+    Compiler: AncillaPerCheckCompiler
+    Layers: 3
+    Initial States: all Zero
+    Final measurements: all Z
+    Observables: logical Z
+    """
+    code = RotatedSurfaceCode(distance=3)
+    extractor = CzExtractor(RotatedSurfaceCodeOrderer())
+    compiler = AncillaPerCheckCompiler(noise_model=SuperconductingInspired(0.03),
+                                       syndrome_extractor=extractor)
+    print(SuperconductingInspired(0.03).gate_idling)
+    data_qubits = code.data_qubits.values()
+    initial_states = {qubit: State.Zero for qubit in data_qubits}
+    final_measurements = [Pauli(qubit, PauliLetter("Z")) for qubit in data_qubits]
+    stim_circuit = compiler.compile_to_stim(
+        code=code,
+        layers=3,
+        initial_states=initial_states,
+        final_measurements=final_measurements,
+        logical_observables=[code.logical_qubits[0].z],
+    )
+    print(stim_circuit)
+test_rotated_surface_code_compilation_end_to_end_7()

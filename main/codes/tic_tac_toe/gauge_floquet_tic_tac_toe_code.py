@@ -14,7 +14,7 @@ from main.codes.tic_tac_toe.TicTacToeCode import TicTacToeCode
 from main.utils.Colour import Red, Green, Blue
 
 class GaugeColourTicTacToeCode(ToricHexagonalCode):
-    def __init__(self, distance: int, tic_tac_toe_route: TicTacToeRoute):
+    def __init__(self, distance: int, tic_tac_toe_route: TicTacToeRoute, gauge_factor: int):
         # Initialise parent class immediately so that we have data qubits
         # etc. available for use in the rest of this init.
         rows = 3 * (distance // 4)
@@ -30,6 +30,7 @@ class GaugeColourTicTacToeCode(ToricHexagonalCode):
             PauliLetter('Z')]
 
         self.tic_tac_toe_route = tic_tac_toe_route
+        self.gauge_factor = gauge_factor
 
         checks, borders = self.create_checks()
         self.checks_by_type = checks

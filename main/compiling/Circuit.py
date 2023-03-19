@@ -365,6 +365,7 @@ class Circuit:
 
         # Go through the circuit and add idling noise.
         if resonator_idling_noise == None and idling_noise != None:
+            
             self.add_idling_noise_to_circuit(idling_noise)
         elif resonator_idling_noise != None:
             self.add_resonator_and_gate_idling_noise_to_circuit(idling_noise, resonator_idling_noise)

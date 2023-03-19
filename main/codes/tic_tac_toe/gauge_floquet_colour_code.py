@@ -21,4 +21,4 @@ class GaugeFloquetColourCode(GaugeColourTicTacToeCode):
             for edge in tic_tac_toe:
                 gauge_tic_tac_toe.extend([edge] * gauge_factor)
        
-        super().__init__(distance, gauge_tic_tac_toe)
+        super().__init__(distance, gauge_tic_tac_toe, gauge_factor)

@@ -15,7 +15,7 @@ class CircuitLevelNoise(NoiseModel):
 
         super().__init__(
             initialisation=initialisation,
-            idling=idling,
+            gate_idling=idling,
             one_qubit_gate=one_qubit_gate,
             two_qubit_gate=two_qubit_gate,
             measurement=measurement)

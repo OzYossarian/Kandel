@@ -13,7 +13,7 @@ from main.utils.utils import coords_mid, xor, coords_minus, embed_coords
 
 
 class TicTacToeCode(ToricHexagonalCode):
-    def __init__(self, distance: int, tic_tac_toe_route: TicTacToeRoute):
+    def __init__(self, distance: int, tic_tac_toe_route: TicTacToeRoute, gauge_factor=1):
         # Initialise parent class immediately so that we have data qubits
         # etc. available for use in the rest of this init.
         rows = 3 * (distance // 4)
@@ -31,7 +31,7 @@ class TicTacToeCode(ToricHexagonalCode):
         assert self.follows_tic_tac_toe_rules(tic_tac_toe_route)
         assert self.is_good_code(tic_tac_toe_route)
         self.tic_tac_toe_route = tic_tac_toe_route
-
+        self.gauge_factor = gauge_factor
         checks, borders = self.create_checks()
         self.checks_by_type = checks
         stabilizers, relearned = self.find_stabilized_plaquettes()

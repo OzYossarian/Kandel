@@ -9,6 +9,8 @@ class SuperconductingInspired(NoiseModel):
             self, p: float):
 
         super().__init__(
+            gate_idling=OneQubitNoise.uniform(p/10),
+            resonator_idling=OneQubitNoise.uniform(2*p),
             two_qubit_gate=TwoQubitNoise.uniform(p),
             one_qubit_gate=OneQubitNoise.uniform(p/10),
             initialisation=OneQubitNoise.uniform(2*p),
