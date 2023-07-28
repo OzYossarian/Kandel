@@ -1,6 +1,6 @@
 from collections import defaultdict
 from statistics import mean
-from typing import List, Tuple, Hashable
+from typing import List, Tuple, Hashable, Union
 from pathlib import Path
 
 from main.utils.types import Coordinates
@@ -76,7 +76,7 @@ def coords_minus(xs: Coordinates, ys: Coordinates):
 
 def embed_coords(
         coords: Coordinates, dimension: int, offset: Coordinates = None,
-        hyperplane: int | Tuple[int, ...] = None):
+        hyperplane: Union[int, Tuple[int, ...]] = None):
     # Embed coordinates into a strictly higher dimension.
     # 'hyperplane' lets user embed into specific axes - e.g. if embedding 2D
     # coordinates into 3D, and hyperplane is (0, 1), this embeds coords into

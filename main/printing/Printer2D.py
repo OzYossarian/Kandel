@@ -180,9 +180,7 @@ class Printer2D(Printer):
         size = self.scale(unscaled_size, buffer)
         # Make a separate printout for each round - e.g. Floquet
         # codes measure different stabilizers in each round.
-        rounds = 1 \
-            if len(codes) == 0 \
-            else max([code.schedule_length for code in codes], default=1)
+        rounds = max([code.schedule_length for code in codes], default=1)
         printouts = [
             Printout(Image.new('RGB', size, White.rgb), offset)
             for _ in range(rounds)]

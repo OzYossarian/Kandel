@@ -1,5 +1,5 @@
 import random
-from typing import Callable, List
+from typing import Callable, List, Union
 
 import numpy as np
 
@@ -17,10 +17,10 @@ def check_arguments(
         unique: bool,
         int_coords: bool,
         tuple_coords: bool,
-        dimension: int | None,
-        max_dimension: int | None,
-        min_coord: int | float,
-        max_coord: int | float,
+        dimension: Union[int, None],
+        max_dimension: Union[int, None],
+        min_coord: Union[int, float],
+        max_coord: Union[int, float],
 ):
     # dimension_args = [dimension, max_dimension, tuple_coords]
     # # Must provide some info about dimensions!
@@ -57,8 +57,8 @@ def random_coordss(
         tuple_coords: bool = True,
         dimension: int = None,
         max_dimension: int = None,
-        min_coord: int | float = default_min_coord,
-        max_coord: int | float = default_max_coord,
+        min_coord: Union[int, float] = default_min_coord,
+        max_coord: Union[int, float] = default_max_coord,
 ):
     check_arguments(
         num,
@@ -82,10 +82,10 @@ def random_coordss(
             return np.random.uniform(min_coord, max_coord, n)
 
     if tuple_coords:
-        def get_coords(components: List[int | float]):
+        def get_coords(components: List[Union[int, float]]):
             return tuple(components)
     else:
-        def get_coords(components: List[int | float]):
+        def get_coords(components: List[Union[int, float]]):
             return components[0]
 
     if not unique:
@@ -100,8 +100,8 @@ def _random_non_unique_coords(
         num: int,
         dimension: int,
         max_dimension: int,
-        get_components: Callable[[int], List[int | float]],
-        get_coords: Callable[[List[int | float]], Coordinates]
+        get_components: Callable[[int], List[Union[int,float]]],
+        get_coords: Callable[[List[Union[int,float]]], Coordinates]
 ) -> List[Coordinates]:
     dimensions = [dimension for _ in range(num)] \
         if dimension is not None \
@@ -124,8 +124,8 @@ def _random_unique_coords(
         num: int,
         dimension: int,
         max_dimension: int,
-        get_components: Callable[[int], List[int | float]],
-        get_coords: Callable[[List[int | float]], Coordinates]
+        get_components: Callable[[int], List[Union[int,float]]],
+        get_coords: Callable[[List[Union[int, float]]], Coordinates]
 ) -> List[Coordinates]:
     # Bit less efficient, but not too bad. We just keep generating coords
     # and see if they're different to all the others we've generated so far.
@@ -148,8 +148,8 @@ def random_coords(
         int_coords: bool = False,
         tuple_coords: bool = True,
         dimension: int = None,
-        min_coord: int | float = default_min_coord,
-        max_coord: int | float = default_max_coord,
+        min_coord: Union[int, float] = default_min_coord,
+        max_coord: Union[int, float] = default_max_coord,
 ):
     coordss = random_coordss(
         num=1,

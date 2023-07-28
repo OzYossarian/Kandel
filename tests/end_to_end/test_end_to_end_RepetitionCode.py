@@ -26,12 +26,12 @@ def test_repetition_code_end_to_end_1():
     initial_states = {qubit: State.Zero for qubit in data_qubits}
     final_measurements = [
         Pauli(qubit, PauliLetter('Z')) for qubit in data_qubits]
-    stim_circuit = compiler.compile_code(
+    stim_circuit = compiler.compile_to_stim(
         code=code,
         layers=3,
         initial_states=initial_states,
         final_measurements=final_measurements,
-        logical_observables=[code.logical_qubits[0].z])
+        observables=[code.logical_qubits[0].z])
 
     expected = """QUBIT_COORDS(0) 0
 QUBIT_COORDS(1) 1
@@ -100,12 +100,12 @@ def test_repetition_code_end_to_end_2():
     initial_states = {qubit: State.Plus for qubit in data_qubits}
     final_measurements = [
         Pauli(qubit, PauliLetter('X')) for qubit in data_qubits]
-    stim_circuit = compiler.compile_code(
+    stim_circuit = compiler.compile_to_stim(
         code=code,
         layers=3,
         initial_states=initial_states,
         final_measurements=final_measurements,
-        logical_observables=[code.logical_qubits[0].x])
+        observables=[code.logical_qubits[0].x])
 
     expected = """QUBIT_COORDS(0) 0
 QUBIT_COORDS(1) 1
@@ -172,12 +172,12 @@ def test_repetition_code_end_to_end_3():
     initial_states = {qubit: State.Zero for qubit in data_qubits}
     final_measurements = [
         Pauli(qubit, PauliLetter('Z')) for qubit in data_qubits]
-    stim_circuit = compiler.compile_code(
+    stim_circuit = compiler.compile_to_stim(
         code=code,
         layers=3,
         initial_states=initial_states,
         final_measurements=final_measurements,
-        logical_observables=[code.logical_qubits[0].z])
+        observables=[code.logical_qubits[0].z])
 
     expected = """QUBIT_COORDS(0) 0
 QUBIT_COORDS(1) 1
@@ -254,12 +254,12 @@ def test_repetition_code_end_to_end_4():
     initial_states = {qubit: State.Zero for qubit in data_qubits}
     final_measurements = [
         Pauli(qubit, PauliLetter('Z')) for qubit in data_qubits]
-    stim_circuit = compiler.compile_code(
+    stim_circuit = compiler.compile_to_stim(
         code=code,
         layers=3,
         initial_states=initial_states,
         final_measurements=final_measurements,
-        logical_observables=[code.logical_qubits[0].z])
+        observables=[code.logical_qubits[0].z])
 
     expected = """QUBIT_COORDS(0) 0
 QUBIT_COORDS(1) 1

@@ -46,7 +46,7 @@ test_compiler = AncillaPerCheckCompiler()
 data_qubits = rep_code.data_qubits.values()
 initial_states = {qubit: State.Zero for qubit in data_qubits}
 final_measurements = [Pauli(qubit, PauliLetter('Z')) for qubit in data_qubits]
-stim_circuit = test_compiler.compile_code(
+stim_circuit = test_compiler.compile_to_stim(
     rep_code,
     layers=3,
     initial_states=initial_states,

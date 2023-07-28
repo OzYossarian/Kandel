@@ -35,14 +35,14 @@ class IdlingExperiment():
         code_logicals = [self.code.logical_qubits[0].z]
 
         if noise_model.measurement is None:
-            circuit = compiler.compile_code(
+            circuit = compiler.compile_to_stim(
                 code=self.code,
                 layers=1,
                 initial_states=code_initials,
                 final_measurements=code_finals,
-                logical_observables=code_logicals)
+                observables=code_logicals)
         else:
-            circuit = compiler.compile_code(
+            circuit = compiler.compile_to_stim(
                 code, 3)
         decoder = PymatchingDecoder(
             circuit.detector_error_model(decompose_errors=True, approximate_disjoint_errors = True))

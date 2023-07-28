@@ -1,4 +1,4 @@
-from typing import List, Dict, Iterable, Any
+from typing import List, Dict, Iterable, Any, Union
 
 from main.utils.Colour import Colour
 from main.building_blocks.pauli.Pauli import Pauli
@@ -10,7 +10,7 @@ from main.utils.utils import coords_mid, coords_length, coords_minus, xor
 
 class Check(NiceRepr):
     def __init__(
-            self, paulis: List[Pauli] | Dict[Coordinates, Pauli],
+            self, paulis: Union[List[Pauli], Dict[Coordinates, Pauli]],
             anchor: Coordinates = None, colour: Colour = None):
         """A Pauli operator to measure.
         
@@ -83,7 +83,7 @@ class Check(NiceRepr):
 
     @staticmethod
     def _assert_check_non_empty(
-            paulis: List[Pauli] | Dict[Coordinates, Pauli]):
+            paulis: Union[List[Pauli], Dict[Coordinates, Pauli]]):
         if len(paulis) == 0:
             raise ValueError(
                 "Can't create a check from an empty list or dict of Paulis.")

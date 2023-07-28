@@ -130,7 +130,7 @@ def test_code_set_schedules_detectors_auto_created_when_expected(
     monkeypatch.setattr(
         Code, '_assert_check_schedule_valid', mocker.Mock(return_value=True))
 
-    checks = [mocker.Mock(spec=Code) for _ in range(3)]
+    checks = [mocker.Mock(spec=Check) for _ in range(3)]
     for check in checks:
         check.anchor = None
     # Create a check schedule with just one round.

@@ -1,5 +1,5 @@
 from collections import defaultdict
-from typing import List, Dict, Tuple, Any
+from typing import List, Dict, Tuple, Any, Iterable, Union
 
 import stim
 import stimcirq
@@ -12,7 +12,7 @@ from main.compiling.Measurer import Measurer
 from main.compiling.noise.noises import OneQubitNoise
 from main.utils.types import Tick
 
-RepeatBlock = Tuple[int, int, int] | None
+RepeatBlock = Union[Tuple[int, int, int],None]
 
 
 class Circuit:
@@ -67,22 +67,22 @@ class Circuit:
         """
         return str(stimcirq.stim_circuit_to_cirq_circuit(self.to_stim(idling_noise)))
 
-    def get_number_of_occurrences_of_gate(self, instruction_name: str) -> int:
-        """Counts the number of times a gate occurs.
+    def number_of_instructions(self, instruction_names: Iterable[str]) -> int:
+        """Counts the number of times an instruction occurs.
 
         Args:
-            instruction_name: Name of the gate to count.
+            instruction_names: Names of the instructions to count.
 
         Returns:
-            Number of occurrences of the gate.
+            Number of occurrences of instructions with these names.
         """
-        number_of_occurrences = 0
+        occurrences = 0
         for instructions_at_tick in self.instructions.values():
             for instructions_on_qubit_at_tick in instructions_at_tick.values():
                 for instruction in instructions_on_qubit_at_tick:
-                    if instruction.name == instruction_name:
-                        number_of_occurrences += 1
-        return number_of_occurrences
+                    if instruction.name in instruction_names:
+                        occurrences += 1
+        return occurrences
 
     def qubit_index(self, qubit: Qubit) -> int:
         """Get the stim index corresponding to this qubit, or create one if it doesn't yet have one.
@@ -258,7 +258,7 @@ class Circuit:
         # TODO - implement!
         raise NotImplementedError
 
-    def add_idling_noise(self, idling_noise: OneQubitNoise | None):
+    def add_idling_noise(self, idling_noise: Union[OneQubitNoise,None]):
         """Adds idling noise everywhere in the circuit
 
         Idling noise is added at every tick to qubits that have been
@@ -308,7 +308,7 @@ class Circuit:
 
     def to_stim(
         self,
-        idling_noise: OneQubitNoise | None,
+        idling_noise: Union[OneQubitNoise,None],
         track_coords: bool = True,
         track_progress: bool = True,
     ) -> stim.Circuit:
@@ -333,7 +333,7 @@ class Circuit:
             return self._to_stim(idling_noise, track_coords, None)
 
     def _to_stim(
-        self, idling_noise: OneQubitNoise | None, track_coords: bool, progress_bar: Any
+        self, idling_noise: Union[OneQubitNoise,None], track_coords: bool, progress_bar: Any
     ) -> stim.Circuit:
         """Called by to_stim() to transform the circuit to a stim circuit.
 
@@ -395,7 +395,7 @@ class Circuit:
 
             # Let the measurer determine if these measurements trigger any
             # further instructions - e.g. compiling detectors, adding checks
-            # into logical observables, etc.
+            # into observables, etc.
             further_instructions = (
                 self.measurer.measurement_triggers_to_stim(
                     measurements, shift_coords

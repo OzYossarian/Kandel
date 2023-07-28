@@ -72,10 +72,10 @@ def test_to_circ_string():
 
 
 def test_get_number_of_occurrences_gates():
-    n_R_gates = single_qubit_circuit.get_number_of_occurrences_of_gate("R")
+    n_R_gates = single_qubit_circuit.number_of_instructions(["R"])
     assert n_R_gates == 1
 
-    n_X_gates = single_qubit_circuit.get_number_of_occurrences_of_gate("X")
+    n_X_gates = single_qubit_circuit.number_of_instructions(["X"])
     assert n_X_gates == 0
 
 
