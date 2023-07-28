@@ -1,14 +1,16 @@
+import random
 from collections import defaultdict
 import copy
 import pytest
 import stim
+from pytest_mock import MockerFixture
 
 from main.building_blocks.Check import Check
 from main.building_blocks.Qubit import Qubit
 from main.building_blocks.pauli.Pauli import Pauli
 from main.building_blocks.pauli.PauliLetter import PauliLetter
 from main.codes.RotatedSurfaceCode import RotatedSurfaceCode
-from main.compiling.Circuit import Circuit
+from main.compiling.Circuit import Circuit, RepeatBlock
 from main.compiling.Instruction import Instruction
 from main.compiling.compilers.AncillaPerCheckCompiler import AncillaPerCheckCompiler
 from main.compiling.noise.models import CodeCapacityBitFlipNoise
@@ -69,11 +71,11 @@ def test_to_circ_string():
     assert single_qubit_circuit.to_cirq_string() == "1: ───R───Z───"
 
 
-def test_get_number_of_occurences_gates():
-    n_R_gates = single_qubit_circuit.number_of_instructions("R")
+def test_get_number_of_occurrences_gates():
+    n_R_gates = single_qubit_circuit.get_number_of_occurrences_of_gate("R")
     assert n_R_gates == 1
 
-    n_X_gates = single_qubit_circuit.number_of_instructions("X")
+    n_X_gates = single_qubit_circuit.get_number_of_occurrences_of_gate("X")
     assert n_X_gates == 0
 
 
@@ -162,6 +164,103 @@ def test_measure():
     assert two_measurements_circuit.measure_ticks == correct_measurement_tick_dict
 
 
+def test_circuit_add_instruction_fails_if_noise_on_even_tick(
+        mocker: MockerFixture):
+    expected_error = "Can't place a noise instruction at an even tick"
+    circuit = Circuit()
+    tick = random.choice(range(-20, 20, 2))
+    instruction = mocker.Mock(spec=Instruction)
+    instruction.is_noise = True
+    with pytest.raises(ValueError, match=expected_error):
+        circuit.add_instruction(tick, instruction)
+
+
+def test_circuit_add_instruction_fails_if_non_noise_on_odd_tick(
+        mocker: MockerFixture):
+    expected_error = "Can't place a non-noise instruction at an odd tick"
+    circuit = Circuit()
+    tick = random.choice(range(-25, 25, 2))
+    instruction = mocker.Mock(spec=Instruction)
+    instruction.is_noise = False
+    with pytest.raises(ValueError, match=expected_error):
+        circuit.add_instruction(tick, instruction)
+
+
+def test_circuit_add_instruction_fails_if_conflicting_instructions(
+        mocker: MockerFixture):
+    expected_error = "Tried to compile conflicting instructions"
+    circuit = Circuit()
+    tick = random.choice(range(-20, 20, 2))
+    qubit = mocker.Mock(spec=Qubit)
+
+    instruction = Instruction([qubit], 'Some instruction')
+    conflicting_instruction = Instruction([qubit], 'Some other instruction')
+
+    circuit.instructions = {tick: {qubit: [instruction]}}
+    with pytest.raises(ValueError, match=expected_error):
+        circuit.add_instruction(tick, conflicting_instruction)
+
+
+def test_circuit_add_instruction_succeeds_otherwise(
+        mocker: MockerFixture):
+    circuit = Circuit()
+    tick = random.choice(range(-20, 20, 2))
+    qubit = mocker.Mock(spec=Qubit)
+    instruction = Instruction([qubit], 'Some instruction')
+    circuit.add_instruction(tick, instruction)
+    assert circuit.instructions[tick][qubit] == [instruction]
+
+
+def test_circuit_add_repeat_block_fails_if_block_empty():
+    expected_error = "Repeat block must contain at least one tick"
+    circuit = Circuit()
+    start = random.randint(-100, 100)
+    end = random.randint(start - 100, start)
+    repeats = random.randint(1, 100)
+    with pytest.raises(ValueError, match=expected_error):
+        circuit.add_repeat_block(start, end, repeats)
+
+
+def test_circuit_add_repeat_block_fails_if_repeats_less_than_once():
+    expected_error = "Repeat block must repeat at least once"
+    circuit = Circuit()
+    start = random.randint(-100, 100)
+    end = random.randint(start + 1, start + 100)
+    repeats = random.randint(-100, 0)
+    with pytest.raises(ValueError, match=expected_error):
+        circuit.add_repeat_block(start, end, repeats)
+
+
+def test_circuit_add_repeat_block_fails_if_conflicts_with_existing_repeat_block(
+        mocker: MockerFixture):
+    expected_error = "Can't compile conflicting repeat blocks"
+    circuit = Circuit()
+    start = random.randint(-100, 100)
+    end = random.randint(start + 1, start + 100)
+    repeats = random.randint(1, 100)
+
+    # Add some existing repeat blocks to ticks in [start, end).
+    width = end - start
+    k = random.randint(1, width)
+    ticks = random.sample(range(start, end), k)
+    for tick in ticks:
+        circuit.repeat_blocks[tick] = mocker.Mock(spec=RepeatBlock)
+
+    # Now try to compile the new repeat block.
+    with pytest.raises(ValueError, match=expected_error):
+        circuit.add_repeat_block(start, end, repeats)
+
+
+def test_circuit_add_repeat_block_succeeds_otherwise():
+    circuit = Circuit()
+    start = random.randint(-100, 100)
+    end = random.randint(start + 1, start + 100)
+    repeats = random.randint(1, 100)
+    circuit.add_repeat_block(start, end, repeats)
+    for tick in range(start, end):
+        assert circuit.repeat_blocks[tick] == (start, end, repeats)
+
+
 def test_to_stim(capfd):
     single_qubit_circuit.to_stim(None, track_progress=False)
     out, _ = capfd.readouterr()
@@ -194,16 +293,109 @@ def test__to_stim():
     assert stim_rsc_circuit_one_layer.num_detectors == 8
 
 
-def add_iddle_noise():
+def add_idling_noise():
     # test if no noise is added
     single_qubit_circuit.add_idling_noise(None)
-    n_idling_gates = single_qubit_circuit.number_of_instructions(
+    n_idling_gates = single_qubit_circuit.get_number_of_occurrences_of_gate(
         "PAULI_CHANNEL_I"
     )
     assert n_idling_gates == 0
 
     two_qubit_circuit.add_idling_noise(OneQubitNoise(0.1, 0.1, 0.1))
-    n_idling_errors = two_qubit_circuit.number_of_instructions(
+    n_idling_errors = two_qubit_circuit.get_number_of_occurrences_of_gate(
         "PAULI_CHANNEL_1"
     )
     assert n_idling_errors == 1
+
+
+def test_circuit_add_idling_noise_does_not_add_idling_noise_after_identity_gate(
+        mocker: MockerFixture):
+    circuit = Circuit()
+    qubit = mocker.Mock(spec=Qubit)
+    identity = Instruction([qubit], 'I')
+    circuit.instructions = {0: {qubit: [identity]}}
+    circuit.add_idling_noise(OneQubitNoise.uniform(0.1))
+    # Assert that nothing has happened!
+    assert circuit.instructions == {0: {qubit: [identity]}}
+
+
+def test_circuit_get_idle_qubits(mocker: MockerFixture):
+    circuit = Circuit()
+    qubits = [mocker.Mock(spec=Qubit) for _ in range(4)]
+    circuit.qubits = set(qubits)
+    # Only initialise the last three qubits, so qubit 0 shouldn't be idle.
+    circuit.init_ticks = defaultdict(list)
+    for qubit in qubits[1:]:
+        circuit.init_ticks[qubit].append(0)
+    # Let only qubit 1 have non-trivial instructions, so this qubit also
+    # shouldn't be idle.
+    circuit.instructions = {0: {
+        qubits[0]: [Instruction([qubits[0]], 'I')],
+        qubits[1]: [Instruction([qubits[1]], 'X')],
+        qubits[2]: [Instruction([qubits[2]], 'I')],
+        qubits[3]: []}}
+
+    idle_qubits = circuit.get_idle_qubits(0)
+    # Only the last two qubits should be idle.
+    assert idle_qubits == set(qubits[2:])
+
+
+def test_circuit_instruction_to_stim_when_targets_are_none(mocker: MockerFixture):
+    circuit = Circuit()
+    stim_circuit = mocker.Mock(spec=stim.Circuit)
+    stim_circuit.append = mocker.Mock()
+
+    qubit = mocker.Mock(spec=Qubit)
+    instruction = Instruction([qubit], 'Something')
+    circuit.instruction_to_stim(instruction, stim_circuit)
+
+    stim_circuit.append.assert_called_with('Something', [0], ())
+
+
+def test_circuit_instruction_to_stim_when_targets_are_not_none(mocker: MockerFixture):
+    circuit = Circuit()
+    stim_circuit = mocker.Mock(spec=stim.Circuit)
+    stim_circuit.append = mocker.Mock()
+
+    qubit = mocker.Mock(spec=Qubit)
+    target = mocker.Mock(spec=stim.GateTarget)
+    instruction = Instruction([qubit], 'Something', targets=[target])
+    circuit.instruction_to_stim(instruction, stim_circuit)
+
+    stim_circuit.append.assert_called_with('Something', [target], ())
+
+
+def test_circuit_entered_repeat_block():
+    circuit = Circuit()
+    circuit.repeat_blocks = {
+        0: None,
+        1: (1, 2, 10),
+        2: (2, 4, 10),
+        3: (2, 4, 10),
+        4: None}
+    for i in [1, 2]:
+        tick = i
+        last_tick = i-1
+        assert circuit.entered_repeat_block(tick, last_tick)
+    for i in [3, 4]:
+        tick = i
+        last_tick = i-1
+        assert not circuit.entered_repeat_block(tick, last_tick)
+
+
+def test_circuit_left_repeat_block():
+    circuit = Circuit()
+    circuit.repeat_blocks = {
+        0: None,
+        1: (1, 2, 10),
+        2: (2, 4, 10),
+        3: (2, 4, 10),
+        4: None}
+    for i in [1, 3]:
+        tick = i
+        last_tick = i - 1
+        assert circuit.left_repeat_block(tick, last_tick) is None
+    for i in [2, 4]:
+        tick = i
+        last_tick = i - 1
+        assert circuit.left_repeat_block(tick, last_tick) == 10
