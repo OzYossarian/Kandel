@@ -10,6 +10,13 @@ from main.codes.ToricColourCode import ToricColourCode
 
 
 class TriangularColourCode(HexagonalCode):
+    """6.6.6 Colour code with open boundaries.
+
+    For details see: https://errorcorrectionzoo.org/c/color
+
+    Args:
+        distance: distance: The distance of the code.
+    """
     def __init__(self, distance: int):
         if distance < 3:
             raise ValueError(

@@ -9,8 +9,16 @@ from main.utils.types import Coordinates
 
 
 class ToricHexagonalCode(HexagonalCode, ToricCode):
+    """Parent class of ToricColourCode and TicTacToeCode.
+
+    Args:
+        rows: Number of rows of hexagons.
+        columns: Number of columns of hexagons.
+        distance: Distance of the code. Defaults to None.
+    """
     def __init__(
             self, rows: int, columns: int, distance: int = None, **kwargs):
+
         if rows <= 0 or columns <= 0:
             raise ValueError(
                 f"Number of rows and columns must both be positive! "

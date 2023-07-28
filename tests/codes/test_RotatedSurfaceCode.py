@@ -18,9 +18,9 @@ def test_rotated_surface_code_fails_if_distance_less_than_3():
 
 
 def test_rotated_surface_code_fails_if_distance_even():
-    expected_error = "Distance of a rotated surface code should be odd"
     repeats = default_test_repeats_small
     for distance in random.choices(range(4, 100, 2), k=repeats):
+        expected_error = f"Currently only implemented for odd distances! Instead, got distance {distance}"
         with pytest.raises(ValueError, match=expected_error):
             RotatedSurfaceCode(distance)
 

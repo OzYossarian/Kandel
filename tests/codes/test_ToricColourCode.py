@@ -15,11 +15,11 @@ def test_toric_colour_code_fails_if_distance_not_positive():
 
 
 def test_toric_colour_code_fails_if_distance_not_multiple_of_4():
-    expected_error = \
-        "Can only instantiate a toric colour whose distance is a multiple " \
-        "of four"
     for distance in range(1, 50):
         if distance % 4 != 0:
+            expected_error = \
+                f"Can only instantiate a toric colour code whose distance is a "\
+                f"multiple of four - instead, got distance {distance}"
             with pytest.raises(ValueError, match=expected_error):
                 ToricColourCode(distance)
 
