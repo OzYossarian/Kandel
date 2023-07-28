@@ -1,3 +1,4 @@
+from typing import Union
 from main.compiling.noise.models.NoiseModel import NoiseModel
 from main.compiling.noise.noises.OneBitNoise import OneBitNoise
 from main.compiling.noise.noises.OneQubitNoise import OneQubitNoise
@@ -6,12 +7,11 @@ from main.compiling.noise.noises.TwoQubitNoise import TwoQubitNoise
 
 class CircuitLevelNoise(NoiseModel):
     def __init__(
-            self, initialisation: OneQubitNoise | float,
-            idling: OneQubitNoise | float,
-            one_qubit_gate: OneQubitNoise | float,
-            two_qubit_gate: TwoQubitNoise | float,
-            measurement: OneBitNoise | float):
-
+            self, initialisation: Union[OneQubitNoise, float, None] = None,
+            idling: Union[OneQubitNoise, float, None] = None,
+            one_qubit_gate: Union[OneQubitNoise, float, None] = None,
+            two_qubit_gate: Union[TwoQubitNoise, float, None] = None,
+            measurement: Union[OneBitNoise, float, None] = None):
         super().__init__(
             initialisation=initialisation,
             idling=idling,

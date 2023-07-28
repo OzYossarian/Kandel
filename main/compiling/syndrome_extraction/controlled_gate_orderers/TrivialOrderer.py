@@ -14,3 +14,10 @@ class TrivialOrderer(ControlledGateOrderer):
     def order(self, check: Check):
         return list(check.paulis.values())
 
+    def __eq__(self, other):
+        # Any two instances of a TrivialOrderer are equal!
+        return type(self) == type(other)
+
+    def __hash__(self):
+        return hash(type(self))
+

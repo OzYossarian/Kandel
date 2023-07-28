@@ -1,5 +1,5 @@
 import random
-from typing import List
+from typing import List, Union
 
 from main.building_blocks.logical.LogicalOperator import LogicalOperator
 from main.utils.utils import xor
@@ -22,8 +22,8 @@ def random_logical_operators(
         max_dimension: int = None,
         from_letters: List[str] = None,
         from_signs: List[str] = None,
-        min_coord: float | int = default_min_coord,
-        max_coord: float | int = default_max_coord
+        min_coord: Union[float, int] = default_min_coord,
+        max_coord: Union[float, int] = default_max_coord
 ):
     """
     A method to generate `num` LogicalOperator objects, with various settings.
@@ -119,8 +119,8 @@ def random_logical_operator(
         tuple_coords: bool = True,
         from_letters: List[str] = None,
         from_signs: List[str] = None,
-        min_coord: float | int = default_min_coord,
-        max_coord: float | int = default_max_coord
+        min_coord: Union[float, int] = default_min_coord,
+        max_coord: Union[float, int] = default_max_coord
 ):
     validate_random_logical_operator_arguments(
         weight, dimension, tuple_coords)

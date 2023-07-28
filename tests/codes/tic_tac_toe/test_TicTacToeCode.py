@@ -166,7 +166,60 @@ def test_create_borders():
             if borders_minus:
                 assert_plaquette_borders_correct(anchors, borders_minus, -1)
 
-# TODO: Remaining tests.
+
+def test_get_init_logical_qubits():
+    # Here I use the smallest Honeycomb code because I'm comparing by hand.
+    # Ideally I would use a mock class here, but the init function is complicated.
+
+    tic_tac_toe_route = [
+            (Red, PauliLetter('X')),
+            (Green, PauliLetter('Y')),
+            (Blue, PauliLetter('Z'))]
+    code = TicTacToeCode(4, tic_tac_toe_route)
+    
+    coords_logical_z_horizontal_t0 = set(qubit.qubit.coords for qubit in code.logical_qubits[1].z.at_round(-1))
+    coords_logical_z_horizontal_t1 = set(qubit.qubit.coords for qubit in code.logical_qubits[1].z.at_round(0))
+    coords_logical_z_horizontal_t2 = set(qubit.qubit.coords for qubit in code.logical_qubits[1].z.at_round(1))
+
+    assert coords_logical_z_horizontal_t0 == {(8,2),(0,2),(20,2),(12,2)} 
+    assert coords_logical_z_horizontal_t1 == {(8,2),(0,2),(20,2),(12,2)}
+    assert coords_logical_z_horizontal_t2 == {(2,4),(6,4),(14,4),(18,4)}
+
+    coords_logical_x_horizontal_t0 = set(qubit.qubit.coords for qubit in code.logical_qubits[1].x.at_round(-1))
+    coords_logical_x_horizontal_t1 = set(qubit.qubit.coords for qubit in code.logical_qubits[1].x.at_round(0))
+    coords_logical_x_horizontal_t2 = set(qubit.qubit.coords for qubit in code.logical_qubits[1].x.at_round(1))
+
+    assert coords_logical_x_horizontal_t0 == {(6,0),(8,2),(8,6),(6,8)} #XX
+    assert coords_logical_x_horizontal_t1 == {(6,4),(8,2),(8,10),(6,8)} #XX
+    assert coords_logical_x_horizontal_t2 == {(6,4),(8,2),(8,10), (6,8)} # ZZ
+
+    assert len(coords_logical_x_horizontal_t0 & coords_logical_z_horizontal_t0) == 1
+    assert len(coords_logical_x_horizontal_t1 & coords_logical_z_horizontal_t1) == 1
+    assert len(coords_logical_x_horizontal_t2 & coords_logical_z_horizontal_t2) == 1
+
+    coords_logical_z_vertical_t0 = set(qubit.qubit.coords for qubit in code.logical_qubits[0].z.at_round(-1))
+#    print(code.checks,'checks')
+#    print(code.logical_qubits[0].z.at_round(-1))
+    checks_multiplied_in = code.logical_qubits[0].z.update(0)
+    coords_of_checks_multiplied_in = set(pauli.qubit.coords for pauli in checks_multiplied_in[0].paulis.values())
+    coords_of_checks_multiplied_in.update(set(pauli.qubit.coords for pauli in checks_multiplied_in[1].paulis.values()))
+    assert coords_of_checks_multiplied_in == {(8, 10), (6, 4), (8, 6), (6, 0)}
+
+    checks_multiplied_in = code.logical_qubits[0].z.update(1)
+    coords_of_checks_multiplied_in = set(pauli.qubit.coords for pauli in checks_multiplied_in[0].paulis.values())
+    coords_of_checks_multiplied_in.update(set(pauli.qubit.coords for pauli in checks_multiplied_in[1].paulis.values()))
+    assert coords_of_checks_multiplied_in == {(8,2),(6,8),(8,10),(6,4)}
+
+    checks_multiplied_in = code.logical_qubits[0].z.update(2)
+    coords_of_checks_multiplied_in = set(pauli.qubit.coords for pauli in checks_multiplied_in[0].paulis.values())
+    coords_of_checks_multiplied_in.update(set(pauli.qubit.coords for pauli in checks_multiplied_in[1].paulis.values()))
+    assert coords_of_checks_multiplied_in == {(8,2),(6,8),(8,6),(6,0)}
+
+
+    checks_multiplied_in = code.logical_qubits[0].z.update(3)
+    coords_of_checks_multiplied_in = set(pauli.qubit.coords for pauli in checks_multiplied_in[0].paulis.values())
+    coords_of_checks_multiplied_in.update(set(pauli.qubit.coords for pauli in checks_multiplied_in[1].paulis.values()))
+    assert coords_of_checks_multiplied_in == {(8, 10), (6, 4), (8, 6), (6, 0)}
 
 # def test_find_stabilized_plaquettes():
 #     assert False

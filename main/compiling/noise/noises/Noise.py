@@ -1,5 +1,5 @@
 from abc import abstractmethod, ABC
-from typing import Tuple, List, Any
+from typing import Tuple, List, Any, Union
 
 from main.building_blocks.Qubit import Qubit
 from main.compiling.Instruction import Instruction
@@ -21,7 +21,7 @@ class Noise(ABC):
 
     @property
     @abstractmethod
-    def params(self) -> Tuple[float, ...] | float:
+    def params(self) -> Union[Tuple[float, ...], float]:
         pass
 
     def instruction(self, qubits: List[Qubit]):

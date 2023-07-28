@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from abc import abstractmethod
-from typing import List, Dict, Iterable, Callable, TYPE_CHECKING
+from typing import List, Dict, Iterable, Callable, TYPE_CHECKING, Union
 
 from main.building_blocks.Check import Check
 from main.building_blocks.pauli import Pauli
@@ -162,7 +162,7 @@ class AncillaPerCheckExtractor(SyndromeExtractor):
             self,
             step: int,
             checks: Iterable[Check],
-            ordered_paulis: Iterable[List[Pauli | None]],
+            ordered_paulis: Iterable[List[Union[Pauli, None]]],
             tick: int,
             circuit: Circuit,
             compiler: Compiler) -> Tick:
@@ -199,7 +199,7 @@ class AncillaPerCheckExtractor(SyndromeExtractor):
 
     def pre_rotate_pauli(
             self,
-            pauli: Pauli | None,
+            pauli: Union[Pauli,None],
             check: Check,
             tick: int,
             circuit: Circuit,
@@ -209,7 +209,7 @@ class AncillaPerCheckExtractor(SyndromeExtractor):
 
     def post_rotate_pauli(
             self,
-            pauli: Pauli | None,
+            pauli: Union[Pauli, None],
             check: Check,
             tick: int,
             circuit: Circuit,
@@ -219,7 +219,7 @@ class AncillaPerCheckExtractor(SyndromeExtractor):
 
     def _rotate_pauli(
             self,
-            pauli: Pauli | None,
+            pauli: Union[Pauli,None],
             check: Check,
             get_rotations: Callable[[Pauli, Check], List[Instruction]],
             tick: int,
@@ -229,13 +229,13 @@ class AncillaPerCheckExtractor(SyndromeExtractor):
             # Nothing to do for this check at this step.
             return tick
         pre_rotations = get_rotations(pauli, check)
-        tick = compiler.compile_one_qubit_gates(
+        tick = compiler.compile_gates(
             pre_rotations, tick, circuit)
         return tick
 
     def do_controlled_gate(
             self,
-            pauli: Pauli | None,
+            pauli: Union[Pauli, None],
             check: Check,
             tick: int,
             circuit: Circuit,
@@ -244,7 +244,7 @@ class AncillaPerCheckExtractor(SyndromeExtractor):
         if pauli is not None:
             controlled_gate = self.get_controlled_gate(pauli, check)
             if controlled_gate is not None:
-                compiler.compile_two_qubit_gates(
+                compiler.compile_gates(
                     [controlled_gate], tick, circuit)
 
     @abstractmethod
@@ -264,3 +264,30 @@ class AncillaPerCheckExtractor(SyndromeExtractor):
     @abstractmethod
     def get_controlled_gate(self, pauli: Pauli, check: Check) -> Instruction:
         raise NotImplementedError("Must be overridden in a subclass!")
+
+    def __eq__(self, other):
+        return \
+            type(self) == type(other) and \
+            self.controlled_gate_orderer == other.controlled_gate_orderer and \
+            self.initialisation_instructions == other.initialisation_instructions and \
+            self.measurement_instructions == other.measurement_instructions and \
+            self.parallelize == other.parallelize
+
+    def __hash__(self):
+        if self.initialisation_instructions is None:
+            initialisation_instructions = None
+        else:
+            initialisation_instructions = frozenset(
+                (state, tuple(names))
+                for state, names in self.initialisation_instructions.items())
+        if self.measurement_instructions is None:
+            measurement_instructions = None
+        else:
+            measurement_instructions = frozenset(
+                (letter, tuple(names))
+                for letter, names in self.measurement_instructions.items())
+        return hash((
+            self.controlled_gate_orderer,
+            initialisation_instructions,
+            measurement_instructions,
+            self.parallelize))

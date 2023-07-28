@@ -1,4 +1,4 @@
-from typing import List
+from typing import List, Union
 
 from main.building_blocks.Check import Check
 from main.building_blocks.pauli.Pauli import Pauli
@@ -28,7 +28,7 @@ class RotatedSurfaceCodeOrderer(ControlledGateOrderer):
             (PauliLetter('Z'), (-1, 0)): 3}
         self.order_length = 4
 
-    def order(self, check: Check) -> List[Pauli | None]:
+    def order(self, check: Check) -> List[Union[Pauli,None]]:
         expected_weights = [2, 4]
         if check.weight not in expected_weights:
             self.unexpected_weight_error(check, expected_weights)
@@ -37,3 +37,10 @@ class RotatedSurfaceCodeOrderer(ControlledGateOrderer):
             self.unexpected_word_error(check, expected_words)
 
         return self._order(check, self.order_length, self.ordering)
+
+    def __eq__(self, other):
+        # Any two instances of a RotatedSurfaceCodeOrderer are equal!
+        return type(self) == type(other)
+
+    def __hash__(self):
+        return hash(type(self))

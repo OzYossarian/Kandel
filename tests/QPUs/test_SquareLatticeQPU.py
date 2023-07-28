@@ -1,3 +1,4 @@
+from __future__ import annotations
 from main.QPUs.SquareLatticeQPU import SquareLatticeQPU
 from main.codes.RepetitionCode import RepetitionCode
 from main.codes.TriangularColourCode import TriangularColourCode

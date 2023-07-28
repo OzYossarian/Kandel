@@ -1,6 +1,6 @@
 import random
 from functools import reduce
-from typing import List, Iterable, Dict
+from typing import List, Iterable, Dict, Union
 
 from main.building_blocks.Qubit import Qubit
 from main.building_blocks.pauli import Pauli
@@ -73,8 +73,8 @@ def random_paulis(
         max_dimension: int = None,
         from_letters: List[str] = None,
         from_signs: List[complex] = None,
-        min_coord: int | float = default_min_coord,
-        max_coord: int | float = default_max_coord,
+        min_coord: Union[int, float] = default_min_coord,
+        max_coord: Union[int, float] = default_max_coord,
 ) -> List[Pauli]:
     qubits = random_qubits(
         num,
@@ -101,8 +101,8 @@ def random_pauli(
         max_dimension: int = None,
         from_letters: List[str] = None,
         from_signs: List[complex] = None,
-        min_coord: int | float = default_min_coord,
-        max_coord: int | float = default_max_coord,
+        min_coord: Union[int, float] = default_min_coord,
+        max_coord: Union[int, float] = default_max_coord,
 ) -> Pauli:
     return random_paulis(
         num=1,
@@ -126,8 +126,8 @@ def random_grouped_paulis(
         max_dimension: int = None,
         from_letters: List[str] = None,
         from_signs: List[complex] = None,
-        min_coord: int | float = default_min_coord,
-        max_coord: int | float = default_max_coord,
+        min_coord: Union[int, float] = default_min_coord,
+        max_coord: Union[int, float] = default_max_coord,
 ) -> Dict[Qubit, List[Pauli]]:
     unique_qubits = True
     qubits = random_qubits(

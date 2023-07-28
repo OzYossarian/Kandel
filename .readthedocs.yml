@@ -1,0 +1,16 @@
+version: 2
+
+sphinx:
+  configuration: docs/conf.py
+
+formats: all
+python:
+  version: 3.6
+  install:
+    - requirements: docs/requirements.txt
+    - method: pip
+      path: .
+  system_packages: true
+
+submodules:
+  include: all

@@ -1,5 +1,5 @@
 import random
-from typing import List
+from typing import List, Union
 
 from main.building_blocks.detectors.Detector import Detector
 from main.utils.utils import xor
@@ -22,8 +22,8 @@ def random_detectors(
         random_anchors: bool = False,
         from_letters: List[str] = None,
         from_signs: List[str] = None,
-        min_coord: float | int = default_min_coord,
-        max_coord: float | int = default_max_coord
+        min_coord: Union[float,int] = default_min_coord,
+        max_coord: Union[float, int] = default_max_coord
 ):
     validate_random_detectors_arguments(
         checks_per_detector,
@@ -74,8 +74,8 @@ def random_detector(
         random_anchors: bool = False,
         from_letters: List[str] = None,
         from_signs: List[str] = None,
-        min_coord: float | int = default_min_coord,
-        max_coord: float | int = default_max_coord
+        min_coord: Union[float, int] = default_min_coord,
+        max_coord: Union[float, int] = default_max_coord
 ):
     validate_random_detector_arguments(
         num_checks,

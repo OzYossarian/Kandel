@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import List, Dict
+from typing import List, Dict, Union
 
 from main.building_blocks.Check import Check
 from main.building_blocks.pauli.Pauli import Pauli
@@ -15,7 +15,7 @@ from main.utils.enums import State
 class UniformAncillaBasisExtractor(AncillaPerCheckExtractor):
     def __init__(
             self, ancilla_basis: PauliLetter,
-            pauli_extractors: Dict[PauliLetter, PauliExtractor | None],
+            pauli_extractors: Dict[PauliLetter, Union[PauliExtractor, None]],
             controlled_gate_orderer: ControlledGateOrderer = None,
             initialisation_instructions: Dict[State, List[str]] = None,
             measurement_instructions: Dict[PauliLetter, List[str]] = None,
@@ -116,7 +116,7 @@ class UniformAncillaBasisExtractor(AncillaPerCheckExtractor):
             self._no_extraction_method_error(pauli, check)
 
     def get_controlled_gate(
-            self, pauli: Pauli, check: Check) -> Instruction | None:
+            self, pauli: Pauli, check: Check) -> Union[Instruction,None]:
         if pauli.letter in self.pauli_extractors:
             extractor = self.pauli_extractors[pauli.letter]
             if extractor is not None:
@@ -135,3 +135,15 @@ class UniformAncillaBasisExtractor(AncillaPerCheckExtractor):
             f"No data was given to the SyndromeExtractor "
             f"specifying how to extract pauli {pauli} as part of check "
             f"{check}.")
+
+    def __eq__(self, other):
+        return \
+            super().__eq__(other) and \
+            self.ancilla_basis == other.ancilla_basis and \
+            self.pauli_extractors == other.pauli_extractors
+
+    def __hash__(self):
+        return hash((
+            super().__hash__(),
+            self.ancilla_basis,
+            frozenset(self.pauli_extractors.items())))
