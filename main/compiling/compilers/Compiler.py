@@ -256,7 +256,7 @@ class Compiler(ABC):
         if initial_stabilizers is not None:
             initial_states = self.get_initial_states(initial_stabilizers)
 
-        if set(initial_states.keys()) != set(code.data_qubits.keys()):
+        if set(initial_states.keys()) != set(code.data_qubits.values()):
             raise ValueError(
                 f"Set of data qubits whose initial states were either given "
                 f"or could be determined differs from the set of all data "

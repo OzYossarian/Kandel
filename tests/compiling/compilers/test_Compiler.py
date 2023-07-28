@@ -1029,17 +1029,13 @@ def test_compile_initialisation():
     assert circuit.instructions[0][rep_code.data_qubits[0]][0].name == "RX"
     assert circuit.instructions[1][rep_code.data_qubits[0]][0].name == "PAULI_CHANNEL_1"
 
-    try:
+    expected_error = \
+        "Set of data qubits whose initial states were either given or could " \
+        "be determined differs from the set of all data qubits. " \
+        "Please give a complete set of desired initial states or desired " \
+        "stabilizers for the first round of measurements."
+    with pytest.raises(ValueError, match=expected_error):
         _, _, circuit = test_compiler.compile_initialisation(rep_code, {}, None)
-        raise ValueError("Shouldn't be able to initialise if no states given.")
-    except ValueError as error:
-        expected_message = (
-            "Some data qubits' initial states either aren't given or "
-            "aren't determined by the given initial stabilizers! Please "
-            "give a complete set of desired initial states or desired "
-            "stabilizers for the first round of measurements."
-        )
-        assert str(error) == expected_message
 
 
 def test_compile_layer():
