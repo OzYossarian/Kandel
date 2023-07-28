@@ -140,16 +140,22 @@ class Circuit:
     def measure(self, measurement: Instruction, check: Check, round: int, tick: int):
         """Adds a measurement instruction to the circuit
 
-        In addition to updating the circuit, the properties of the measurement class are updated such that the detector
+        In addition to updating the circuit, the properties of the
+        measurement class are updated such that the detector
         can be added to the stim circuit when running to_stim()
 
         Args:
-            measurement: Measurement instruction which can be on one or multiple qubits.
-            check: The check to which the measurement corresponds. This is used by the measurer class to compile
-                detectors.
-            round: The QEC round in which the measurement takes place. This is used by the measurer class to compile
-                detectors.
-            tick: Tick at which the measurement happens.
+            measurement:
+                Measurement instruction, which can be on one or multiple
+                qubits.
+            check:
+                The check to which the measurement corresponds.
+                This is used by the measurer class to compile detectors.
+            round:
+                The QEC round in which the measurement takes place.
+                This is used by the measurer class to compile detectors.
+            tick:
+                Tick at which the measurement happens.
         """
         # TODO - raise error if measurement.is_measurement is False?
         # Measure a qubit (perhaps multiple)
@@ -166,60 +172,84 @@ class Circuit:
         """Adds an instruction to the Circuit
 
         Args:
-            tick (int): Tick at which the instruction should be added.
-            instruction (Instruction): Instruction to be added to the circuit.
+            tick:
+                Tick at which the instruction should be added.
+            instruction:
+                Instruction to be added to the circuit.
 
         Raises:
-            ValueError: If there is already an instruction on the same qubit at the tick
+            ValueError:
+                If trying to place a noise instruction at an even tick, or a
+                non-noise instruction at an odd tick, or if there is already
+                an instruction on the same qubit(s) at this tick.
 
         Note:
-            Don't use this function for initializing a qubit or for measuring a qubit.
-            For measuring use Circuit.measure and for initializing use Circuit.initialize.
+            Don't use this function for initializing a qubit or for
+            measuring a qubit. For measuring use Circuit.measure and for
+            initializing use Circuit.initialize.
         """
+        # TODO - if instruction starts with 'R' or 'M', raise an error?
         # Even ticks are for gates, odd ticks are for noise.
-        assert tick % 2 == (1 if instruction.is_noise else 0)
+        if instruction.is_noise and tick % 2 == 0:
+            raise ValueError(
+                f"Can't place a noise instruction at an even tick! "
+                f"This really shouldn't have happened; it's probably a bug. "
+                f"Tried to place instruction {instruction} at tick {tick}")
+        elif not instruction.is_noise and tick % 2 == 1:
+            raise ValueError(
+                f"Can't place a non-noise instruction at an odd tick! "
+                f"This really shouldn't have happened; it's probably a bug. "
+                f"Tried to place instruction {instruction} at tick {tick}")
+
         for qubit in instruction.qubits:
             instructions_on_qubit_at_tick = self.instructions[tick][qubit]
-            instructions_on_qubit_at_tick.append(instruction)
-            if len(instructions_on_qubit_at_tick) > 1:
+            if len(instructions_on_qubit_at_tick) > 0:
                 # Only time a qubit can have multiple gates at the same tick
                 # is when they're all noise gates or all Pauli product
-                # measurements.
-                all_noise = all(
-                    [
-                        instruction.is_noise
-                        for instruction in instructions_on_qubit_at_tick
-                    ]
-                )
-                all_product_measurements = all(
-                    [
-                        instruction.name == "MPP"
-                        for instruction in instructions_on_qubit_at_tick
-                    ]
-                )
+                # measurements - check this isn't violated.
+                instructions = instructions_on_qubit_at_tick + [instruction]
+                all_noise = all([
+                    instruction.is_noise for instruction in instructions])
+                all_product_measurements = all([
+                    instruction.name == "MPP" for instruction in instructions])
                 if not (all_noise or all_product_measurements):
-                    instructions_string = "\n".join(
-                        [
-                            str(instruction)
-                            for instruction in instructions_on_qubit_at_tick
-                        ]
-                    )
+                    # Can't add this instruction to the circuit!
+                    instructions_string = "\n".join([
+                        str(instruction) for instruction in instructions])
                     raise ValueError(
                         f"Tried to compile conflicting instructions on qubit "
-                        f"{qubit.coords} at pseudo-tick {tick}! Instructions "
-                        f"are:\n {instructions_string}"
-                    )
+                        f"{qubit} at tick {tick}! "
+                        f"Instructions are:\n {instructions_string}")
+
+            # Otherwise, no problem - add this instruction to the circuit.
+            instructions_on_qubit_at_tick.append(instruction)
             # Add this to the set of qubits we've come across in the circuit.
             self.qubits.add(qubit)
 
-    def add_repeat_block(self, start: int, end: int, repeats: int):
+    def add_repeat_block(self, start: Tick, end: Tick, repeats: int):
         # start inclusive, end exclusive.
         # Check this repeat block is well-defined - isn't trivial and doesn't
         # overlap with other repeat blocks.
-        assert start + 1 < end
-        assert repeats >= 1
-        assert all([self.repeat_blocks[i] is None for i in range(start, end)])
-
+        if start >= end:
+            raise ValueError(
+                f"Repeat block must contain at least one tick! "
+                f"Instead, requested a repeat block from tick {start} "
+                f"(inclusive) to tick {end} (exclusive).")
+        if repeats < 1:
+            raise ValueError(
+                f"Repeat block must repeat at least once! Instead, "
+                f"requested a repeat block that repeats {repeats} times.")
+        existing_repeat_blocks = {
+            tick: self.repeat_blocks[tick] for tick in range(start, end)}
+        conflicting_repeat_blocks = any([
+            block is not None for block in existing_repeat_blocks.values()])
+        if conflicting_repeat_blocks:
+            raise ValueError(
+                f"Can't compile conflicting repeat blocks. Requested a repeat "
+                f"block from {start} to {end} that repeats {repeats} times, "
+                f"but on these ticks we already have the following repeat "
+                f"blocks, denoted by (start, end, repeats) tuples: "
+                f"{existing_repeat_blocks}.")
         for i in range(start, end):
             self.repeat_blocks[i] = (start, end, repeats)
 
@@ -231,32 +261,50 @@ class Circuit:
     def add_idling_noise(self, idling_noise: Union[OneQubitNoise,None]):
         """Adds idling noise everywhere in the circuit
 
-        Idling noise is added at every tick to qubits that have been initialized but on which no gate is performed
+        Idling noise is added at every tick to qubits that have been
+        initialized but on which no non-identity gate is performed
 
         Args:
-            idling_noise: Noise channel to apply to idling locations in the circuit.
+            idling_noise:
+                Noise channel to apply to idling locations in the circuit.
         """
 
-        # Not a good idea to call this method before compression is done.
+        # If circuit is going to be compressed, then this should be done
+        # before adding idling noise, since compression changes the amount
+        # of idling time in the circuit.
         if idling_noise is not None:
-            instructions = sorted(self.instructions.items())
-            # note that this only loop through ticks at which there is at least one instruction
-            for tick, qubit_instructions in instructions:
+            # Note that this only loop through ticks at which there is at
+            # least one instruction
+            for tick in sorted(self.instructions.keys()):
                 # Only interested in even ticks, where actual gates happen.
                 if tick % 2 == 0:
-                    # Find out which qubits were idle at this tick. These are those
-                    # that are initialised but not involved in any gate.
-                    initialised_qubits = {
-                        qubit
-                        for qubit in self.qubits
-                        if self.is_initialised(tick, qubit)}
-                    active_qubits = set(qubit_instructions.keys())
-                    idle_qubits = initialised_qubits.difference(active_qubits)
+                    # Find out which qubits were idle at this tick. These are
+                    # those that are initialised but not involved in any gate.
+                    idle_qubits = self.get_idle_qubits(tick)
                     # Sort for reproducibility in tests.
-                    idle_qubits = sorted(idle_qubits, key=lambda qubit: qubit.coords)
+                    idle_qubits = sorted(
+                        idle_qubits, key=lambda qubit: qubit.coords)
                     for qubit in idle_qubits:
                         noise = idling_noise.instruction([qubit])
                         self.add_instruction(tick + 1, noise)
+
+    def get_idle_qubits(self, tick: Tick):
+        # A qubit is idle at a given tick if it has been initialised but
+        # isn't involved in any non-identity gate.
+        def is_active(instructions: List[Instruction]):
+            names = [instruction.name for instruction in instructions]
+            return names not in [[], ['I']]
+
+        initialised_qubits = {
+            qubit
+            for qubit in self.qubits
+            if self.is_initialised(tick, qubit)}
+        active_qubits = {
+            qubit for qubit, instructions
+            in self.instructions[tick].items()
+            if is_active(instructions)}
+        idle_qubits = initialised_qubits.difference(active_qubits)
+        return idle_qubits
 
     def to_stim(
         self,
@@ -392,15 +440,52 @@ class Circuit:
         circuit.append(instruction.name, targets, instruction.params)
 
     def entered_repeat_block(self, tick: int, last_tick: int):
-        # TODO Return whether we've entered a repeat block between these two ticks.
+        """Checks if a repeat block started between last_tick and tick.
+
+        Whether we've entered a repeat block between two CONSECUTIVE ticks.
+        That is, if one were to make an ordered list of all ticks at which
+        at least one gate occurs, then `tick` and `last_tick` should be
+        adjacent in this list. So they need not actually be consecutive
+        integers, but if they aren't, then there can be no gates at any tick
+        inbetween these two integers.
+
+        Args:
+            tick:
+                The current tick.
+            last_tick:
+                The last tick at which at least one gate occurred before
+                the current tick.
+
+        Returns:
+            Whether we've entered a repeat block between `last_tick` and `tick`.
+
+        """
         last_block = self.repeat_blocks[last_tick]
         this_block = self.repeat_blocks[tick]
         return last_block != this_block and this_block is not None
 
     def left_repeat_block(self, tick: int, last_tick: int):
-        # TODO
-        # Return whether we've left a repeat block between these two ticks -
-        # if we have, return the number of times the block should be repeated
+        """Returns a repeat blocks repititions if it has ended at last tick.
+
+        Whether we've left a repeat block between two CONSECUTIVE ticks.
+        That is, if one were to make an ordered list of all ticks at which
+        at least one gate occurs, then `tick` and `last_tick` should be
+        adjacent in this list. So they need not actually be consecutive
+        integers, but if they aren't, then there can be no gates at any tick
+        inbetween these two integers.
+
+        Args:
+            tick:
+                The current tick.
+            last_tick:
+                The last tick at which at least one gate occurred before
+                the current tick.
+
+        Returns:
+            If we have indeed left a repeat block between `last_tick` and
+            `tick`, then we return the number of times that repeat block
+            should be repeated. Else, we return None.
+        """
         last_block = self.repeat_blocks[last_tick]
         this_block = self.repeat_blocks[tick]
         if this_block != last_block and last_block is not None:
