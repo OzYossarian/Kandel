@@ -106,7 +106,7 @@ class Compiler(ABC):
             final_measurements: List[Pauli] = None,
             final_stabilizers: List[Stabilizer] = None,
             observables: List[LogicalOperator] = None,
-    ) -> Circuit():
+    ) -> Circuit:
         """Compiles a circuit for the given code.
 
         Args:
@@ -157,8 +157,16 @@ class Compiler(ABC):
         if final_stabilizers is not None:
             # Checks within final stabilizers should be things we'll
             # actually measure as part of the code's check schedule.
-            self._assert_final_stabilizers_valid(final_stabilizers)
+            self._assert_final_stabilizers_valid(final_stabilizers, code)
 
+        compile_final_round = \
+            final_measurements is not None or final_stabilizers is not None
+        if observables is not None and not compile_final_round:
+            raise ValueError(
+                "Can't measure any observables if no method is given "
+                "for performing final measurements! Please provide one of "
+                "final_measurements or final_stabilizers, "
+                "or set observables to None.")
 
         initial_detector_schedules, tick, circuit = self.compile_initialisation(
             code, initial_states, initial_stabilizers)
@@ -168,10 +176,10 @@ class Compiler(ABC):
         # detectors exist.
         if initial_layers > layers:
             raise ValueError(
+                f"The number of layers required to set up the code is "
+                f"greater than the number of layers to compile!"
                 f"Requested that {layers} layer(s) are compiled, but code "
-                f"seems to take {initial_layers} layer(s) to set up! Please "
-                f"increase number of layers to compile"
-            )
+                f"seems to take {initial_layers} layer(s) to set up.")
 
         # Compile these initial layers.
         for layer, detector_schedule in enumerate(initial_detector_schedules):
@@ -262,7 +270,7 @@ class Compiler(ABC):
                 f"or could be determined differs from the set of all data "
                 f"qubits. Please give a complete set of desired initial states "
                 f"or desired stabilizers for the first round of measurements. "
-                f"Set of all data qubits is {list(code.data_qubits.keys())}. "
+                f"Set of all data qubits is {list(code.data_qubits.values())}. "
                 f"Set of data qubits whose initial states could be determined "
                 f"is {list(initial_states.keys())}")
 
@@ -480,10 +488,10 @@ class Compiler(ABC):
         if final_stabilizers is not None:
             final_measurements = self.get_measurement_bases(final_stabilizers)
 
-        # A single qubit measurement is just a weight-1 check, and writing
-        # them as checks rather than Paulis fits them into the same framework
-        # as other measurements.
         if final_measurements is not None:
+            # A single qubit measurement is just a weight-1 check, and writing
+            # them as checks rather than Paulis fits them into the same framework
+            # as other measurements.
             final_checks = {}
             for pauli in final_measurements:
                 check = Check([pauli], pauli.qubit.coords)
@@ -503,13 +511,6 @@ class Compiler(ABC):
             # Finally, define the observables we want to measure
             self.compile_final_logical_operators(
                 observables, final_checks, round, circuit
-            )
-
-        elif observables is not None:
-            raise ValueError(
-                "Can't measure any observables if no method is given "
-                "for performing final measurements! Please provide one of "
-                "final_measurements or final_stabilizers."
             )
 
     def compile_final_detectors(
@@ -710,11 +711,11 @@ class Compiler(ABC):
             self, final_stabilizers: List[Stabilizer], code: Code):
         for stabilizer in final_stabilizers:
             for t, check in stabilizer.timed_checks:
-                if check not in code.check_schedule[stabilizer.end + t]:
+                expected_round = (stabilizer.end + t) % code.schedule_length
+                if check not in code.check_schedule[expected_round]:
                     raise ValueError(
                         f"Requested that a final detector is built using a "
                         f"check that isn't in the code's check schedule! "
                         f"The check is {check}, and is part of stabilizer "
                         f"{stabilizer}. The code's check schedule is "
                         f"{code.check_schedule}.")
-
