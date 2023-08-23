@@ -608,7 +608,7 @@ class Compiler(ABC):
         if observables is not None:
             for observable in observables:
                 observable_checks = []
-                for observable_pauli in observable.at_round(round):
+                for observable_pauli in observable.at_round(round - 1):
                     # Just double check that what we measured is actually what we
                     # want to use to form the logical operator.
                     check = final_checks[observable_pauli.qubit]
