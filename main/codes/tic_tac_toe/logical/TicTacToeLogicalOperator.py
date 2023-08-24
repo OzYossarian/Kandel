@@ -17,7 +17,8 @@ class TicTacToeLogicalOperator(LogicalOperator):
             initial_paulis: List[Pauli],
             is_vertical: bool,
             logical_letter: PauliLetter,
-            logical_qubit: TicTacToeLogicalQubit):
+            logical_qubit: TicTacToeLogicalQubit,
+            gauge_factor: int = 1):
         """
         A logical operator specifically for a TicTacToeCode. Here the
         logical operator may move around without repeating, so we won't
@@ -35,14 +36,25 @@ class TicTacToeLogicalOperator(LogicalOperator):
                 which operator this represents - either PauliLetter('X') or PauliLetter('Z')
             logical_qubit:
                 the logical qubit this operator is part of.
+            gauge_factor:
+                The gauge factor of the code this operator is part of.
         """
         assert logical_letter in [PauliLetter('X'), PauliLetter('Z')]
 
+        self.is_vertical = is_vertical
+        self.logical_letter = logical_letter
+        self.logical_qubit = logical_qubit
+
+        # This is a hacky way to include the gauge factor stuff.
+        self.gauge_factor = gauge_factor
+        # Ideally every tic-tac-toe code would have a gauge_factor
+        # attribute, and we would just read that out from there.
+        # But since I haven't figured out what it means for a general
+        # tic-tac-toe code to have a gauge factor > 1 (only specific
+        # examples of HCC and FCC), we do things the hacky way.
+
         self._at_round = {-1: initial_paulis}
         self.last_updated = -1
-        self.logical_letter = logical_letter
-        self.is_vertical = is_vertical
-        self.logical_qubit = logical_qubit
         super().__init__([])
 
     def at_round(self, round: int):
@@ -54,8 +66,22 @@ class TicTacToeLogicalOperator(LogicalOperator):
         return self._at_round[round]
 
     def update(self, round: int):
-        prev_x_type, prev_z_type = self.logical_qubit.get_types(round - 1)
-        next_x_type, next_z_type = self.logical_qubit.get_types(round)
+        """Updates the logical operator.
+
+        Args:
+            round:
+                The index of the round that has just been measured.
+
+        Returns:
+            checks_multiplied_in:
+                Checks with which the logical operator has been multiplied.
+        """
+        # Again, hacky way to include the gauge factor stuff.
+        ungauged_round = round // self.gauge_factor
+        prev_ungauged_round = (round - 1) // self.gauge_factor
+
+        prev_x_type, prev_z_type = self.logical_qubit.get_types(prev_ungauged_round)
+        next_x_type, next_z_type = self.logical_qubit.get_types(ungauged_round)
 
         if self.logical_letter == PauliLetter('X'):
             next_type, prev_type = next_x_type, prev_x_type
@@ -72,7 +98,10 @@ class TicTacToeLogicalOperator(LogicalOperator):
         return checks_multiplied_in
 
     def multiply_by_checks(self, round: int):
-        relative_round = round % self.logical_qubit.code.schedule_length
+        # Again, hacky way to include the gauge factor stuff.
+        ungauged_round = round // self.gauge_factor
+
+        relative_round = ungauged_round % self.logical_qubit.code.schedule_length
         check_type = self.logical_qubit.code.tic_tac_toe_route[relative_round]
         checks = self.logical_qubit.code.checks_by_type[check_type]
         intersecting_checks = [
