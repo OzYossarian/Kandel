@@ -48,6 +48,7 @@ class TicTacToeDrumBlueprint(NiceRepr):
         self.lid = relative_to_when_detector_is_learned(lid)
         self.checks = self.floor + self.lid
         self.learned = learned % schedule_length
+
         super().__init__(['learned', 'floor', 'lid'])
 
     def equivalent_to(self, other):

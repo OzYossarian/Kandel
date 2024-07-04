@@ -46,7 +46,8 @@ class TicTacToeCode(ToricHexagonalCode):
 
         self.set_schedules(check_schedule, detector_schedule)
         self.logical_qubits = self.get_init_logical_qubits()
-
+        self.final_check_schedule = None 
+        
     @staticmethod
     def follows_tic_tac_toe_rules(tic_tac_toe_route) -> bool:
         """Tic-tac-toe rules state that the type of edges measured at each
@@ -118,6 +119,7 @@ class TicTacToeCode(ToricHexagonalCode):
                 for anchor in anchors:
                     self.add_checks_around_plaquette(
                         anchor, edge_colour, pauli_letters, checks, borders)
+
 
         return checks, borders
 
@@ -362,19 +364,20 @@ class TicTacToeCode(ToricHexagonalCode):
         for colour in self.colours:
             anchors = self.colourful_plaquette_anchors[colour]
             for anchor in anchors:
-                for blueprint in detector_blueprints[colour]:
-                    # Create an actual detector object from each blueprint.
-                    floor, lid = [], []
-                    for (t, edge_colour, edge_letter) in blueprint.floor:
-                        checks = self.borders[anchor][(edge_colour, edge_letter)]
-                        floor.extend((t, check) for check in checks)
-                    for (t, edge_colour, edge_letter) in blueprint.lid:
-                        checks = self.borders[anchor][(edge_colour, edge_letter)]
-                        lid.extend((t, check) for check in checks)
-                    drum_anchor = embed_coords(anchor, 3)
-                    detector = Drum(floor, lid, blueprint.learned, drum_anchor)
-                    detectors[blueprint.learned].append(detector)
-
+                if colour in detector_blueprints:
+                    for blueprint in detector_blueprints[colour]:
+                        if blueprint != None:
+                        # Create an actual detector object from each blueprint.
+                            floor, lid = [], []
+                            for (t, edge_colour, edge_letter) in blueprint.floor:
+                                checks = self.borders[anchor][(edge_colour, edge_letter)]
+                                floor.extend((t, check) for check in checks)
+                            for (t, edge_colour, edge_letter) in blueprint.lid:
+                                checks = self.borders[anchor][(edge_colour, edge_letter)]
+                                lid.extend((t, check) for check in checks)
+                            drum_anchor = embed_coords(anchor, 3)
+                            detector = Drum(floor, lid, blueprint.learned, drum_anchor)
+                            detectors[blueprint.learned].append(detector)
         return detectors
 
     def get_init_logical_qubits(self) -> List[TicTacToeLogicalQubit]:

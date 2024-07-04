@@ -142,6 +142,7 @@ class Measurer:
         # Only compile this detector if all the final checks have
         # actually been measured, and if we haven't already compiled an
         # equivalent detector (one that compares the exact same measurements).
+
         final_checks_measured = all([
             (check, round) in self.measurement_numbers
             for check in detector.final_checks])
@@ -150,7 +151,6 @@ class Measurer:
             measurement_numbers = tuple(sorted([
                 self.measurement_numbers[(check, round + rounds_ago)]
                 for rounds_ago, check in detector.timed_checks_mod_2]))
-
             already_compiled = self.detectors_compiled[measurement_numbers]
             if not already_compiled:
                 # Second criteria met - can compile this detector!
