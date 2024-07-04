@@ -4,6 +4,12 @@ from typing import List
 from main.building_blocks.detectors.Drum import Drum
 from main.codes.ToricHexagonalCode import ToricHexagonalCode
 from main.codes.tic_tac_toe.TicTacToeCode import TicTacToeCode
+from main.building_blocks.pauli import Pauli
+from main.building_blocks.pauli.PauliLetter import PauliLetter
+from main.building_blocks.Check import Check
+from main.codes.tic_tac_toe.detectors.TicTacToeDrumBlueprint import TicTacToeDrumBlueprint
+from main.utils.Colour import Red, Green, Blue
+from main.utils.utils import coords_mid, xor, coords_minus, embed_coords
 
 
 class GaugeTicTacToeCode(ABC, ToricHexagonalCode):
@@ -12,7 +18,7 @@ class GaugeTicTacToeCode(ABC, ToricHexagonalCode):
         # for any tic-tac-toe code. Have only done this for honeycomb code
         # and Floquet colour code. Hence this class is abstract, and just
         # contains the code common to GaugeHoneycombCode and
-        # GaugeFloquetColourCode.
+        # GaugeFloquetColourCode
 
         if gauge_factor < 1:
             raise ValueError("Gauge factor must be a positive integer.")
@@ -37,13 +43,13 @@ class GaugeTicTacToeCode(ABC, ToricHexagonalCode):
         # Create the small detectors
         detector_schedule: List[List[Drum]] = [
             [] for _ in range(self.schedule_length)]
+
         for ungauged_round, checks in enumerate(self.ungauged_code.check_schedule):
             for check in checks:
                 for g in range(gauge_factor - 1):
                     gauged_round = ungauged_round * gauge_factor + g + 1
                     detector = Drum([(-1, check)], [(0, check)], gauged_round)
-                    detector_schedule[gauged_round].append(detector)
-
+                    detector_schedule[gauged_round].append(detector)            
         # Create the plaquette detectors
         plaquette_detector_schedule = self.get_plaquette_detector_schedule()
         for round, detectors in enumerate(plaquette_detector_schedule):
@@ -58,6 +64,12 @@ class GaugeTicTacToeCode(ABC, ToricHexagonalCode):
             for logical_operator in logical_qubit.operators:
                 if logical_operator is not None:
                     logical_operator.gauge_factor = self.gauge_factor
+
+        check_schedule = [
+            self.ungauged_code.check_schedule[round // gauge_factor]
+            for round in range(self.schedule_length)]    
+    
+        self.final_check_schedule = None 
 
     @abstractmethod
     def get_ungauged_code(self, distance: int) -> TicTacToeCode:

@@ -10,8 +10,8 @@ from main.utils.Colour import Red, Green, Blue
 
 
 class GaugeHoneycombCode(GaugeTicTacToeCode):
-    def __init__(self, distance: int, gauge_factors: List[int]):
-        super().__init__(distance, gauge_factors)
+    def __init__(self, distance: int, gauge_factor: int):
+        super().__init__(distance, gauge_factor)
 
     def get_ungauged_code(self, distance: int) -> TicTacToeCode:
         return HoneycombCode(distance)
