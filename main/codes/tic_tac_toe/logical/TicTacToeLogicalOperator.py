@@ -18,7 +18,7 @@ class TicTacToeLogicalOperator(LogicalOperator):
             is_vertical: bool,
             logical_letter: PauliLetter,
             logical_qubit: TicTacToeLogicalQubit,
-            gauge_factor: int = 1):
+            gauge_factors: List[int] = 1):
         """
         A logical operator specifically for a TicTacToeCode. Here the
         logical operator may move around without repeating, so we won't
@@ -46,7 +46,11 @@ class TicTacToeLogicalOperator(LogicalOperator):
         self.logical_qubit = logical_qubit
 
         # This is a hacky way to include the gauge factor stuff.
-        self.gauge_factor = gauge_factor
+        # pj todo temp fix
+        if gauge_factors == 1:
+            self.gauge_factors = [1, 1, 1]
+        else:
+            self.gauge_factors = gauge_factors
         # Ideally every tic-tac-toe code would have a gauge_factor
         # attribute, and we would just read that out from there.
         # But since I haven't figured out what it means for a general
@@ -65,6 +69,18 @@ class TicTacToeLogicalOperator(LogicalOperator):
                 self.update(r)
         return self._at_round[round]
 
+    def round_to_ungauged_round(self, round: int):
+        sum_of_gauge_factors = sum(self.gauge_factors)
+
+        cumulative_sum = 0
+        for i, gauge_factor in enumerate(self.gauge_factors):
+            cumulative_sum += gauge_factor
+            if round % sum_of_gauge_factors < cumulative_sum:
+                ungauged_round = i + \
+                    (len(self.gauge_factors) * (round // sum_of_gauge_factors))
+                return ungauged_round
+        return (None)
+
     def update(self, round: int):
         """Updates the logical operator.
 
@@ -77,10 +93,11 @@ class TicTacToeLogicalOperator(LogicalOperator):
                 Checks with which the logical operator has been multiplied.
         """
         # Again, hacky way to include the gauge factor stuff.
-        ungauged_round = round // self.gauge_factor
-        prev_ungauged_round = (round - 1) // self.gauge_factor
+        ungauged_round = self.round_to_ungauged_round(round)
+        prev_ungauged_round = self.round_to_ungauged_round(round - 1)
 
-        prev_x_type, prev_z_type = self.logical_qubit.get_types(prev_ungauged_round)
+        prev_x_type, prev_z_type = self.logical_qubit.get_types(
+            prev_ungauged_round)
         next_x_type, next_z_type = self.logical_qubit.get_types(ungauged_round)
 
         if self.logical_letter == PauliLetter('X'):
@@ -99,7 +116,7 @@ class TicTacToeLogicalOperator(LogicalOperator):
 
     def multiply_by_checks(self, round: int):
         # Again, hacky way to include the gauge factor stuff.
-        ungauged_round = round // self.gauge_factor
+        ungauged_round = self.round_to_ungauged_round(round)
 
         relative_round = ungauged_round % self.logical_qubit.code.schedule_length
         check_type = self.logical_qubit.code.tic_tac_toe_route[relative_round]
@@ -138,7 +155,7 @@ class TicTacToeLogicalOperator(LogicalOperator):
             pauli.letter.letter != 'I' and pauli.qubit in check_qubits
             for pauli in self.at_round(round - 1))
 
-    @staticmethod
+    @ staticmethod
     def is_horizontal(check: Check):
         y_coords = [pauli.qubit.coords[1] for pauli in check.paulis.values()]
         return len(set(y_coords)) == 1

@@ -11,6 +11,14 @@ from main.utils.Colour import Red, Green, Blue
 
 class GaugeHoneycombCode(GaugeTicTacToeCode):
     def __init__(self, distance: int, gauge_factors: List[int]):
+        assert len(gauge_factors) == 3
+        self.rx_gf = gauge_factors[0]
+        self.gy_gf = gauge_factors[1]
+        self.bz_gf = gauge_factors[2]
+        self.tic_tac_toe_route = [
+            (Red, PauliLetter('X')) for _ in range(self.rx_gf)] + \
+            [(Green, PauliLetter('Y')) for _ in range(self.gy_gf)] + \
+            [(Blue, PauliLetter('Z')) for _ in range(self.bz_gf)]
         super().__init__(distance, gauge_factors)
 
     def get_ungauged_code(self, distance: int) -> TicTacToeCode:
@@ -19,39 +27,43 @@ class GaugeHoneycombCode(GaugeTicTacToeCode):
     def get_plaquette_detector_schedule(self) -> List[List[Drum]]:
         # Rather than build the actual detectors from scratch, build the
         # blueprints, and let the ungauged code build the actual detectors.
+
+        # TODO figure out what the gauge factors should be.
         blue_z_drum_floor = [
-            (1 * self.gauge_factor - 1, Red, PauliLetter('X')),
-            (2 * self.gauge_factor - 1, Green, PauliLetter('Y'))]
+            (self.rx_gf - 1, Red, PauliLetter('X')),
+            (self.rx_gf + self.gy_gf - 1, Green, PauliLetter('Y'))]
         blue_z_drum_lid = [
-            (4 * self.gauge_factor - 1, Red, PauliLetter('X')),
-            (4 * self.gauge_factor, Green, PauliLetter('Y'))]
+            (2*self.rx_gf + self.gy_gf + self.bz_gf - 1, Red, PauliLetter('X')),
+            (2*self.rx_gf + self.gy_gf + self.bz_gf, Green, PauliLetter('Y'))]
         blue_z_drum_blueprint = TicTacToeDrumBlueprint(
             self.schedule_length,
-            4 * self.gauge_factor,
+            2*self.rx_gf + self.gy_gf + self.bz_gf,
             blue_z_drum_floor,
             blue_z_drum_lid)
 
         green_y_drum_floor = [
-            (3 * self.gauge_factor - 1, Blue, PauliLetter('Z')),
-            (4 * self.gauge_factor - 1, Red, PauliLetter('X'))]
+            (self.rx_gf + self.gy_gf + self.bz_gf - 1, Blue, PauliLetter('Z')),
+            (2*self.rx_gf + self.gy_gf + self.bz_gf - 1, Red, PauliLetter('X'))]
         green_y_drum_lid = [
-            (6 * self.gauge_factor - 1, Blue, PauliLetter('Z')),
-            (6 * self.gauge_factor, Red, PauliLetter('X'))]
+            (2*self.rx_gf + 2*self.gy_gf + 2 *
+             self.bz_gf - 1, Blue, PauliLetter('Z')),
+            (2*self.rx_gf + 2*self.gy_gf + 2*self.bz_gf, Red, PauliLetter('X'))]
         green_y_drum_blueprint = TicTacToeDrumBlueprint(
             self.schedule_length,
-            6 * self.gauge_factor,
+            2*self.rx_gf + 2*self.gy_gf + 2*self.bz_gf,
             green_y_drum_floor,
             green_y_drum_lid)
 
         red_x_drum_floor = [
-            (5 * self.gauge_factor - 1, Green, PauliLetter('Y')),
-            (6 * self.gauge_factor - 1, Blue, PauliLetter('Z'))]
+            (2*self.rx_gf + 2*self.gy_gf + self.bz_gf - 1, Green, PauliLetter('Y')),
+            (2*self.rx_gf + 2*self.gy_gf + 2*self.bz_gf - 1, Blue, PauliLetter('Z'))]
         red_x_drum_lid = [
-            (8 * self.gauge_factor - 1, Green, PauliLetter('Y')),
-            (8 * self.gauge_factor, Blue, PauliLetter('Z'))]
+            (3*self.rx_gf + 3*self.gy_gf + 2 *
+             self.bz_gf - 1, Green, PauliLetter('Y')),
+            (3*self.rx_gf + 3*self.gy_gf + 2*self.bz_gf, Blue, PauliLetter('Z'))]
         red_x_drum_blueprint = TicTacToeDrumBlueprint(
             self.schedule_length,
-            8 * self.gauge_factor,
+            3*self.rx_gf + 3*self.gy_gf + 2*self.bz_gf,
             red_x_drum_floor,
             red_x_drum_lid)
 
@@ -59,5 +71,6 @@ class GaugeHoneycombCode(GaugeTicTacToeCode):
             Blue: [blue_z_drum_blueprint],
             Green: [green_y_drum_blueprint],
             Red: [red_x_drum_blueprint]}
+
         return self.ungauged_code.create_detectors(
             blueprints, self.schedule_length)

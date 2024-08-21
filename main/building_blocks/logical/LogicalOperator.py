@@ -21,7 +21,7 @@ class LogicalOperator(NiceRepr):
         # Shouldn't access _paulis directly; instead, use at_round.
         self._paulis = paulis
 
-        #self._assert_non_empty()
+        self._assert_non_empty()
         self._assert_qubits_unique()
         self._assert_coords_valid()
 

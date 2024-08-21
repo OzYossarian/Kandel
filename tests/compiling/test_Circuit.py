@@ -143,7 +143,8 @@ def test_measure():
     m_instruction = Instruction([qubit_1, qubit_2], "M")
 
     m_instruction.params = ()
-    check = Check([Pauli(qubit_1, PauliLetter('Z')), Pauli(qubit_2, PauliLetter('Z'))])
+    check = Check([Pauli(qubit_1, PauliLetter('Z')),
+                  Pauli(qubit_2, PauliLetter('Z'))])
     two_measurements_circuit.measure(m_instruction, check, round=0, tick=6)
     correct_dict = {}
     correct_dict[qubit_2] = [m_instruction]
@@ -268,7 +269,7 @@ def test_to_stim(capfd):
 
     single_qubit_circuit.to_stim(None)
     out, _ = capfd.readouterr()
-    assert out != ""
+    assert out == ""
 
 
 def test__to_stim():
@@ -281,11 +282,13 @@ def test__to_stim():
     )
 
     rsc_circuit_one_layer = create_rsc_circuit()
-    stim_rsc_circuit_one_layer = rsc_circuit_one_layer._to_stim(None, True, None)
+    stim_rsc_circuit_one_layer = rsc_circuit_one_layer._to_stim(
+        None, True, None)
 
     # testing if the properties of the measurer class are reset
     assert rsc_circuit_one_layer.measurer.measurement_numbers == {}
-    assert rsc_circuit_one_layer.measurer.detectors_compiled == defaultdict(bool)
+    assert rsc_circuit_one_layer.measurer.detectors_compiled == defaultdict(
+        bool)
     assert rsc_circuit_one_layer.measurer.total_measurements == 0
 
     # test number of measurements

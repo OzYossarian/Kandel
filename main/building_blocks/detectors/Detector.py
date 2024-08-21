@@ -13,7 +13,7 @@ TimedCheck = Tuple[int, Check]
 class Detector(NiceRepr):
     """A set of checks whose measurement outcomes' product should be
     deterministic in the absence of any noise."""
-    
+
     def __init__(
             self,
             timed_checks: List[TimedCheck], end: int,

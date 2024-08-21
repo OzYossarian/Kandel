@@ -17,7 +17,7 @@ def test_rotated_surface_code_compilation_end_to_end_1():
     Noise model: None
     Syndrome extractor: CnotCssExtractor
     Compiler: AncillaPerCheckCompiler
-    Layers: 3
+    total_rounds: 3
     Initial States: all Zero
     Final measurements: all Z
     Observables: logical Z
@@ -32,7 +32,7 @@ def test_rotated_surface_code_compilation_end_to_end_1():
         Pauli(qubit, PauliLetter('Z')) for qubit in data_qubits]
     stim_circuit = compiler.compile_to_stim(
         code=code,
-        layers=3,
+        total_rounds=3,
         initial_states=initial_states,
         final_measurements=final_measurements,
         observables=[code.logical_qubits[0].z])
@@ -149,7 +149,7 @@ def test_rotated_surface_code_compilation_end_to_end_2():
     Noise model: None
     Syndrome extractor: CnotCssExtractor
     Compiler: AncillaPerCheckCompiler
-    Layers: 3
+    total_rounds: 3
     Initial States: all Plus
     Final measurements: all X
     Observables: logical X
@@ -164,7 +164,7 @@ def test_rotated_surface_code_compilation_end_to_end_2():
         Pauli(qubit, PauliLetter('X')) for qubit in data_qubits]
     stim_circuit = compiler.compile_to_stim(
         code=code,
-        layers=3,
+        total_rounds=3,
         initial_states=initial_states,
         final_measurements=final_measurements,
         observables=[code.logical_qubits[0].x])
@@ -281,7 +281,7 @@ def test_rotated_surface_code_compilation_end_to_end_3():
     Noise model: Phenomenological
     Syndrome extractor: CnotCssExtractor
     Compiler: AncillaPerCheckCompiler
-    Layers: 3
+    total_rounds: 3
     Initial States: all Zero
     Final measurements: all Z
     Observables: logical Z
@@ -298,7 +298,7 @@ def test_rotated_surface_code_compilation_end_to_end_3():
         Pauli(qubit, PauliLetter('Z')) for qubit in data_qubits]
     stim_circuit = compiler.compile_to_stim(
         code=code,
-        layers=3,
+        total_rounds=3,
         initial_states=initial_states,
         final_measurements=final_measurements,
         observables=[code.logical_qubits[0].z])
@@ -421,7 +421,7 @@ def test_rotated_surface_code_compilation_end_to_end_4():
     Noise model: CircuitLevel
     Syndrome extractor: CnotCssExtractor
     Compiler: AncillaPerCheckCompiler
-    Layers: 3
+    total_rounds: 3
     Initial States: all Zero
     Final measurements: all Z
     Observables: logical Z
@@ -438,7 +438,7 @@ def test_rotated_surface_code_compilation_end_to_end_4():
         Pauli(qubit, PauliLetter('Z')) for qubit in data_qubits]
     stim_circuit = compiler.compile_to_stim(
         code=code,
-        layers=3,
+        total_rounds=3,
         initial_states=initial_states,
         final_measurements=final_measurements,
         observables=[code.logical_qubits[0].z])
@@ -608,7 +608,7 @@ def test_rotated_surface_code_compilation_end_to_end_5():
     Noise model: None
     Syndrome extractor: CnotExtractor
     Compiler: AncillaPerCheckCompiler
-    Layers: 3
+    total_rounds: 3
     Initial States: all Zero
     Final measurements: all Z
     Observables: logical Z
@@ -623,7 +623,7 @@ def test_rotated_surface_code_compilation_end_to_end_5():
         Pauli(qubit, PauliLetter('Z')) for qubit in data_qubits]
     stim_circuit = compiler.compile_to_stim(
         code=code,
-        layers=3,
+        total_rounds=3,
         initial_states=initial_states,
         final_measurements=final_measurements,
         observables=[code.logical_qubits[0].z])
@@ -770,7 +770,7 @@ def test_rotated_surface_code_compilation_end_to_end_6():
     Noise model: None
     Syndrome extractor: CzExtractor
     Compiler: AncillaPerCheckCompiler
-    Layers: 3
+    total_rounds: 3
     Initial States: all Zero
     Final measurements: all Z
     Observables: logical Z
@@ -785,7 +785,7 @@ def test_rotated_surface_code_compilation_end_to_end_6():
         Pauli(qubit, PauliLetter('Z')) for qubit in data_qubits]
     stim_circuit = compiler.compile_to_stim(
         code=code,
-        layers=3,
+        total_rounds=3,
         initial_states=initial_states,
         final_measurements=final_measurements,
         observables=[code.logical_qubits[0].z])

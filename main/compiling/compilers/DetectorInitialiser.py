@@ -15,6 +15,7 @@ from main.codes.Code import Code
 from main.compiling.Circuit import Circuit
 from main.compiling.Instruction import Instruction
 from main.utils.types import Tick
+from main.codes.tic_tac_toe.gauge.GaugeFloquetColourCode import GaugeFloquetColourCode
 
 if TYPE_CHECKING:
     from main.compiling.compilers.Compiler import Compiler
@@ -53,7 +54,7 @@ class DetectorInitialiser:
 
     def get_initial_detectors(
             self, initial_states: Dict[Qubit, State],
-            initial_stabilizers: Union[List[Stabilizer],None]
+            initial_stabilizers: Union[List[Stabilizer], None]
     ) -> List[List[List[Detector]]]:
         """
         Determine the detectors that should be measured in the first round(s).
@@ -92,15 +93,17 @@ class DetectorInitialiser:
             initial_detector_schedule = {}
             round = 0
 
-        # We're done when no more 'lid-only' detectors can occur
         min_floor_start = round + min(
             detector.floor_start for detector in self.code.detectors)
         done = min_floor_start >= 0
 
+        # for gauge floquet codes we need to check this condition such that we don't miss small detectors at the start consisting of a single check
+        if isinstance(self.code, GaugeFloquetColourCode):
+            min_floor_start -= max(self.code.gauge_factors)
+
         while not done:
             round_detectors = self.simulate_round(round, tick, circuit)
             initial_detector_schedule[round] = round_detectors
-
             # If all floors start at a non-negative round, then we're done
             # with this special initialisation logic.
             min_floor_start += 1
@@ -111,6 +114,7 @@ class DetectorInitialiser:
         # Now split the schedule into chunks of the right size.
         initial_detector_schedules = self.split_schedule(
             initial_detector_schedule)
+
         return initial_detector_schedules
 
     def split_schedule(
@@ -142,6 +146,7 @@ class DetectorInitialiser:
             initial_detector_schedules[layer].append(round_detectors)
 
         # Maybe pad out the final initial layer with the usual detectors.
+
         truncation = len(initial_detector_schedules[-1])
         if truncation < self.code.schedule_length:
             initial_detector_schedules[-1] += \
@@ -213,12 +218,12 @@ class DetectorInitialiser:
             self, round: int, circuit: Circuit, simulator:
             stim.TableauSimulator):
         """
-        Find out which detectors from the code's detector schedule would be 
+        Find out which detectors from the code's detector schedule would be
         deterministic at this round.
-        
+
         Args:
-            round: the current round 
-            circuit: the circuit implementing the code up to and including 
+            round: the current round
+            circuit: the circuit implementing the code up to and including
                 the given round
             simulator: the corresponding stim simulator for the given circuit.
 
@@ -348,7 +353,7 @@ class DetectorInitialiser:
         expectation = simulator.peek_observable_expectation(string)
         return expectation in [1, -1]
 
-    @staticmethod
+    @ staticmethod
     def to_pauli_string(product: PauliProduct, circuit: Circuit):
         """
         Turn a PauliProduct into a stim.PauliString

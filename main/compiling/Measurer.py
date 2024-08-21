@@ -10,7 +10,7 @@ from main.compiling.Instruction import Instruction
 from main.utils.types import Coordinates
 
 
-Trigger = Union[Detector,LogicalOperator]
+Trigger = Union[Detector, LogicalOperator]
 
 
 class Measurer:
@@ -115,9 +115,11 @@ class Measurer:
         # Can now actually create corresponding Stim instructions.
         instructions = []
         for detector, round in detectors:
-            instructions.append(self.detector_to_stim(detector, round, track_coords))
+            instructions.append(self.detector_to_stim(
+                detector, round, track_coords))
         for observable, checks in observable_multipliers.items():
-            targets = [self.measurement_target(check, round) for check, round in checks]
+            targets = [self.measurement_target(
+                check, round) for check, round in checks]
             index = self.observable_index(observable)
             instructions.append(
                 stim.CircuitInstruction("OBSERVABLE_INCLUDE", targets, [index])
@@ -146,6 +148,7 @@ class Measurer:
         final_checks_measured = all([
             (check, round) in self.measurement_numbers
             for check in detector.final_checks])
+
         if final_checks_measured:
             # First criteria met...
             measurement_numbers = tuple(sorted([
