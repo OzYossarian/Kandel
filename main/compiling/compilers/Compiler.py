@@ -225,7 +225,7 @@ class Compiler(ABC):
         noiseless_data_qubit_readout: bool = False
     ) -> Circuit():
         """
-        """
+    """
 
         # TODO - actually might make more sense to only allow
         #  initial_stabilizers and final_stabilizers?? Is more general! But no
