@@ -49,14 +49,28 @@ def check_distance(circuit: stim.Circuit, distance):
         approximate_disjoint_errors=True).shortest_graphlike_error()) == distance
 
 
-def test_properties_of_d4_codes():
-    for gauge_factors in itertools.product([1, 2], repeat=2):
+def test_properties_of_d4_codes_g123():
+    for gauge_factors in itertools.product([1, 2, 3], repeat=2):
         for n_rounds in range(sum(gauge_factors)*4, sum(gauge_factors)*6):
             circuit: stim.Circuit = generate_circuit(
                 n_rounds, 4, gauge_factors)
             check_parity_of_number_of_violated_detectors_d4(circuit)
             check_distance(circuit, 4)
 
+
+def test_properties_of_d4_codes_g3456():
     circuit: stim.Circuit = generate_circuit(24, 4, [3, 4])
+    check_parity_of_number_of_violated_detectors_d4(circuit)
+    check_distance(circuit, 4)
+
+    circuit: stim.Circuit = generate_circuit(28, 4, [6, 1])
+    check_parity_of_number_of_violated_detectors_d4(circuit)
+    check_distance(circuit, 4)
+
+    circuit: stim.Circuit = generate_circuit(20, 4, [1, 5])
+    check_parity_of_number_of_violated_detectors_d4(circuit)
+    check_distance(circuit, 4)
+
+    circuit: stim.Circuit = generate_circuit(28, 4, [6, 3])
     check_parity_of_number_of_violated_detectors_d4(circuit)
     check_distance(circuit, 4)
