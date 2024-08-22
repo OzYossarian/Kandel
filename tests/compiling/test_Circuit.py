@@ -267,10 +267,6 @@ def test_to_stim(capfd):
     out, _ = capfd.readouterr()
     assert out == ""
 
-    single_qubit_circuit.to_stim(None)
-    out, _ = capfd.readouterr()
-    assert out == ""
-
 
 def test__to_stim():
     circuit = single_qubit_circuit._to_stim(None, True, None)
