@@ -2,6 +2,7 @@ from main.building_blocks.detectors.Stabilizer import Stabilizer
 from main.codes.tic_tac_toe.gauge.GaugeHoneycombCode import GaugeHoneycombCode
 from main.compiling.compilers.AncillaPerCheckCompiler import AncillaPerCheckCompiler
 from main.compiling.noise.models.PhenomenologicalNoise import PhenomenologicalNoise
+from main.compiling.noise.noises.OneQubitNoise import OneQubitNoise
 from main.compiling.syndrome_extraction.extractors.ancilla_per_check.mixed.CxCyCzExtractor import CxCyCzExtractor
 import stim
 import itertools
@@ -15,7 +16,7 @@ def generate_circuit(rounds, distance, gauge_factors):
         initial_stabilizers.append(Stabilizer([(0, check)], 0))
 
     compiler = AncillaPerCheckCompiler(
-        noise_model=PhenomenologicalNoise(1, 1),
+        noise_model=PhenomenologicalNoise(OneQubitNoise(0.1, 0.1, 0.1), 0.1),
         syndrome_extractor=CxCyCzExtractor())
     stim_circuit = compiler.compile_to_stim(
         code=code,
@@ -50,7 +51,7 @@ def check_distance(circuit: stim.Circuit, distance):
 
 
 def test_properties_of_d4_codes():
-    for gauge_factors in itertools.product([1, 2], repeat=3):
+    for gauge_factors in itertools.product([1, 2, 3], repeat=3):
         for n_rounds in range(sum(gauge_factors)*2, sum(gauge_factors)*3):
             circuit: stim.Circuit = generate_circuit(
                 n_rounds, 4, gauge_factors)
@@ -59,6 +60,10 @@ def test_properties_of_d4_codes():
 
 
 def test_d4_codes_high_gauge():
+    circuit: stim.Circuit = generate_circuit(
+        20, 4, [1, 1, 2])
+    check_parity_of_number_of_violated_detectors_d4(circuit)
+    check_distance(circuit, 4)
 
     circuit: stim.Circuit = generate_circuit(
         16, 4, [4, 1, 1])

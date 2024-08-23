@@ -161,15 +161,15 @@ class Compiler(ABC):
         initial_detector_schedules, tick, circuit = self.compile_initialisation(
             code, initial_states, initial_stabilizers)
 
-        initialization_rounds = len(initial_detector_schedules)
+        initialization_layers = len(initial_detector_schedules)
         # initial_layers is the number of layers in which 'lid-only'
         # detectors exist.
-        if initialization_rounds * code.schedule_length > total_rounds:
+        if initialization_layers * code.schedule_length > total_rounds:
             raise ValueError(
                 f"The number of layers required to set up the code is "
                 f"greater than the number of layers to compile!"
                 f"Requested that {total_rounds} round(s) are compiled, but code "
-                f"seems to take {initialization_rounds * code.schedule_length} round(s) to set up.")
+                f"seems to take {initialization_layers * code.schedule_length} round(s) to set up.")
 
         # Compile these initial layers.
         for layer, detector_schedule in enumerate(initial_detector_schedules):
@@ -178,7 +178,7 @@ class Compiler(ABC):
             )
 
         # Compile the remaining layers.
-        round = code.schedule_length * initialization_rounds
+        round = code.schedule_length * initialization_layers
         while round < total_rounds:
             tick = self.compile_round(
                 round,
@@ -714,7 +714,8 @@ class Compiler(ABC):
             for pauli in final_measurements:
                 check = Check([pauli], pauli.qubit.coords)
                 final_checks[pauli.qubit] = check
-            if isinstance(code, TicTacToeCode):
+            if isinstance(code, TicTacToeCode) or isinstance(code, GaugeTicTacToeCode):
+
                 if (pauli.letter == code.tic_tac_toe_route[(
                         round-1) % code.schedule_length][1]):
                     add_small_detectors = True
@@ -807,7 +808,6 @@ class Compiler(ABC):
             # so there are not enough "has open lid"
             n = self.get_factor_to_check_for_open_lid(
                 final_checks, code, round)
-
             open_lid, detector_checks_measured = detector.has_open_lid(
                 round - 1 + n, code.schedule_length)
 
@@ -845,7 +845,7 @@ class Compiler(ABC):
 
                     floor = []
                     for t, check in detector_checks_measured:
-                        relative_round = round % code.schedule_length
+
                         expected_lid_end = (
                             round//code.schedule_length)*code.schedule_length + detector.lid_end
                         actual_lid_end = round
