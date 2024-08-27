@@ -11,6 +11,13 @@ from main.utils.Colour import Red, Green, Blue
 
 class GaugeHoneycombCode(GaugeTicTacToeCode):
     def __init__(self, distance: int, gauge_factors: List[int]):
+        """A gauge-fixed honeycomb code.
+
+        Args:
+            distance: The distance of the code.
+            gauge_factors: A list containing the number of times each check is repeated.
+                            Entry 1 means the check is repeated once, entry 2 means the check is repeated twice, etc.
+        """
         assert len(gauge_factors) == 3
         self.rx_gf = gauge_factors[0]
         self.gy_gf = gauge_factors[1]
@@ -27,8 +34,6 @@ class GaugeHoneycombCode(GaugeTicTacToeCode):
     def get_plaquette_detector_schedule(self) -> List[List[Drum]]:
         # Rather than build the actual detectors from scratch, build the
         # blueprints, and let the ungauged code build the actual detectors.
-
-        # TODO figure out what the gauge factors should be.
         blue_z_drum_floor = [
             (self.rx_gf - 1, Red, PauliLetter('X')),
             (self.rx_gf + self.gy_gf - 1, Green, PauliLetter('Y'))]

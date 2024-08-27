@@ -1,3 +1,4 @@
+import webbrowser
 from main.codes.tic_tac_toe.FloquetColourCode import FloquetColourCode
 
 from main.building_blocks.detectors.Stabilizer import Stabilizer
@@ -8,11 +9,30 @@ from main.compiling.syndrome_extraction.extractors.ancilla_per_check.mixed.CxCyC
 import stim
 
 
-def generate_circuit(rounds, distance):
+def generate_circuit_X_observable(rounds, distance):
     code = FloquetColourCode(distance)
     logical_observables = [code.logical_qubits[1].x]
     initial_stabilizers = []
     for check in code.check_schedule[0]:
+        initial_stabilizers.append(Stabilizer([(0, check)], 0))
+
+    compiler = AncillaPerCheckCompiler(
+        noise_model=PhenomenologicalNoise(1, 1),
+        syndrome_extractor=CxCyCzExtractor())
+    stim_circuit = compiler.compile_to_stim(
+        code=code,
+        total_rounds=rounds,
+        initial_stabilizers=initial_stabilizers,
+        observables=logical_observables
+    )
+    return (stim_circuit)
+
+
+def generate_circuit_Z_observable(rounds, distance):
+    code = FloquetColourCode(distance)
+    logical_observables = [code.logical_qubits[0].z]
+    initial_stabilizers = []
+    for check in code.check_schedule[1]:
         initial_stabilizers.append(Stabilizer([(0, check)], 0))
 
     compiler = AncillaPerCheckCompiler(
@@ -63,7 +83,14 @@ def check_n_detectors(circuit: stim.Circuit, rounds):
 
 def test_properties_of_d4_codes():
     for n_rounds in range(12, 24):
-        circuit: stim.Circuit = generate_circuit(n_rounds, 4)
+        circuit: stim.Circuit = generate_circuit_X_observable(n_rounds, 4)
         check_parity_of_number_of_violated_detectors(circuit)
         check_n_detectors(circuit, n_rounds)
         check_distance(circuit, 4)
+
+
+def test_Z_observable():
+    circuit: stim.Circuit = generate_circuit_Z_observable(12, 4)
+    check_parity_of_number_of_violated_detectors(circuit)
+    check_n_detectors(circuit, 12)
+    check_distance(circuit, 4)

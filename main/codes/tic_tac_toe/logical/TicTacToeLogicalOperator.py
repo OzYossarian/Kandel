@@ -46,7 +46,6 @@ class TicTacToeLogicalOperator(LogicalOperator):
         self.logical_qubit = logical_qubit
 
         # This is a hacky way to include the gauge factor stuff.
-        # pj todo temp fix
         if gauge_factors == 1:
             self.gauge_factors = [1, 1, 1]
         else:
@@ -56,7 +55,6 @@ class TicTacToeLogicalOperator(LogicalOperator):
         # But since I haven't figured out what it means for a general
         # tic-tac-toe code to have a gauge factor > 1 (only specific
         # examples of HCC and FCC), we do things the hacky way.
-
         self._at_round = {-1: initial_paulis}
         self.last_updated = -1
         super().__init__([])
@@ -70,6 +68,20 @@ class TicTacToeLogicalOperator(LogicalOperator):
         return self._at_round[round]
 
     def round_to_ungauged_round(self, round: int):
+        """ Converts a round to an ungauged round.
+
+        Round can be used as an index for the check schedule.
+        Ungauged round can be used as an index for the tic-tac-toe route, because the tic-tac-toe route does not include repeated measurements.
+
+        Args:
+            round:
+                The index of a round.
+
+        Returns:
+            ungauged_round:
+                The index of the ungauged round.
+
+        """
         sum_of_gauge_factors = sum(self.gauge_factors)
 
         cumulative_sum = 0
@@ -155,7 +167,7 @@ class TicTacToeLogicalOperator(LogicalOperator):
             pauli.letter.letter != 'I' and pauli.qubit in check_qubits
             for pauli in self.at_round(round - 1))
 
-    @ staticmethod
+    @staticmethod
     def is_horizontal(check: Check):
         y_coords = [pauli.qubit.coords[1] for pauli in check.paulis.values()]
         return len(set(y_coords)) == 1

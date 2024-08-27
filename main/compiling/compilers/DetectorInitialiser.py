@@ -353,7 +353,7 @@ class DetectorInitialiser:
         expectation = simulator.peek_observable_expectation(string)
         return expectation in [1, -1]
 
-    @ staticmethod
+    @staticmethod
     def to_pauli_string(product: PauliProduct, circuit: Circuit):
         """
         Turn a PauliProduct into a stim.PauliString

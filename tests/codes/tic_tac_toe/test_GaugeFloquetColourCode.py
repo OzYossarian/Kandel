@@ -15,7 +15,7 @@ def generate_circuit(rounds, distance, gauge_factors):
         initial_stabilizers.append(Stabilizer([(0, check)], 0))
 
     compiler = AncillaPerCheckCompiler(
-        noise_model=PhenomenologicalNoise(1, 1),
+        noise_model=PhenomenologicalNoise(0.1, 0.1),
         syndrome_extractor=CxCyCzExtractor())
     stim_circuit = compiler.compile_to_stim(
         code=code,
