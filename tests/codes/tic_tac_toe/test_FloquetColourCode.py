@@ -94,3 +94,6 @@ def test_Z_observable():
     check_parity_of_number_of_violated_detectors(circuit)
     check_n_detectors(circuit, 12)
     check_distance(circuit, 4)
+
+
+

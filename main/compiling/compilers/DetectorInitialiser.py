@@ -234,20 +234,28 @@ class DetectorInitialiser:
         shift = layer * self.code.schedule_length
         round_detectors = []
         for drum in self.code.detector_schedule[relative_round]:
+
             assert drum.end == relative_round
             if drum.floor_start + shift >= 0:
                 # This detector is always going to be comparing a floor
                 # with a lid, so should always be deterministic.
                 round_detectors.append(drum)
+
             else:
-                timed_checks = drum.checks_at_or_after(
-                    0, self.code.schedule_length)
+
+                # Not all checks of the drum may have been performed just after initialisation.
+                # This returns the checks that have been measured so far.
+                timed_checks = drum.checks_at_or_before(
+                    round)
+
                 if self.is_deterministic(timed_checks, circuit, simulator):
+
                     # This detector should become a 'lid-only' detector
                     # in this layer.
                     lid_only = Stabilizer(
                         timed_checks, relative_round, drum.anchor)
                     round_detectors.append(lid_only)
+
         return round_detectors
 
     def measure_checks(self, round: int, tick: int, circuit: Circuit):
@@ -345,15 +353,16 @@ class DetectorInitialiser:
         """
         timed_checks = sorted(
             timed_checks, key=lambda timed_check: -timed_check[0])
+        # need to check if the checks in the last round are deterministic
         product = PauliProduct([
             pauli
-            for _, check in timed_checks
-            for pauli in check.paulis.values()])
+            for t, check in timed_checks
+            for pauli in check.paulis.values() if t == 0])
         string = self.to_pauli_string(product, circuit)
         expectation = simulator.peek_observable_expectation(string)
         return expectation in [1, -1]
 
-    @staticmethod
+    @ staticmethod
     def to_pauli_string(product: PauliProduct, circuit: Circuit):
         """
         Turn a PauliProduct into a stim.PauliString

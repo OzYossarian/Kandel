@@ -103,14 +103,15 @@ class Compiler(ABC):
         self.initialisation_instructions = initialisation_instructions
         self.measurement_instructions = measurement_instructions
 
-    def check_validity_of_inputs(self,
-                                 code: Code,
-                                 initial_states: Dict[Qubit, State] = None,
-                                 initial_stabilizers: List[Stabilizer] = None,
-                                 final_measurements: List[Pauli] = None,
-                                 final_stabilizers: List[Stabilizer] = None,
-                                 observables: List[LogicalOperator] = None,
-                                 ):
+    def check_validity_of_inputs(
+        self,
+        code: Code,
+        initial_states: Dict[Qubit, State] = None,
+        initial_stabilizers: List[Stabilizer] = None,
+        final_measurements: List[Pauli] = None,
+        final_stabilizers: List[Stabilizer] = None,
+        observables: List[LogicalOperator] = None,
+    ):
 
         if not xor(initial_states is None, initial_stabilizers is None):
             raise ValueError(
@@ -173,7 +174,6 @@ class Compiler(ABC):
             observables: 
                 The observables to include in the circuit.
         """
-
         self.check_validity_of_inputs(
             code, initial_states, initial_stabilizers, final_measurements, final_stabilizers, observables
         )
@@ -202,78 +202,6 @@ class Compiler(ABC):
             tick = self.compile_round(
                 round,
                 round % code.schedule_length,
-
-                code.detector_schedule,
-                observables,
-                tick,
-                circuit,
-                code,
-            )
-            round += 1
-
-        # Finish with data qubit measurements, and use these to reconstruct
-        # some detectors.
-        if isinstance(code, TicTacToeCode) or isinstance(code, GaugeTicTacToeCode):
-            pauli_letter_observable = observables[0].at_round(round-1)[
-                0].letter.letter
-
-            final_measurements = [Pauli(qubit, PauliLetter(pauli_letter_observable))
-                                  for qubit in code.data_qubits.values()]
-
-        self.compile_final_measurements(
-            final_measurements,
-            final_stabilizers,
-            observables,
-            round,
-            tick,
-            circuit,
-            code)
-
-        return circuit
-
-    def compile_to_circuit(
-            self,
-            code: Code,
-            total_rounds: int,
-            initial_states: Dict[Qubit, State] = None,
-            initial_stabilizers: List[Stabilizer] = None,
-            final_measurements: List[Pauli] = None,
-            final_stabilizers: List[Stabilizer] = None,
-            observables: List[LogicalOperator] = None,
-    ) -> Circuit:
-        """
-        TODO explain total rounds
-        """
-
-        self.check_validity_of_inputs(
-            code, initial_states, initial_stabilizers, final_measurements, final_stabilizers, observables
-        )
-        initial_detector_schedules, tick, circuit = self.compile_initialisation(
-            code, initial_states, initial_stabilizers)
-
-        initialization_layers = len(initial_detector_schedules)
-        # initial_layers is the number of layers in which 'lid-only'
-        # detectors exist.
-        if initialization_layers * code.schedule_length > total_rounds:
-            raise ValueError(
-                f"The number of layers required to set up the code is "
-                f"greater than the number of layers to compile!"
-                f"Requested that {total_rounds} round(s) are compiled, but code "
-                f"seems to take {initialization_layers * code.schedule_length} round(s) to set up.")
-
-        # Compile these initial layers.
-        for layer, detector_schedule in enumerate(initial_detector_schedules):
-            tick = self.compile_layer(
-                layer, detector_schedule, observables, tick, circuit, code
-            )
-
-        # Compile the remaining layers.
-        round = code.schedule_length * initialization_layers
-        while round < total_rounds:
-            tick = self.compile_round(
-                round,
-                round % code.schedule_length,
-
                 code.detector_schedule,
                 observables,
                 tick,
@@ -295,102 +223,6 @@ class Compiler(ABC):
 
         # Finish with data qubit measurements, and use these to reconstruct
         # some detectors.
-        self.compile_final_measurements(
-            final_measurements,
-            final_stabilizers,
-            observables,
-            round,
-            tick,
-            circuit,
-            code)
-
-        return circuit
-
-    def compile_to_circuit_for_loop(
-            self,
-            code: Code,
-            total_rounds: int,
-            initial_states: Dict[Qubit, State] = None,
-            initial_stabilizers: List[Stabilizer] = None,
-            final_measurements: List[Pauli] = None,
-            final_stabilizers: List[Stabilizer] = None,
-            observables: List[LogicalOperator] = None,
-    ) -> Circuit:
-        """
-        TODO explain total rounds
-        """
-
-        self.check_validity_of_inputs(
-            code, initial_states, initial_stabilizers, final_measurements, final_stabilizers, observables
-        )
-        initial_detector_schedules, tick, circuit = self.compile_initialisation(
-            code, initial_states, initial_stabilizers)
-
-        initialization_layers = len(initial_detector_schedules)
-        # initial_layers is the number of layers in which 'lid-only'
-        # detectors exist.
-        if initialization_layers * code.schedule_length > total_rounds:
-            raise ValueError(
-                f"The number of layers required to set up the code is "
-                f"greater than the number of layers to compile!"
-                f"Requested that {total_rounds} round(s) are compiled, but code "
-                f"seems to take {initialization_layers * code.schedule_length} round(s) to set up.")
-
-        # Compile these initial layers.
-        for layer, detector_schedule in enumerate(initial_detector_schedules):
-            tick = self.compile_layer(
-                layer, detector_schedule, observables, tick, circuit, code
-            )
-
-        # Compile the remaining layers.
-        tick_at_start_of_for_loop = tick
-        for_loop_repetitions = (
-            total_rounds - initialization_layers * code.schedule_length)//code.schedule_length
-
-        # final round of for loop
-        round = code.schedule_length * initialization_layers
-        while round < (code.schedule_length * initialization_layers + code.schedule_length):
-            tick = self.compile_round(
-                round,
-                round % code.schedule_length,
-                code.detector_schedule,
-                observables,
-                tick,
-                circuit,
-                code,
-            )
-            round += 1
-
-        tick_at_end_of_for_loop = tick
-        for tick_in_for_loop in range(tick_at_start_of_for_loop, tick_at_end_of_for_loop):
-            circuit.repeat_blocks[tick_in_for_loop] = [
-                tick_at_start_of_for_loop,
-                tick_at_end_of_for_loop,
-                for_loop_repetitions
-            ]
-
-        # need to compile some rounds after completion of for loop
-        while round < (total_rounds - (for_loop_repetitions - 1) * code.schedule_length):
-            tick = self.compile_round(
-                round,
-                round % code.schedule_length,
-                code.detector_schedule,
-                observables,
-                tick,
-                circuit,
-                code,
-            )
-            round += 1
-
-        # Finish with data qubit measurements, and use these to reconstruct
-        # some detectors.
-        if isinstance(code, TicTacToeCode) or isinstance(code, GaugeTicTacToeCode):
-            pauli_letter_observable = observables[0].at_round(round-1)[
-                0].letter.letter
-
-            final_measurements = [Pauli(qubit, PauliLetter(pauli_letter_observable))
-                                  for qubit in code.data_qubits.values()]
-
         self.compile_final_measurements(
             final_measurements,
             final_stabilizers,
