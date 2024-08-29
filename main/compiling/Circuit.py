@@ -386,13 +386,27 @@ class Circuit:
 
             # Now actually compile instructions at this tick
             measurements = []
-            for qubit, instructions in qubit_instructions.items():
-                for instruction in instructions:
-                    if not compiled[instruction]:
-                        self.instruction_to_stim(instruction, circuit)
-                        if instruction.is_measurement:
-                            measurements.append(instruction)
-                        compiled[instruction] = True
+            qubits_by_instruction = {}
+
+            for qubit, instruction in qubit_instructions.items():
+                if instruction[0].is_measurement:
+                    measurements.append(instruction[0])
+
+                if instruction[0].name != "MPP":
+                    qubits = instruction[0].qubits
+                    if (instruction[0].name, instruction[0].params) not in qubits_by_instruction:
+                        qubits_by_instruction[(
+                            instruction[0].name, instruction[0].params)] = []
+                    for qubit in qubits:
+                        if self.qubit_index(qubit) not in qubits_by_instruction[(instruction[0].name, instruction[0].params)]:
+                            qubits_by_instruction[(instruction[0].name, instruction[0].params)].append(
+                                self.qubit_index(qubit))
+                else:
+                    self.instruction_to_stim(instruction[0], circuit)
+
+            for instruction in qubits_by_instruction:
+                circuit.append(instruction[0],
+                               qubits_by_instruction[instruction], instruction[1])
 
             # Let the measurer determine if these measurements trigger any
             # further instructions - e.g. compiling detectors, adding checks
@@ -439,7 +453,6 @@ class Circuit:
         else:
             targets = [self.qubit_index(qubit) for qubit in instruction.qubits]
         circuit.append(instruction.name, targets, instruction.params)
-
 
     def entered_repeat_block(self, tick: int, last_tick: int):
         """Checks if a repeat block started between last_tick and tick.
