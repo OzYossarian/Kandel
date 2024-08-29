@@ -384,26 +384,8 @@ class Circuit:
             if self.entered_repeat_block(tick, most_recent_tick):
                 circuit = stim.Circuit()
 
-            # Now actually compile instructions at this tick
-            measurements = []
-            qubits_by_instruction = {}
-
-            for qubit, instruction in qubit_instructions.items():
-                if instruction[0].is_measurement:
-                    measurements.append(instruction[0])
-
-                qubits = instruction[0].qubits
-                if (instruction[0].name, instruction[0].params) not in qubits_by_instruction:
-                    qubits_by_instruction[(
-                        instruction[0].name, instruction[0].params)] = []
-                if instruction[0].targets is not None:
-                    qubits_by_instruction[(instruction[0].name, instruction[0].params)].extend(
-                        instruction[0].targets)
-                else:
-                    for qubit in qubits:
-                        if self.qubit_index(qubit) not in qubits_by_instruction[(instruction[0].name, instruction[0].params)]:
-                            qubits_by_instruction[(instruction[0].name, instruction[0].params)].append(
-                                self.qubit_index(qubit))
+            qubits_by_instruction, measurements = self.split_instructions_according_to_gate(
+                qubit_instructions)
 
             for instruction in qubits_by_instruction:
                 circuit.append(instruction[0],
@@ -443,20 +425,28 @@ class Circuit:
         self.measurer.reset_compilation()
         return full_circuit
 
-    """
-    def instruction_to_stim(self, instruction: Instruction, circuit: stim.Circuit):
-        Adds an individual Instruction to a circuit
+    def split_instructions_according_to_gate(self, qubit_instructions: Dict[Qubit, List[Instruction]]):
+        """TODO - docstring"""
+        measurements = []
+        qubits_by_instruction = {}
 
-       Args:
-            instruction: The instruction to be translated
-            circuit: A stim circuit to add the instruction to.
-   
-        if instruction.targets is not None:
-            targets = instruction.targets
-        else:
-            targets = [self.qubit_index(qubit) for qubit in instruction.qubits]
-        circuit.append(instruction.name, targets, instruction.params)
-    """
+        for qubit, instruction in qubit_instructions.items():
+            if instruction[0].is_measurement:
+                measurements.append(instruction[0])
+
+            qubits = instruction[0].qubits
+            if (instruction[0].name, instruction[0].params) not in qubits_by_instruction:
+                qubits_by_instruction[(
+                    instruction[0].name, instruction[0].params)] = []
+            if instruction[0].targets is not None:
+                qubits_by_instruction[(instruction[0].name, instruction[0].params)].extend(
+                    instruction[0].targets)
+            else:
+                for qubit in qubits:
+                    if self.qubit_index(qubit) not in qubits_by_instruction[(instruction[0].name, instruction[0].params)]:
+                        qubits_by_instruction[(instruction[0].name, instruction[0].params)].append(
+                            self.qubit_index(qubit))
+        return (qubits_by_instruction, measurements)
 
     def entered_repeat_block(self, tick: int, last_tick: int):
         """Checks if a repeat block started between last_tick and tick.
