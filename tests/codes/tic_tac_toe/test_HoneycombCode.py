@@ -85,9 +85,5 @@ def test_properties_of_d4_codes():
 
 def test_z_obs():
     circuit: stim.Circuit = generate_circuit_Z_observable(12, 4)
-    print(circuit)
     check_parity_of_number_of_violated_detectors_d4(circuit)
     check_distance(circuit, 4)
-
-
-test_z_obs()

@@ -101,14 +101,11 @@ def test_d4_codes_high_gauge():
     check_distance(circuit, 4)
 
 
-test_d4_codes_high_gauge()
 
 
 def test_Z_observable():
     circuit: stim.Circuit = generate_circuit_Z_observable(12, 4, [1, 1, 1])
-    print(circuit)
     check_parity_of_number_of_violated_detectors(circuit)
     check_distance(circuit, 4)
 
 
-test_Z_observable()
