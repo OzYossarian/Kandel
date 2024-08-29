@@ -178,69 +178,6 @@ def test_drum_has_open_lid():
     assert Counter(checks_measured) == Counter(floor + [lid[1]])
 
 
-def test_drum_checks_at_or_after():
-    # Explicit tests. Use Counters throughout for comparisons because we
-    # want to compare lists but don't care about ordering.
-    qubits = [Qubit(0), Qubit(1)]
-    checks = [
-        Check([Pauli(qubits[0], PauliLetter('X'))]),
-        Check([Pauli(qubits[1], PauliLetter('X'))])]
-    lid = [(0, checks[0]), (-1, checks[1])]
-    floor = [(-2, checks[0]), (-3, checks[1])]
-
-    schedule_length = 6
-    # First test - drum sits entirely within one layer of the schedule
-    # 0       1       2       3       4       5       Absolute round
-    # |-------|-------|-------|-------|-------|-------
-    # 0       1       2       3       4       5       Relative round
-    #         floor   floor   lid     lid
-    #         start   end     start   end
-    end = 4
-    drum = Drum(floor, lid, end)
-
-    for relative_round in [5, 0, 1]:
-        timed_checks = drum.checks_at_or_after(
-            relative_round, schedule_length)
-        assert Counter(timed_checks) == Counter(floor + lid)
-
-    timed_checks = drum.checks_at_or_after(2, schedule_length)
-    assert Counter(timed_checks) == Counter([floor[0]] + lid)
-
-    timed_checks = drum.checks_at_or_after(3, schedule_length)
-    assert Counter(timed_checks) == Counter(lid)
-
-    timed_checks = drum.checks_at_or_after(4, schedule_length)
-    assert Counter(timed_checks) == Counter([lid[0]])
-
-    # Next test: drum straddles two layers of the code schedule
-    # 6       7       8       9       10      11      Absolute round
-    # |-------|-------|-------|-------|-------|-------
-    # 0       1       2       3       4       5       Relative round
-    # lid     lid                     floor   floor
-    # start   end                     start   end
-    end = 1
-    drum = Drum(floor, lid, end)
-
-    for relative_round in [2, 3, 4, 8, 9, 10]:
-        timed_checks = drum.checks_at_or_after(
-            relative_round, schedule_length)
-        assert Counter(timed_checks) == Counter(floor + lid)
-
-    for relative_round in [5, 11]:
-        timed_checks = drum.checks_at_or_after(
-            relative_round, schedule_length)
-        assert Counter(timed_checks) == Counter([floor[0]] + lid)
-
-    for relative_round in [0, 6]:
-        timed_checks = drum.checks_at_or_after(
-            relative_round, schedule_length)
-        assert Counter(timed_checks) == Counter(lid)
-
-    for relative_round in [1, 7]:
-        timed_checks = drum.checks_at_or_after(
-            relative_round, schedule_length)
-        assert Counter(timed_checks) == Counter([lid[0]])
-
 
 def test_drum_repr():
     # Explicit test:

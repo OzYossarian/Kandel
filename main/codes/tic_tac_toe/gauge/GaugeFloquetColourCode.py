@@ -2,6 +2,7 @@ from typing import List
 
 from main.building_blocks.detectors.Drum import Drum
 from main.building_blocks.pauli.PauliLetter import PauliLetter
+from main.codes.tic_tac_toe.FloquetColourCode import FloquetColourCode
 from main.codes.tic_tac_toe.detectors.TicTacToeDrumBlueprint import TicTacToeDrumBlueprint
 from main.codes.tic_tac_toe.gauge.GaugeTicTacToeCode import GaugeTicTacToeCode
 from main.utils.Colour import Red, Green, Blue
@@ -32,6 +33,9 @@ class GaugeFloquetColourCode(GaugeTicTacToeCode):
                          self.x_gf, self.z_gf]
         super().__init__(distance, gauge_factors)
         self.get_plaquette_detector_schedule()
+
+    def get_ungauged_code(self, distance: int) -> TicTacToeCode:
+        return FloquetColourCode(distance)
 
     def get_plaquette_detector_schedule(self) -> List[List[Drum]]:
         # Rather than build the actual detectors from scratch, build the
