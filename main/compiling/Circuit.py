@@ -373,7 +373,8 @@ class Circuit:
                 index = self.qubit_index(qubit)
                 circuit.append("QUBIT_COORDS", [index], qubit.coords)
 
-        for tick, qubit_instructions in sorted(self.instructions.items()):
+        sorted_instructions = sorted(self.instructions.items())
+        for tick, qubit_instructions in sorted_instructions:
             # Check whether we need to close a repeat block
             repeats = self.left_repeat_block(tick, most_recent_tick)
             if repeats is not None:
@@ -426,27 +427,47 @@ class Circuit:
         return full_circuit
 
     def split_instructions_according_to_gate(self, qubit_instructions: Dict[Qubit, List[Instruction]]):
-        """TODO - docstring"""
+        """Splits the instructions into gates and measurements
+
+        Qubit instructions is a dictionary whose keys are Qubits and values are lists of Instructions.
+        This function generates a dictionary whose keys are a instruction and whose values are lists of qubits.
+        This is done to reduce the amount of times we need to call Stim's append function.
+
+        It also generates a list of measurements.
+
+        Args:
+            qubit_instructions: A dictionary whose keys are Qubits and values are lists of Instructions.
+
+        Returns:
+            A tuple of two dictionaries. The first dictionary has keys of Instructions and values of lists of qubits.
+            The second dictionary has keys of Instructions which are measurements and values of lists of qubits.        
+        """
         measurements = []
         qubits_by_instruction = {}
+        compiled_instruction = defaultdict(bool)
+        instructions = sorted(qubit_instructions.values(),
+                              key=lambda value: (value[0].name, self.qubit_index(value[0].qubits[0])))
+        for instruction in instructions:
 
-        for qubit, instruction in qubit_instructions.items():
-            if instruction[0].is_measurement:
-                measurements.append(instruction[0])
+            first_instruction = instruction[0]
+            if not compiled_instruction[first_instruction]:
 
-            qubits = instruction[0].qubits
-            if (instruction[0].name, instruction[0].params) not in qubits_by_instruction:
-                qubits_by_instruction[(
-                    instruction[0].name, instruction[0].params)] = []
-            if instruction[0].targets is not None:
-                qubits_by_instruction[(instruction[0].name, instruction[0].params)].extend(
-                    instruction[0].targets)
-            else:
-                for qubit in qubits:
-                    if self.qubit_index(qubit) not in qubits_by_instruction[(instruction[0].name, instruction[0].params)]:
-                        qubits_by_instruction[(instruction[0].name, instruction[0].params)].append(
-                            self.qubit_index(qubit))
-        return (qubits_by_instruction, measurements)
+                if first_instruction.is_measurement:
+                    measurements.append(first_instruction)
+
+                key = (first_instruction.name, first_instruction.params)
+                if key not in qubits_by_instruction:
+                    qubits_by_instruction[key] = []
+
+                if first_instruction.targets is not None:
+                    qubits_by_instruction[key].extend(
+                        first_instruction.targets)
+                else:
+                    qubits_by_instruction[key].extend(
+                        [self.qubit_index(qubit) for qubit in first_instruction.qubits])
+                compiled_instruction[first_instruction] = True
+
+        return qubits_by_instruction, measurements
 
     def entered_repeat_block(self, tick: int, last_tick: int):
         """Checks if a repeat block started between last_tick and tick.
