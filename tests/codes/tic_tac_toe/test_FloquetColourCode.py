@@ -136,7 +136,7 @@ def test_X_stability_experiment():
     circuit: stim.Circuit = generate_X_stability_circuit(16, 4)
     check_distance(circuit, 4)
 
-    circuit: stim.Circuit = generate_X_stability_circuit(12, 4)
+    circuit: stim.Circuit = generate_X_stability_circuit(13, 4)
     check_distance(circuit, 3)
 
     circuit: stim.Circuit = generate_X_stability_circuit(20, 4)
