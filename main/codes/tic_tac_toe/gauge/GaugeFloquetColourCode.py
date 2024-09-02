@@ -6,6 +6,7 @@ from main.codes.tic_tac_toe.FloquetColourCode import FloquetColourCode
 from main.codes.tic_tac_toe.TicTacToeCode import TicTacToeCode
 from main.codes.tic_tac_toe.detectors.TicTacToeDrumBlueprint import TicTacToeDrumBlueprint
 from main.codes.tic_tac_toe.gauge.GaugeTicTacToeCode import GaugeTicTacToeCode
+from main.codes.tic_tac_toe.stability_observable.stability_logical_operator import StabilityOperator
 from main.utils.Colour import Red, Green, Blue
 from main.building_blocks.pauli.PauliLetter import PauliLetter
 
@@ -32,8 +33,16 @@ class GaugeFloquetColourCode(GaugeTicTacToeCode):
             [(Blue, PauliLetter('Z')) for _ in range(self.z_gf)]
         gauge_factors = [self.x_gf, self.z_gf, self.x_gf, self.z_gf,
                          self.x_gf, self.z_gf]
+        self.get_stability_observables()
+
         super().__init__(distance, gauge_factors)
         self.get_plaquette_detector_schedule()
+
+    def get_stability_observables(self):
+        self.x_stability_operator = StabilityOperator(
+            [self.x_gf+self.z_gf, 2*self.x_gf + 2*self.z_gf], self)
+        self.z_stability_operator = StabilityOperator(
+            [2*self.x_gf+self.z_gf, 3*self.x_gf+2*self.z_gf], self)
 
     def get_ungauged_code(self, distance: int) -> TicTacToeCode:
         return FloquetColourCode(distance)
