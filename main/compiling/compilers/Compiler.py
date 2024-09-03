@@ -213,13 +213,13 @@ class Compiler(ABC):
         # For tic-tac-toe codes, which measurements need to be performed at the end depends on the number of rounds.
         # Only after compilition the at_round function contains the pauli letter of the observable.
         # That is why we do this here.
-        if isinstance(code, TicTacToeCode) or isinstance(code, GaugeTicTacToeCode):
+        if final_stabilizers is None and final_measurements is None:
             # We are assuming that there is only one observable in the list.
             pauli_letter_observable = observables[0].at_round(round-1)[
                 0].letter.letter
 
             final_measurements = [Pauli(qubit, PauliLetter(pauli_letter_observable))
-                                  for qubit in code.data_qubits.values()]
+                                    for qubit in code.data_qubits.values()]
 
         # Finish with data qubit measurements, and use these to reconstruct
         # some detectors.
