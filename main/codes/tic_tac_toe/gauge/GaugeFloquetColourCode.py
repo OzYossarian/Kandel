@@ -16,9 +16,9 @@ class GaugeFloquetColourCode(GaugeTicTacToeCode):
         """A gauge-fixed Floquet colour code.
 
         Args:
-            distance: 
+            distance:
                 The distance of the code.
-            gauge_factors: 
+            gauge_factors:
                 A list containing the number of times each check is repeated. Entry 1 means the check is repeated once, entry 2 means the check is repeated twice, etc.
         """
         self.x_gf = gauge_factors[0]
@@ -116,3 +116,74 @@ class GaugeFloquetColourCode(GaugeTicTacToeCode):
             Red: [red_x_drum_blueprint, red_z_drum_blueprint]}
         return self.ungauged_code.create_detectors(
             blueprints, self.schedule_length)
+
+    @staticmethod
+    def count_letter_with_skip(list_of_letters, letter):
+        count = 0
+        skip_next = True
+        matched = False
+
+        for l in list_of_letters:
+            if l == letter:
+                if not skip_next:
+                    count += 1
+                matched = True
+
+            else:
+                if matched == True:
+                    skip_next = not skip_next
+
+                matched = False
+        return count
+
+    @staticmethod
+    def count_letter(list_of_letters, letter):
+        count = 0
+        matched = False
+        for l in list_of_letters:
+
+            if l == letter:
+                if matched == False:
+                    count += 1
+                    matched = True
+            else:
+                matched = False
+        return count
+
+    @staticmethod
+    def repeat_list_to_length(original_list, x):
+        repeated_list = (original_list * (x // len(original_list) + 1))[:x]
+        return repeated_list
+
+    def get_measurement_error_distance(self, rounds, letter):
+        """error index: is the error on the 'X' or 'Z' measuerements!
+        """
+        measurement_pattern = [
+            edge[1].letter for edge in self.tic_tac_toe_route]
+        measurement_pattern = self.repeat_list_to_length(
+            measurement_pattern, rounds)
+        letter_count = self.count_letter_with_skip(measurement_pattern, letter)
+        return (letter_count)
+
+    def get_pauli_error_distance(self, rounds, letter):
+        """error index: is the error on the 'X' or 'Z' measuerements!
+        """
+        measurement_pattern = [
+            edge[1].letter for edge in self.tic_tac_toe_route]
+        measurement_pattern = self.repeat_list_to_length(
+            measurement_pattern, rounds)
+
+        letter_count = self.count_letter(
+            measurement_pattern[(self.x_gf + self.z_gf):], letter)
+        return (letter_count)
+
+    def get_number_of_rounds_for_stability_experiment(self, desired_distance):
+        #TODO
+        """Get the minimal number of rounds needed to perform a stability experiment of distance d"""
+        n_rounds = len(self.tic_tac_toe_route)
+        print(n_rounds)
+#        while actual
+        pass
+
+    def get_distance_stability_experiment(self, rounds, letter):
+        return (min(self.get_pauli_error_distance(rounds, letter), self.get_measurement_error_distance(rounds, letter)))
