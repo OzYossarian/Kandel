@@ -178,12 +178,19 @@ class GaugeFloquetColourCode(GaugeTicTacToeCode):
         return (letter_count)
 
     def get_number_of_rounds_for_stability_experiment(self, desired_distance):
-        #TODO
-        """Get the minimal number of rounds needed to perform a stability experiment of distance d"""
+        """Get the minimal number of rounds needed to perform a stability experiment of distance d
+        Assuming phenemenological noise
+        """
         n_rounds = len(self.tic_tac_toe_route)
-        print(n_rounds)
-#        while actual
-        pass
+        distance_x = self.get_distance_stability_experiment(n_rounds, 'X')
+        distance_z = self.get_distance_stability_experiment(n_rounds, 'Z')
+        while min(distance_x, distance_z) < desired_distance:
+            n_rounds += 1
+            distance_x = self.get_distance_stability_experiment(n_rounds, 'X')
+            distance_z = self.get_distance_stability_experiment(n_rounds, 'Z')
+
+        return n_rounds, distance_x, distance_z
 
     def get_distance_stability_experiment(self, rounds, letter):
-        return (min(self.get_pauli_error_distance(rounds, letter), self.get_measurement_error_distance(rounds, letter)))
+        return (min(self.get_pauli_error_distance(rounds, letter),
+                    self.get_measurement_error_distance(rounds, letter)))
