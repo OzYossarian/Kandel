@@ -63,29 +63,19 @@ def repeat_list_to_length(original_list, x):
 def count_letter_with_skip(list_of_letters, letter):
     count = 0
     skip_next = False
-    i = 0
+    matched = False
 
-    patterns = []
+    for l in list_of_letters:
+        if l == letter:
+            if not skip_next:
+                count += 1
+            matched = True
 
-    # Define a list of patterns to check and their corresponding lengths
-    for length in range(4, 0, -1):
-        # Create a pattern of 'X' of the given length
-        pattern = [letter] * length
-        patterns.append((pattern, length))
-    while i < len(list_of_letters):
-        matched = False
-
-        for pat, length in patterns:
-            if list_of_letters[i:i+length] == pat:
-                if not skip_next:
-                    count += length
+        else:
+            if matched == True:
                 skip_next = not skip_next
-                i += length
-                matched = True
-                break
 
-        if not matched:
-            i += 1
+            matched = False
     return count
 
 
@@ -123,16 +113,12 @@ def check_parity_of_number_of_violated_detectors_d4(circuit: stim.Circuit):
 
 def check_distance(circuit: stim.Circuit, distance):
 
-    logical_error = circuit.explain_detector_error_model_errors(dem_filter=(circuit.detector_error_model(
-        approximate_disjoint_errors=True).shortest_graphlike_error()), reduce_to_one_representative_error=True)
-#    for error in logical_error:
+    #    logical_error = circuit.explain_detector_error_model_errors(dem_filter=(circuit.detector_error_model(
+    #        approximate_disjoint_errors=True).shortest_graphlike_error()), reduce_to_one_representative_error=True)
+    #    for error in logical_error:
  #       print(error)
-
-    print(len(circuit.detector_error_model(
-        approximate_disjoint_errors=True).shortest_graphlike_error()), 'shortest error ')
-    print(distance, 'distance')
-  #  assert len(circuit.detector_error_model(
-   #     approximate_disjoint_errors=True).shortest_graphlike_error()) == distance
+    assert len(circuit.detector_error_model(
+        approximate_disjoint_errors=True).shortest_graphlike_error()) == distance
 
 
 def test_properties_of_d4_codes_g123():
@@ -168,22 +154,23 @@ def test_measurement_qubit_error_distance():
             rounds, 4, gauge_factors, 'stability_x', measurement_error_probability=0.1, data_qubit_error_probability=0)
         d = get_measurement_qubit_error_distance(
             rounds,  code.tic_tac_toe_route, 'X')
-
+        print(d, 'd')
         check_distance(circuit, d)
 
 
+test_measurement_qubit_error_distance()
 """
 def test_properties_of_d4_stability():
     gauge_factors = [3, 2]
     for rounds in range(20, 30):
-        """
-  circuit: stim.Circuit = generate_circuit(
+
+circuit: stim.Circuit = generate_circuit(
        rounds, 4, gauge_factors, 'stability_x')
    with open('circuit.txt', 'w') as f:
         f.write(str(circuit))
     d = get_distance_stability_experiments(gauge_factors, rounds)
     check_distance(circuit, d)
-    """
+
 
         print('rounds', rounds)
         circuit, code = generate_circuit(
