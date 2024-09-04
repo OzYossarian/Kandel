@@ -32,19 +32,18 @@ def generate_circuit(rounds: int,
         initial_stabilizers = [Stabilizer([(0, check)], 0)
                                for check in code.check_schedule[2]]
 
-        measurements = ['Y', 'Y', 'Y', 'Y', 'Z', 'Z']
+        measurement_letters = ['Y', 'Y', 'Y', 'Y', 'Z', 'Z']
         final_measurements = [Pauli(qubit, PauliLetter(
-            measurements[rounds % 6])) for qubit in code.data_qubits.values()]
+            measurement_letters[rounds % 6])) for qubit in code.data_qubits.values()]
     elif observable_type == 'stability_z':
         logical_observables = [code.z_stability_operator]
         initial_stabilizers = [Stabilizer([(0, check)], 0)
                                for check in code.check_schedule[0]]
-        if rounds % 6 == 0 or rounds % 6 == 5:
-            final_measurements = [Pauli(qubit, PauliLetter(
-                'Y')) for qubit in code.data_qubits.values()]
-        else:
-            final_measurements = [Pauli(qubit, PauliLetter(
-                'Z')) for qubit in code.data_qubits.values()]
+        # I just found this by drawing the detectors by hand and checking which measurements
+        # create the right timelike boundary.
+        measurement_letters = ['Y', 'Z', 'Z', 'Z', 'Z', 'Y']
+        final_measurements = [Pauli(qubit, PauliLetter(
+            measurement_letters[rounds % 6])) for qubit in code.data_qubits.values()]
 
     elif observable_type == 'X':
         logical_observables = [code.logical_qubits[1].x]
@@ -113,8 +112,11 @@ def test_z_obs():
     check_distance(circuit, 4)
 
 
-def distance_of_stability(rounds: int):
-    return (math.ceil((rounds-2)/2))
+def distance_of_stability(rounds: int, letter: str) -> int:
+    if letter == 'z':
+        return (math.ceil((rounds-3)/2))
+    elif letter == 'x':
+        return (math.ceil((rounds-2)/2))
 
 
 def test_stability_z():
@@ -124,7 +126,7 @@ def test_stability_z():
             measurement_noise_probability=0, pauli_noise_probability=0.1)
 
         check_parity_of_number_of_violated_detectors_d4(circuit)
-        check_distance(circuit, distance_of_stability(n_rounds))
+        check_distance(circuit, distance_of_stability(n_rounds, 'z'))
 
 
 def test_stability_x():
@@ -134,4 +136,4 @@ def test_stability_x():
             measurement_noise_probability=0, pauli_noise_probability=0.1)
 
         check_parity_of_number_of_violated_detectors_d4(circuit)
-        check_distance(circuit, distance_of_stability(n_rounds))
+        check_distance(circuit, distance_of_stability(n_rounds, 'x'))
