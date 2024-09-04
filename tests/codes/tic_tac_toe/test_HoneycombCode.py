@@ -1,3 +1,4 @@
+import math
 from main.building_blocks.detectors.Stabilizer import Stabilizer
 from main.building_blocks.pauli import Pauli
 from main.building_blocks.pauli.PauliLetter import PauliLetter
@@ -10,7 +11,11 @@ import stim
 from main.utils.enums import State
 
 
-def generate_circuit(rounds: int, distance: int, observable_type: str = 'X') -> stim.Circuit:
+def generate_circuit(rounds: int,
+                     distance: int,
+                     observable_type: str = 'X',
+                     pauli_noise_probability: float = 0.1,
+                     measurement_noise_probability: float = 0.1) -> stim.Circuit:
     """Generates a quantum error correction circuit for the Honeycomb code.
 
     Args:
@@ -26,15 +31,20 @@ def generate_circuit(rounds: int, distance: int, observable_type: str = 'X') -> 
         logical_observables = [code.x_stability_operator]
         initial_stabilizers = [Stabilizer([(0, check)], 0)
                                for check in code.check_schedule[2]]
-        final_measurements = [Pauli(qubit, PauliLetter(
-            'Z')) for qubit in code.data_qubits.values()]
 
+        measurements = ['Y', 'Y', 'Y', 'Y', 'Z', 'Z']
+        final_measurements = [Pauli(qubit, PauliLetter(
+            measurements[rounds % 6])) for qubit in code.data_qubits.values()]
     elif observable_type == 'stability_z':
         logical_observables = [code.z_stability_operator]
         initial_stabilizers = [Stabilizer([(0, check)], 0)
                                for check in code.check_schedule[0]]
-        final_measurements = [Pauli(qubit, PauliLetter(
-            'X')) for qubit in code.data_qubits.values()]
+        if rounds % 6 == 0 or rounds % 6 == 5:
+            final_measurements = [Pauli(qubit, PauliLetter(
+                'Y')) for qubit in code.data_qubits.values()]
+        else:
+            final_measurements = [Pauli(qubit, PauliLetter(
+                'Z')) for qubit in code.data_qubits.values()]
 
     elif observable_type == 'X':
         logical_observables = [code.logical_qubits[1].x]
@@ -46,13 +56,13 @@ def generate_circuit(rounds: int, distance: int, observable_type: str = 'X') -> 
         initial_stabilizers = [Stabilizer([(0, check)], 0)
                                for check in code.check_schedule[2]]
         final_measurements = None
-    noise_model = PhenomenologicalNoise(0.1, 0.1)
+    noise_model = PhenomenologicalNoise(
+        pauli_noise_probability, measurement_noise_probability)
 
     compiler = AncillaPerCheckCompiler(
         noise_model=noise_model,
         syndrome_extractor=CxCyCzExtractor()
     )
-    print(logical_observables)
     stim_circuit = compiler.compile_to_stim(
         code=code,
         total_rounds=rounds,
@@ -83,11 +93,8 @@ def check_parity_of_number_of_violated_detectors_d4(circuit: stim.Circuit):
 
 
 def check_distance(circuit: stim.Circuit, distance):
-    print(circuit.detector_error_model(
-        approximate_disjoint_errors=True, decompose_errors=True))
     print(len(circuit.detector_error_model(
-        approximate_disjoint_errors=True, decompose_errors=True).shortest_graphlike_error()
-    ))
+        approximate_disjoint_errors=True, decompose_errors=True).shortest_graphlike_error()))
     assert len(circuit.detector_error_model(
         approximate_disjoint_errors=True, decompose_errors=True).shortest_graphlike_error()) == distance
 
@@ -106,17 +113,25 @@ def test_z_obs():
     check_distance(circuit, 4)
 
 
-def test_stability_z():
-    circuit: stim.Circuit = generate_circuit(
-        rounds=12, distance=4, observable_type='stability_z')
+def distance_of_stability(rounds: int):
+    return (math.ceil((rounds-2)/2))
 
-    check_parity_of_number_of_violated_detectors_d4(circuit)
-    check_distance(circuit, 5)
+
+def test_stability_z():
+    for n_rounds in range(12, 18):
+        circuit: stim.Circuit = generate_circuit(
+            rounds=n_rounds, distance=4, observable_type='stability_z',
+            measurement_noise_probability=0, pauli_noise_probability=0.1)
+
+        check_parity_of_number_of_violated_detectors_d4(circuit)
+        check_distance(circuit, distance_of_stability(n_rounds))
 
 
 def test_stability_x():
-    circuit: stim.Circuit = generate_circuit(
-        rounds=12, distance=4, observable_type='stability_x')
+    for n_rounds in range(12, 18):
+        circuit: stim.Circuit = generate_circuit(
+            rounds=n_rounds, distance=4, observable_type='stability_x',
+            measurement_noise_probability=0, pauli_noise_probability=0.1)
 
-    check_parity_of_number_of_violated_detectors_d4(circuit)
-    check_distance(circuit, 5)
+        check_parity_of_number_of_violated_detectors_d4(circuit)
+        check_distance(circuit, distance_of_stability(n_rounds))
