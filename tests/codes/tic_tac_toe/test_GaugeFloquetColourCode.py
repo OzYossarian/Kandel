@@ -7,7 +7,6 @@ from main.compiling.noise.models.PhenomenologicalNoise import PhenomenologicalNo
 from main.compiling.syndrome_extraction.extractors.ancilla_per_check.mixed.CxCyCzExtractor import CxCyCzExtractor
 import stim
 import itertools
-import math
 
 
 def generate_circuit(rounds, distance, gauge_factors, observable_type, initial_stabilizers=None, measurement_error_probability=0.1, data_qubit_error_probability=0.1):
@@ -49,6 +48,8 @@ def generate_circuit(rounds, distance, gauge_factors, observable_type, initial_s
 
 
 def check_for_5_detectors_violated(dem):
+    # errors should only violate 1,2,3 or 4 detectors.
+    # (1,3) occur near the timelike boundaries.
     for dem_instruction in dem:
         if dem_instruction.type == "error":
             error_targets = dem_instruction.targets_copy()
@@ -67,7 +68,6 @@ def check_parity_of_number_of_violated_detectors_d4(circuit: stim.Circuit):
 
 
 def check_distance(circuit: stim.Circuit, distance):
-
     assert len(circuit.detector_error_model(
         approximate_disjoint_errors=True).shortest_graphlike_error()) == distance
 
@@ -161,9 +161,35 @@ def test_distance_phenomenological_noise():
     gauge_factors = [2, 2]
     rounds = 20
     circuit, code = generate_circuit(
-        rounds, 4, gauge_factors, 'stability_z', measurement_error_probability = 0.1, data_qubit_error_probability = 0.1)
+        rounds, 4, gauge_factors, 'stability_z', measurement_error_probability=0.1, data_qubit_error_probability=0.1)
     d = code.get_distance_stability_experiment(
         rounds, 'Z')
 
     # distance of pauli errors = 4, distance of measurement errors = 4
     check_distance(circuit, d)
+
+
+def test_get_number_of_rounds_for_stability_experiment():
+    distances = [4, 5, 7]
+    for distance in distances:
+        code = GaugeFloquetColourCode(4, [1, 4])
+        r, d_x, d_z = code.get_number_of_rounds_for_stability_experiment(
+            distance)
+        circuit_x_stability, code = generate_circuit(
+            r, 4, [1, 4], 'stability_x', measurement_error_probability=0.1, data_qubit_error_probability=0.1)
+
+        circuit_z_stability, code = generate_circuit(
+            r, 4, [1, 4], 'stability_z', measurement_error_probability=0.1, data_qubit_error_probability=0.1)
+
+        check_distance(circuit_x_stability, d_x)
+        check_distance(circuit_z_stability, d_z)
+        assert d_x == distance or d_z == distance
+
+        if d_z == distance:
+            circuit, code = generate_circuit(
+                r-1, 4, [1, 4], 'stability_z', measurement_error_probability=0.1, data_qubit_error_probability=0.1)
+            check_distance(circuit, distance-1)
+        else:
+            circuit, code = generate_circuit(
+                r-1, 4, [1, 4], 'stability_x', measurement_error_probability=0.1, data_qubit_error_probability=0.1)
+            check_distance(circuit, distance-1)

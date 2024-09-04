@@ -1,4 +1,4 @@
-from typing import List
+from typing import List, Literal, Tuple
 
 from main.building_blocks.detectors.Drum import Drum
 from main.building_blocks.pauli.PauliLetter import PauliLetter
@@ -119,6 +119,15 @@ class GaugeFloquetColourCode(GaugeTicTacToeCode):
 
     @staticmethod
     def count_letter_with_skip(list_of_letters, letter):
+        """Counts the number of times a letter appears in a list, skipping every other occurrence after the first match.
+
+        Args:
+            list_of_letters (List[str]): The list of letters to search through.
+            letter (str): The letter to count in the list.
+
+        Returns:
+            int: The count of the specified letter in the list, skipping every other occurrence after the first match.
+        """
         count = 0
         skip_next = True
         matched = False
@@ -137,7 +146,16 @@ class GaugeFloquetColourCode(GaugeTicTacToeCode):
         return count
 
     @staticmethod
-    def count_letter(list_of_letters, letter):
+    def count_letter(list_of_letters: List[str], letter: str) -> int:
+        """Counts the number of times a letter appears in a list, considering consecutive occurrences as one.
+
+        Args:
+            list_of_letters (List[str]): The list of letters to search through.
+            letter (str): The letter to count in the list.
+
+        Returns:
+            int: The count of the specified letter in the list, considering consecutive occurrences as one.
+        """
         count = 0
         matched = False
         for l in list_of_letters:
@@ -151,35 +169,73 @@ class GaugeFloquetColourCode(GaugeTicTacToeCode):
         return count
 
     @staticmethod
-    def repeat_list_to_length(original_list, x):
-        repeated_list = (original_list * (x // len(original_list) + 1))[:x]
+    def repeat_list_to_length(original_list: List, desired_length: int) -> List:
+        ""R"epeats a list until it reaches a certain length."""
+        repeated_list = (original_list * (desired_length //
+                         len(original_list) + 1))[:desired_length]
         return repeated_list
 
-    def get_measurement_error_distance(self, rounds, letter):
-        """error index: is the error on the 'X' or 'Z' measuerements!
+    def get_measurement_error_distance(self, rounds: int, letter: Literal['X', 'Z']) -> int:
+        """Returns the minimum weight of a timelike logical consisting of measurement errors.
+
+        For an 'X' stability experiment this weight (distance) can be calculated from looking at 
+        how letter appears in the measurement pattern.
+
+        Args:
+            rounds: The number of rounds in the experiment.
+            letter: The letter of the stability experiment to get the distance of.
+
+        Returns:
+            int: The distance of the stability experiment.
         """
         measurement_pattern = [
             edge[1].letter for edge in self.tic_tac_toe_route]
         measurement_pattern = self.repeat_list_to_length(
             measurement_pattern, rounds)
-        letter_count = self.count_letter_with_skip(measurement_pattern, letter)
-        return (letter_count)
+        measurement_error_distance = self.count_letter_with_skip(
+            measurement_pattern, letter)
+        return (measurement_error_distance)
 
-    def get_pauli_error_distance(self, rounds, letter):
-        """error index: is the error on the 'X' or 'Z' measuerements!
+    def get_pauli_error_distance(self, rounds: int, letter: Literal['X', 'Z']) -> int:
+        """Returns the minimum weight of a timelike logical consisting of X,Y, or Z errors on 
+        data qubits.
+
+        For an 'X' stability experiment this weight (distance) can be calculated from looking at 
+        how letter appears in the measurement pattern.
+
+        Args:
+            rounds: The number of rounds in the experiment.
+            letter: The letter of the stability experiment to get the distance of.
+
+        Returns:
+            int: The distance of the stability experiment.
         """
         measurement_pattern = [
             edge[1].letter for edge in self.tic_tac_toe_route]
         measurement_pattern = self.repeat_list_to_length(
             measurement_pattern, rounds)
 
-        letter_count = self.count_letter(
+        pauli_error_distance = self.count_letter(
             measurement_pattern[(self.x_gf + self.z_gf):], letter)
-        return (letter_count)
+        return (pauli_error_distance)
 
-    def get_number_of_rounds_for_stability_experiment(self, desired_distance):
-        """Get the minimal number of rounds needed to perform a stability experiment of distance d
-        Assuming phenemenological noise
+    def get_number_of_rounds_for_stability_experiment(self, desired_distance: int) -> Tuple[int, int, int]:
+        """Get the minimal number of rounds needed to perform a stability experiment 
+
+        This method assumes a phenmenological noise model is used. The number of rounds 
+        is returned such that both the distance of x and z stability experiments are at least the 
+        desired_distance. Distance here refers to the minimum number of errors needed to create 
+        a timelike logical operator.
+
+        Args:
+            desired_distance (int): The desired distance for the stability experiment
+
+        Returns:
+            Tuple[int, int, int]: A tuple containing:
+                - The number of rounds needed to perform a stability experiment
+                - The distance of the x-stability experiment with the given number of rounds
+                - The distance of the z-stability experiment with the given number of rounds
+
         """
         n_rounds = len(self.tic_tac_toe_route)
         distance_x = self.get_distance_stability_experiment(n_rounds, 'X')
@@ -191,6 +247,18 @@ class GaugeFloquetColourCode(GaugeTicTacToeCode):
 
         return n_rounds, distance_x, distance_z
 
-    def get_distance_stability_experiment(self, rounds, letter):
+    def get_distance_stability_experiment(self, rounds: int, letter: Literal['X', 'Z']) -> int:
+        """Get the distance of a stability experiment assuming phenomenological noise
+
+        The distance of a stability experiment is the minimum weight of a timelike logical operator
+        that can be created by applying errors to the data qubits or measurement errors.
+
+        Args:
+            rounds (int): The number of rounds in the experiment
+            letter (str): The letter of the stability experiment to get the distance of
+
+        Returns:
+            int: The distance of the stability experiment
+        """
         return (min(self.get_pauli_error_distance(rounds, letter),
                     self.get_measurement_error_distance(rounds, letter)))
