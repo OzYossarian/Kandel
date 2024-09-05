@@ -91,11 +91,24 @@ def check_parity_of_number_of_violated_detectors_d4(circuit: stim.Circuit):
         approximate_disjoint_errors=True)) == True
 
 
-def check_distance(circuit: stim.Circuit, distance):
+def check_graphlike_distance(circuit: stim.Circuit, distance):
     print(len(circuit.detector_error_model(
-        approximate_disjoint_errors=True, decompose_errors=True).shortest_graphlike_error()))
+        approximate_disjoint_errors=True, decompose_errors=False).shortest_graphlike_error()
+    ))
     assert len(circuit.detector_error_model(
-        approximate_disjoint_errors=True, decompose_errors=True).shortest_graphlike_error()) == distance
+        approximate_disjoint_errors=True, decompose_errors=False).shortest_graphlike_error()) == distance
+
+
+def check_hyper_edge_distance(circuit: stim.Circuit):
+
+    logical_errors = circuit.search_for_undetectable_logical_errors(
+        dont_explore_detection_event_sets_with_size_above=6,
+        dont_explore_edges_with_degree_above=6,
+        dont_explore_edges_increasing_symptom_degree=False,
+    )
+    for error in logical_errors:
+        print(error)
+    print(len(logical_errors))
 
 
 def test_properties_of_d4_codes():
@@ -119,6 +132,27 @@ def distance_of_stability(rounds: int, letter: str) -> int:
         return (math.ceil((rounds-2)/2))
 
 
+def remove_detectors(circuit: stim.Circuit, layers_to_skip_detectors) -> stim.Circuit:
+    vertical_layer = 0
+    layer: stim.CircuitInstruction
+    new_circuit = stim.Circuit()
+
+    for layer in circuit:
+        if layer.name == "SHIFT_COORDS":
+            vertical_layer += 1
+
+        if layer.name == "DETECTOR":
+            if (vertical_layer % 6) not in layers_to_skip_detectors:
+                new_circuit.append(layer)
+#        elif layer.name == "OBSERVABLE_INCLUDE":
+ #           if (vertical_layer % 6) not in layers_to_skip_detectors:
+  #              new_circuit.append(layer)
+        else:
+            new_circuit.append(layer)
+
+    return (new_circuit)
+
+
 def test_stability_z():
     for n_rounds in range(12, 18):
         circuit: stim.Circuit = generate_circuit(
@@ -126,7 +160,37 @@ def test_stability_z():
             measurement_noise_probability=0, pauli_noise_probability=0.1)
 
         check_parity_of_number_of_violated_detectors_d4(circuit)
-        check_distance(circuit, distance_of_stability(n_rounds, 'z'))
+        check_graphlike_distance(circuit, distance_of_stability(n_rounds, 'z'))
+
+
+def test_stability_z_measurement_noise_graphlike_distance():
+    for n_rounds in range(12, 18):
+        circuit: stim.Circuit = generate_circuit(
+            rounds=n_rounds, distance=4, observable_type='stability_z',
+            measurement_noise_probability=0.1, pauli_noise_probability=0)
+
+        new_circuit = remove_detectors(circuit, [0, 2, 4])
+        check_graphlike_distance(new_circuit, n_rounds//4)
+
+
+def test_stability_x_measurement_noise_graphlike_distance():
+    for n_rounds in range(12, 18):
+        circuit: stim.Circuit = generate_circuit(
+            rounds=n_rounds, distance=4, observable_type='stability_x',
+            measurement_noise_probability=0.1, pauli_noise_probability=0)
+
+        new_circuit = remove_detectors(circuit, [1, 3, 5])
+        check_graphlike_distance(new_circuit, (n_rounds+1)//4)
+
+
+def test_stability_z_measurement_noise_non_graphlike_distance():
+    # TODO
+    pass
+
+
+def test_stability_x_measurement_noise_non_graphlike_distance():
+    # TODO
+    pass
 
 
 def test_stability_x():
@@ -136,4 +200,4 @@ def test_stability_x():
             measurement_noise_probability=0, pauli_noise_probability=0.1)
 
         check_parity_of_number_of_violated_detectors_d4(circuit)
-        check_distance(circuit, distance_of_stability(n_rounds, 'x'))
+        check_graphlike_distance(circuit, distance_of_stability(n_rounds, 'x'))
