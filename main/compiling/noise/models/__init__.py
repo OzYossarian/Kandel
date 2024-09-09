@@ -1,3 +1,5 @@
 from .CodeCapacityBitFlipNoise import CodeCapacityBitFlipNoise
 from .CircuitLevelNoise import CircuitLevelNoise
 from .PhenomenologicalNoise import PhenomenologicalNoise
+from .code_capacity_noise import CodeCapacityNoise
+from .dw_tic_tac_toe_code_capacity_noise import DomainWallCodeCapacityNoise

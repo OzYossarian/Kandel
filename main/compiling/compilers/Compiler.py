@@ -7,12 +7,16 @@ from main.building_blocks.detectors.Stabilizer import Stabilizer
 from main.building_blocks.logical.LogicalOperator import LogicalOperator
 from main.building_blocks.pauli.PauliProduct import PauliProduct
 from main.building_blocks.pauli.utils import plus_one_eigenstates
+from main.codes.tic_tac_toe.FloquetColourCode import FloquetColourCode
+from main.codes.tic_tac_toe.TicTacToeCode import TicTacToeCode
+from main.codes.tic_tac_toe.gauge.GaugeHoneycombCode import GaugeHoneycombCode
+from main.codes.tic_tac_toe.gauge.GaugeTicTacToeCode import GaugeTicTacToeCode
 from main.compiling.Instruction import Instruction
 from main.codes.Code import Code
 from main.building_blocks.pauli.PauliLetter import PauliLetter
 from main.building_blocks.Qubit import Qubit
 from main.building_blocks.pauli.Pauli import Pauli
-from main.compiling.Circuit import Circuit
+from main.compiling.Circuit import Circuit, RepeatBlock
 from main.compiling.compilers.DetectorInitialiser import DetectorInitialiser
 from main.compiling.noise.models.NoNoise import NoNoise
 from main.compiling.noise.models.NoiseModel import NoiseModel
@@ -25,15 +29,17 @@ from main.compiling.syndrome_extraction.extractors.ancilla_per_check.mixed.CnotE
 from main.utils.enums import State
 from main.utils.types import Tick
 from main.utils.utils import xor
+from main.codes.tic_tac_toe.gauge.GaugeFloquetColourCode import GaugeFloquetColourCode
 import stim
 
 
 class Compiler(ABC):
     """Base class for all compilers.
 
-    At the moment, this compiler can be used to create a memory experiment 
+    At the moment, this compiler can be used to create a memory experiment
     using the function compile_to_circuit.
     """
+
     def __init__(
             self,
             noise_model: NoiseModel = None,
@@ -97,52 +103,16 @@ class Compiler(ABC):
         self.initialisation_instructions = initialisation_instructions
         self.measurement_instructions = measurement_instructions
 
-    def compile_to_circuit(
-            self,
-            code: Code,
-            layers: int,
-            initial_states: Dict[Qubit, State] = None,
-            initial_stabilizers: List[Stabilizer] = None,
-            final_measurements: List[Pauli] = None,
-            final_stabilizers: List[Stabilizer] = None,
-            observables: List[LogicalOperator] = None,
-    ) -> Circuit:
-        """Compiles a circuit for the given code.
+    def check_validity_of_inputs(
+        self,
+        code: Code,
+        initial_states: Dict[Qubit, State] = None,
+        initial_stabilizers: List[Stabilizer] = None,
+        final_measurements: List[Pauli] = None,
+        final_stabilizers: List[Stabilizer] = None,
+        observables: List[LogicalOperator] = None,
+    ):
 
-        Args:
-            code: The code to compile a circuit for.
-            layers: The number of layers to compile. One layers consits of
-                performing the entire check schedule of a code once.
-            initial_states: The initial states of the data qubits. If not
-                provided, will use initial_stabilizers to determine the
-                initial state.
-            initial_stabilizers: If initial_states is not provided,
-                this can be used to determine the initial states of the data
-                qubits.
-            final_measurements: The measurements to perform at the end of the
-                circuit. If not provided, will use final_stabilizers to
-                determine the measurements.
-            final_stabilizers: If final_measurements is not provided, this can
-                be used to determine the measurements to perform at the end of
-                the circuit.
-            logical_observables: The logical observables to construnct from
-                the final measurements.
-
-                                
-        Raises:
-            ValueError: If neither initial_states nor initial_stabilizers are
-                provided.
-            ValueError: If both final_measurements and final_stabilizers are
-                provided.
-            ValueError: If the number of layers is not a positive integer.
-
-        Returns:
-            An instance of the Circuit class.
-        """
-
-        # TODO - actually might make more sense to only allow
-        #  initial_stabilizers and final_stabilizers?? Is more general! But no
-        #  harm keeping both for now.
         if not xor(initial_states is None, initial_stabilizers is None):
             raise ValueError(
                 "Exactly one of initial_states and initial_stabilizers "
@@ -161,25 +131,64 @@ class Compiler(ABC):
 
         compile_final_round = \
             final_measurements is not None or final_stabilizers is not None
-        if observables is not None and not compile_final_round:
-            raise ValueError(
-                "Can't measure any observables if no method is given "
-                "for performing final measurements! Please provide one of "
-                "final_measurements or final_stabilizers, "
-                "or set observables to None.")
 
+        if observables is not None and not compile_final_round:
+            if isinstance(code, TicTacToeCode) or isinstance(code, GaugeTicTacToeCode):
+                pass
+            else:
+                raise ValueError(
+                    "Can't measure any observables if no method is given "
+                    "for performing final measurements! Please provide one of "
+                    "final_measurements or final_stabilizers, "
+                    "or set observables to None.")
+
+    def compile_to_circuit(
+        self,
+        code: Code,
+        total_rounds: int,
+        initial_states: Dict[Qubit, State] = None,
+        initial_stabilizers: List[Stabilizer] = None,
+        final_measurements: List[Pauli] = None,
+        final_stabilizers: List[Stabilizer] = None,
+        observables: List[LogicalOperator] = None,
+    ) -> Circuit:
+        """ Compiles a circuit for a given code.
+
+        Args:
+            code: The code to compile a circuit for.
+            total_rounds: The number of rounds to compile.
+            initial_states: The initial states of the data qubits. If not
+                provided, will use initial_stabilizers to determine the
+                initial state.
+            initial_stabilizers: If initial_states is not provided,
+                this can be used to determine the initial states of the data
+                qubits.
+            final_measurements: The measurements to perform at the end of the
+                circuit. If not provided, will use final_stabilizers to
+                determine the measurements. If the code is a tic-tac-toe code,
+                the measurements will be determined by the pauli-letter of the 
+                observables at the last round.
+            final_stabilizers: If final_measurements is not provided,
+                this can be used to determine the measurements to perform at
+                the end of the circuit.
+            observables: 
+                The observables to include in the circuit.
+        """
+        self.check_validity_of_inputs(
+            code, initial_states, initial_stabilizers, final_measurements, final_stabilizers, observables
+        )
         initial_detector_schedules, tick, circuit = self.compile_initialisation(
             code, initial_states, initial_stabilizers)
 
-        initial_layers = len(initial_detector_schedules)
+        initialization_layers = len(initial_detector_schedules)
         # initial_layers is the number of layers in which 'lid-only'
         # detectors exist.
-        if initial_layers > layers:
+        if initialization_layers * code.schedule_length > total_rounds:
             raise ValueError(
                 f"The number of layers required to set up the code is "
                 f"greater than the number of layers to compile!"
-                f"Requested that {layers} layer(s) are compiled, but code "
-                f"seems to take {initial_layers} layer(s) to set up.")
+                f"Requested that {total_rounds} round(s) are compiled, but code "
+                f"seems to take {initialization_layers * code.schedule_length} round(s) to set up.")
 
         # Compile these initial layers.
         for layer, detector_schedule in enumerate(initial_detector_schedules):
@@ -188,12 +197,29 @@ class Compiler(ABC):
             )
 
         # Compile the remaining layers.
-        layer = initial_layers
-        while layer < layers:
-            tick = self.compile_layer(
-                layer, code.detector_schedule, observables, tick, circuit, code
+        round = code.schedule_length * initialization_layers
+        while round < total_rounds:
+            tick = self.compile_round(
+                round,
+                round % code.schedule_length,
+                code.detector_schedule,
+                observables,
+                tick,
+                circuit,
+                code,
             )
-            layer += 1
+            round += 1
+
+        # For tic-tac-toe codes, which measurements need to be performed at the end depends on the number of rounds.
+        # Only after compilition the at_round function contains the pauli letter of the observable.
+        # That is why we do this here.
+        if isinstance(code, TicTacToeCode) or isinstance(code, GaugeTicTacToeCode):
+            # We are assuming that there is only one observable in the list.
+            pauli_letter_observable = observables[0].at_round(round-1)[
+                0].letter.letter
+
+            final_measurements = [Pauli(qubit, PauliLetter(pauli_letter_observable))
+                                  for qubit in code.data_qubits.values()]
 
         # Finish with data qubit measurements, and use these to reconstruct
         # some detectors.
@@ -201,32 +227,198 @@ class Compiler(ABC):
             final_measurements,
             final_stabilizers,
             observables,
-            layer,
+            round,
             tick,
             circuit,
             code)
 
         return circuit
 
-    def compile_to_stim(
+    def compile_to_circuit_for_loop(
             self,
             code: Code,
-            layers: int,
+            total_rounds: int,
             initial_states: Dict[Qubit, State] = None,
             initial_stabilizers: List[Stabilizer] = None,
             final_measurements: List[Pauli] = None,
             final_stabilizers: List[Stabilizer] = None,
             observables: List[LogicalOperator] = None,
-    ) -> stim.Circuit():
+    ) -> Circuit:
+        """
+        TODO explain total rounds
+        """
+
+        self.check_validity_of_inputs(
+            code, initial_states, initial_stabilizers, final_measurements, final_stabilizers, observables
+        )
+        initial_detector_schedules, tick, circuit = self.compile_initialisation(
+            code, initial_states, initial_stabilizers)
+
+        initialization_layers = len(initial_detector_schedules)
+        # initial_layers is the number of layers in which 'lid-only'
+        # detectors exist.
+        if initialization_layers * code.schedule_length > total_rounds:
+            raise ValueError(
+                f"The number of layers required to set up the code is "
+                f"greater than the number of layers to compile!"
+                f"Requested that {total_rounds} round(s) are compiled, but code "
+                f"seems to take {initialization_layers * code.schedule_length} round(s) to set up.")
+
+        # Compile these initial layers.
+        for layer, detector_schedule in enumerate(initial_detector_schedules):
+            tick = self.compile_layer(
+                layer, detector_schedule, observables, tick, circuit, code
+            )
+
+        # Compile the remaining layers.
+        tick_at_start_of_for_loop = tick
+        for_loop_repetitions = (
+            total_rounds - initialization_layers * code.schedule_length)//code.schedule_length
+
+        # final round of for loop
+        round = code.schedule_length * initialization_layers
+        while round < (code.schedule_length * initialization_layers + code.schedule_length):
+            tick = self.compile_round(
+                round,
+                round % code.schedule_length,
+                code.detector_schedule,
+                observables,
+                tick,
+                circuit,
+                code,
+            )
+            round += 1
+
+        tick_at_end_of_for_loop = tick
+        for tick_in_for_loop in range(tick_at_start_of_for_loop, tick_at_end_of_for_loop):
+            circuit.repeat_blocks[tick_in_for_loop] = [
+                tick_at_start_of_for_loop,
+                tick_at_end_of_for_loop,
+                for_loop_repetitions
+            ]
+
+        # need to compile some rounds after completion of for loop
+        while round < (total_rounds - (for_loop_repetitions - 1) * code.schedule_length):
+            tick = self.compile_round(
+                round,
+                round % code.schedule_length,
+                code.detector_schedule,
+                observables,
+                tick,
+                circuit,
+                code,
+            )
+            round += 1
+
+        # Finish with data qubit measurements, and use these to reconstruct
+        # some detectors.
+        if isinstance(code, TicTacToeCode) or isinstance(code, GaugeTicTacToeCode):
+            pauli_letter_observable = observables[0].at_round(round-1)[
+                0].letter.letter
+
+            final_measurements = [Pauli(qubit, PauliLetter(pauli_letter_observable))
+                                  for qubit in code.data_qubits.values()]
+
+        self.compile_final_measurements(
+            final_measurements,
+            final_stabilizers,
+            observables,
+            round,
+            tick,
+            circuit,
+            code)
+
+        return circuit
+
+    def compile_final_layer(
+        self,
+        layer: int,
+        detector_schedule: List[List[Detector]],
+        stability_observable_rounds: List[int],
+        tick: int,
+        circuit: Circuit,
+        code: Code,
+    ) -> int:
+        obs = LogicalOperator([])
+        for relative_round in range(code.schedule_length):
+            # Compile one round of checks, and note down the final tick
+            # used, then start the next round of checks from this tick.
+            round = layer * code.schedule_length + relative_round
+
+            if relative_round in stability_observable_rounds:
+                tick = self.compile_final_round(
+                    round,
+                    relative_round,
+                    detector_schedule,
+                    obs,
+                    tick,
+                    circuit,
+                    code,
+                )
+            else:
+                tick = self.compile_round(
+                    round,
+                    relative_round,
+                    code.check_schedule,
+                    detector_schedule,
+                    None,
+                    tick,
+                    circuit,
+                    code,
+                )
+
+        # round = layer * code.schedule_length + relative_round + 1
+        return (tick)
+
+    def compile_final_round(
+        self,
+        round: int,
+        relative_round: int,
+        detector_schedule: List[List[Detector]],
+        observable: Union[List[LogicalOperator], None],
+        tick: int,
+        circuit: Circuit,
+        code: Code,
+    ):
+        self.add_start_of_round_noise(tick - 1, circuit, code)
+
+        # First compile the syndrome extraction circuits for the checks.
+        checks = code.check_schedule[relative_round]
+        tick = self.syndrome_extractor.extract_checks(
+            checks, round, tick, circuit, self
+        )
+
+        # Next note down any detectors we'll need to compile at this round.
+        detectors = detector_schedule[relative_round]
+
+        circuit.measurer.add_detectors(detectors, round)
+
+        circuit.measurer.multiply_observable(
+            checks, observable, round
+        ),
+        circuit.end_round(tick - 2)
+
+        return tick
+
+    def compile_to_stim(
+        self,
+        code: Code,
+        total_rounds: int,
+        initial_states: Dict[Qubit, State] = None,
+        initial_stabilizers: List[Stabilizer] = None,
+        final_measurements: List[Pauli] = None,
+        final_stabilizers: List[Stabilizer] = None,
+        observables: List[LogicalOperator] = None,
+    ) -> stim.Circuit:
         circuit = self.compile_to_circuit(
             code=code,
-            layers=layers,
+            total_rounds=total_rounds,
             initial_states=initial_states,
             initial_stabilizers=initial_stabilizers,
             final_measurements=final_measurements,
             final_stabilizers=final_stabilizers,
             observables=observables)
-        return circuit.to_stim(self.noise_model.idling)
+        return (circuit.to_stim(self.noise_model.idling))
 
     def compile_initialisation(
             self,
@@ -244,7 +436,7 @@ class Compiler(ABC):
             initial_stabilizers: If initial_states is not provided,
                 this can be used to determine the initial states of the data
                 qubits.
-    
+
         Returns:
             A tuple containing:
                 - A list of detector schedules, one for each layer in which
@@ -332,7 +524,7 @@ class Compiler(ABC):
             initialisation_instructions: Dict[State, List[str]] = None
     ) -> Tick:
         """Initialises the data qubits in the given states.
-        
+
         Args:
             initial_states: The states to initialise the data qubits in.
             tick: The tick at which to start initialising the qubits.
@@ -379,28 +571,32 @@ class Compiler(ABC):
             circuit: Circuit,
             code: Code
     ) -> int:
-        """Compiles one layer of a code's check schedule.
+        """
+        Compiles one layer of a code's entire check schedule.
 
         Args:
             layer: The layer of the check schedule to compile.
             detector_schedule: The detector schedule to compile. This is not
-                fixed as the detector schedule of the first round is different
-                then subsequent rounds.
+            fixed as the detector schedule of the first round is different
+            then subsequent rounds.
             observables: The logical observables to measure.
             tick: The tick at which to start compiling the layer.
             circuit: The circuit to compile the layer on.
-            code: The code to compile the layer for.
+            code: The code to compile the layer for .
 
         Returns:
             The tick at which the last gates of the layer were compiled.
         """
         for relative_round in range(code.schedule_length):
+
             # Compile one round of checks, and note down the final tick
             # used, then start the next round of checks from this tick.
             round = layer * code.schedule_length + relative_round
+
             tick = self.compile_round(
                 round,
                 relative_round,
+                #                code.check_schedule,
                 detector_schedule,
                 observables,
                 tick,
@@ -419,6 +615,20 @@ class Compiler(ABC):
             circuit: Circuit,
             code: Code,
     ):
+        """ Compile one round of the code's check schedule.
+
+        Args:
+            round: The round of the code to compile.
+            relative_round: The round relative to the length of the code schedule to compile.
+            detector_schedule: The detector schedule to compile.
+            observables: The logical observables to measure.
+            tick: The tick to start compiling at.
+            circuit: The circuit to compile to.
+            code: The code to compile for.
+
+        Returns:
+            The tick after the round has been compiled.
+        """
         self.add_start_of_round_noise(tick - 1, circuit, code)
 
         # First compile the syndrome extraction circuits for the checks.
@@ -435,11 +645,11 @@ class Compiler(ABC):
         if observables is not None:
             for observable in observables:
                 checks_to_multiply_in = observable.update(round)
+
                 circuit.measurer.multiply_observable(
                     checks_to_multiply_in, observable, round)
 
         circuit.end_round(tick - 2)
-
         return tick
 
     def add_start_of_round_noise(self, tick: int, circuit: Circuit, code: Code):
@@ -448,18 +658,70 @@ class Compiler(ABC):
             for qubit in code.data_qubits.values():
                 circuit.add_instruction(tick, noise.instruction([qubit]))
 
-    def compile_final_measurements(
+    def compile_final_schedule(
             self,
-            final_measurements: Union[List[Pauli], None],
-            final_stabilizers: Union[List[Stabilizer], None],
             observables: Union[List[LogicalOperator], None],
             layer: int,
             tick: int,
             circuit: Circuit,
             code: Code,
     ):
+        for relative_round in range(len(code.final_check_schedule)-1):
+            # Compile one round of checks, and note down the final tick
+            # used, then start the next round of checks from this tick.
+            round = layer * code.schedule_length + relative_round
+            tick = self.compile_round(
+                round,
+                relative_round,
+                code.final_check_schedule,
+                code.final_detector_schedule,
+                observables,
+                tick,
+                circuit,
+                code,
+            )
+
+        # First, compile instructions for actually measuring the qubits.
+        paulis = [list(check.paulis.values())[0]
+                  for check in code.final_check_schedule[-1]]
+        self.measure_qubits(
+            paulis,
+            code.final_check_schedule[-1], round+1, tick, circuit
+        )
+
+        detectors = code.final_detector_schedule[-1]
+        circuit.measurer.add_detectors(detectors, round+1)
+
+        # Finally, define the observables we want to measure
+        final_checks = {}
+        for pauli in paulis:
+            check = Check([pauli], pauli.qubit.coords)
+            final_checks[pauli.qubit] = check
+
+        self.compile_final_logical_operators(
+            observables, final_checks, round+1, circuit
+        )
+
+        # Compile the final measurements
+        # final_measurements = code.final_check_schedule[-1]
+        # self.compile_final_measurements(
+        #    final_measurements, None, observables, layer, tick, circuit, code
+        # )
+
+        return tick
+
+    def compile_final_measurements(
+            self,
+            final_measurements: Union[List[Pauli], None],
+            final_stabilizers: Union[List[Stabilizer], None],
+            observables: Union[List[LogicalOperator], None],
+            round: int,
+            tick: int,
+            circuit: Circuit,
+            code: Code,
+    ):
         """Compile the final measurements of the circuit.
-        
+
         This method is called at the end of compile_to_circuit. It is
         assumed that the circuit has already been compiled up to this point,
         and that the circuit is in the ground state of the final stabilizers.
@@ -474,7 +736,7 @@ class Compiler(ABC):
                 final_stabilizers can be None.
             logical_observables: The logical observables to construct from the
                 final measurements.
-            layer: The layer of the circuit to compile.
+            round: The round of the circuit to compile.
             tick: The tick to start compiling at.
             circuit: The circuit to compile to.
             code: The code to compile for.
@@ -484,11 +746,10 @@ class Compiler(ABC):
         """
         # TODO - allow measurements other than single data qubits
         #  measurements at the end? e.g. Pauli product measurements.
-        round = layer * code.schedule_length
         if final_stabilizers is not None:
             final_measurements = self.get_measurement_bases(final_stabilizers)
 
-        if final_measurements is not None:
+        elif final_measurements is not None:
             # A single qubit measurement is just a weight-1 check, and writing
             # them as checks rather than Paulis fits them into the same framework
             # as other measurements.
@@ -496,18 +757,25 @@ class Compiler(ABC):
             for pauli in final_measurements:
                 check = Check([pauli], pauli.qubit.coords)
                 final_checks[pauli.qubit] = check
+            if isinstance(code, TicTacToeCode) or isinstance(code, GaugeTicTacToeCode):
 
+                if (pauli.letter == code.tic_tac_toe_route[(
+                        round-1) % code.schedule_length][1]):
+                    add_small_detectors = True
+                else:
+                    add_small_detectors = False
+
+            else:
+                add_small_detectors = False
             # First, compile instructions for actually measuring the qubits.
             self.measure_qubits(
                 final_measurements, final_checks.values(), round, tick, circuit
             )
-
             # Now try to use these as lids for any detectors that at this point
             # have a floor but no lid.
             self.compile_final_detectors(
-                final_checks, final_stabilizers, layer, circuit, code
+                final_checks, final_stabilizers, round, circuit, code, add_small_detectors
             )
-
             # Finally, define the observables we want to measure
             self.compile_final_logical_operators(
                 observables, final_checks, round, circuit
@@ -517,14 +785,14 @@ class Compiler(ABC):
             self,
             final_checks: Union[Dict[Qubit, Check], None],
             final_stabilizers: Union[List[Stabilizer], None],
-            layer: int,
+            round: int,
             circuit: Circuit,
             code: Code,
+            add_small_detectors: bool = False
     ):
-        round = layer * code.schedule_length
         if final_stabilizers is None:
             final_detectors = self.compile_final_detectors_from_measurements(
-                final_checks, round, code)
+                final_checks, round, code, add_small_detectors)
         else:
             final_detectors = self.compile_final_detectors_from_stabilizers(
                 final_checks, final_stabilizers, code)
@@ -536,6 +804,7 @@ class Compiler(ABC):
             self, final_checks: Dict[Qubit, Check],
             final_stabilizers: List[Stabilizer],
             code: Code):
+
         # Note - no need for extra validation here. We checked earlier that
         # the final stabilizers actually consist of checks from the code's
         # check schedule. And we derived the required single qubit data
@@ -553,13 +822,40 @@ class Compiler(ABC):
             final_detectors.append(drum)
         return final_detectors
 
+    def get_factor_to_check_for_open_lid(self, final_checks, code, round):
+        if isinstance(code, GaugeHoneycombCode) == False:
+            return (0)
+
+        current_letter = code.tic_tac_toe_route[round %
+                                                code.schedule_length][1].letter
+        final_check_letter = list(final_checks.values())[0].product.word.word
+        previous_letter = code.tic_tac_toe_route[(round - 1) %
+                                                 code.schedule_length][1].letter
+        if current_letter != final_check_letter and current_letter == previous_letter:
+            n = 1
+            while True:
+                if code.tic_tac_toe_route[(round + n) % code.schedule_length][1].letter != current_letter:
+                    break
+                n += 1
+            return n
+
+        else:
+            return 0
+
     def compile_final_detectors_from_measurements(
-            self, final_checks: Dict[Qubit, Check], round: int, code: Code):
+            self, final_checks: Dict[Qubit, Check], round: int, code: Code, add_small_detectors: bool = False):
         final_detectors = []
         for detector in code.detectors:
+
+            # should be round - 1 + n, where n is the number of same measurements that in the regular schedule have been skipped
+            # so there are not enough "has open lid"
+            n = self.get_factor_to_check_for_open_lid(
+                final_checks, code, round)
             open_lid, detector_checks_measured = detector.has_open_lid(
-                round - 1, code.schedule_length)
+                round - 1 + n, code.schedule_length)
+
             if open_lid:
+
                 # This detector can potentially be 'finished off', if our
                 # final data qubit measurements are in the right bases. First,
                 # calculate the product of the detector's checks that have
@@ -567,10 +863,12 @@ class Compiler(ABC):
                 detector_checks_measured = sorted(
                     detector_checks_measured,
                     key=lambda timed_check: -timed_check[0])
+
                 detector_product_measured = PauliProduct([
                     pauli
                     for _, check in detector_checks_measured
                     for pauli in check.paulis.values()])
+
                 # Restrict now just to the qubits that are actually involved
                 # in the checks measured so far. Sort them just for
                 # reproducibility in tests.
@@ -579,6 +877,7 @@ class Compiler(ABC):
                     for pauli in detector_product_measured.paulis}
                 detector_qubits = sorted(
                     detector_qubits, key=lambda qubit: qubit.coords)
+
                 # Now calculate the product of the measurements on these qubits.
                 measurements = [
                     list(final_checks[data_qubit].paulis.values())[0]
@@ -586,13 +885,48 @@ class Compiler(ABC):
                 measurement_product = PauliProduct(measurements)
 
                 if detector_product_measured.equal_up_to_sign(measurement_product):
-                    # Can make a lid for this detector!
-                    floor = [
-                        (t + detector.lid_end, check)
-                        for t, check in detector_checks_measured]
-                    lid = [(0, final_checks[qubit]) for qubit in detector_qubits]
-                    final_detectors.append(Drum(floor, lid, 0, detector.anchor))
 
+                    floor = []
+                    for t, check in detector_checks_measured:
+
+                        expected_lid_end = (
+                            round//code.schedule_length)*code.schedule_length + detector.lid_end
+                        actual_lid_end = round
+
+                        if expected_lid_end < actual_lid_end:
+                            expected_lid_end += code.schedule_length
+                        difference = expected_lid_end - actual_lid_end
+
+                        floor_t = t + difference
+
+                        if floor_t == -1 + n:
+                            floor_t -= n
+
+                        floor.append((floor_t, check))
+
+                    lid = [(0, final_checks[qubit])
+                           for qubit in detector_qubits]
+
+                    new_drum = Drum(floor, lid, (round %
+                                    code.schedule_length), detector.anchor)
+
+                    # because gauge css floquet codes tries to add hexagonal detectors of consecutive rounds
+                    if isinstance(code, GaugeFloquetColourCode) or isinstance(code, FloquetColourCode):
+                        if (new_drum.end - new_drum.start) == 1:
+                            pass
+                        else:
+                            final_detectors.append(new_drum)
+                    else:
+                        final_detectors.append(new_drum)
+
+        if add_small_detectors:
+            for check in code.check_schedule[(round-1) % code.schedule_length]:
+                floor = [(-1, check)]
+                floor_qubits = [pauli.qubit for pauli in check.paulis.values()]
+                lid = [(0, final_checks[qubit])
+                       for qubit in floor_qubits]
+                final_detectors.append(
+                    Drum(floor, lid, (round % code.schedule_length), None))
         return final_detectors
 
     def compile_final_logical_operators(
@@ -608,7 +942,7 @@ class Compiler(ABC):
         if observables is not None:
             for observable in observables:
                 observable_checks = []
-                for observable_pauli in observable.at_round(round):
+                for observable_pauli in observable.at_round(round - 1):
                     # Just double check that what we measured is actually what we
                     # want to use to form the logical operator.
                     check = final_checks[observable_pauli.qubit]
@@ -620,12 +954,13 @@ class Compiler(ABC):
                             f"final measurement at this qubit was instead "
                             f"{check_pauli}!")
                     observable_checks.append(check)
+
                 # Compile to the circuit.
                 circuit.measurer.multiply_observable(
                     observable_checks, observable, round
                 )
-
     # TODO - generalise for native multi-qubit measurements.
+
     def measure_qubits(
             self,
             paulis: Iterable[Pauli],
@@ -638,7 +973,7 @@ class Compiler(ABC):
         """
 
         Args:
-            paulis: 
+            paulis:
             checks: _description_
             round: _description_
             tick: _description_
@@ -652,8 +987,8 @@ class Compiler(ABC):
         # have its own measurement instructions.
         if measurement_instructions is None:
             measurement_instructions = self.measurement_instructions
-        measurement_noise = self.noise_model.measurement
 
+        measurement_noise = self.noise_model.measurement
         ticks_needed = 0
         for pauli, check in zip(paulis, checks):
             # `check` should correspond to the check whose outcome is given

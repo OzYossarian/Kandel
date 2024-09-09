@@ -1,8 +1,7 @@
 import random
-
+from main.codes.tic_tac_toe.TicTacToeCode import TicTacToeCode
 from main.utils.Colour import Red, Green, Blue
 from main.building_blocks.pauli.PauliLetter import PauliLetter
-from main.codes.tic_tac_toe.TicTacToeCode import TicTacToeCode
 from main.codes.tic_tac_toe.utils import random_valid_route, random_valid_route_chunk, all_good_colours, \
     random_good_route
 
@@ -198,8 +197,6 @@ def test_get_init_logical_qubits():
     assert len(coords_logical_x_horizontal_t2 & coords_logical_z_horizontal_t2) == 1
 
     coords_logical_z_vertical_t0 = set(qubit.qubit.coords for qubit in code.logical_qubits[0].z.at_round(-1))
-#    print(code.checks,'checks')
-#    print(code.logical_qubits[0].z.at_round(-1))
     checks_multiplied_in = code.logical_qubits[0].z.update(0)
     coords_of_checks_multiplied_in = set(pauli.qubit.coords for pauli in checks_multiplied_in[0].paulis.values())
     coords_of_checks_multiplied_in.update(set(pauli.qubit.coords for pauli in checks_multiplied_in[1].paulis.values()))

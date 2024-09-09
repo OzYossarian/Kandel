@@ -12,7 +12,7 @@ from main.compiling.Measurer import Measurer
 from main.compiling.noise.noises import OneQubitNoise
 from main.utils.types import Tick
 
-RepeatBlock = Union[Tuple[int, int, int],None]
+RepeatBlock = Union[Tuple[int, int, int], None]
 
 
 class Circuit:
@@ -126,10 +126,11 @@ class Circuit:
         """
         # Initialise a single qubit..
         if len(instruction.qubits) != 1:
-            raise ValueError("The instruction has to act on 1 qubit")        
+            raise ValueError("The instruction has to act on 1 qubit")
         qubit = instruction.qubits[0]
         if instruction.name[0] != "R":
-            raise ValueError("The instruction has to be an initialize instruction starting with \"R\"")
+            raise ValueError(
+                "The instruction has to be an initialize instruction starting with \"R\"")
         self.add_instruction(tick, instruction)
         # Note down at which tick this qubit is considered initialised.
         self.init_ticks[qubit].append(tick)
@@ -258,7 +259,7 @@ class Circuit:
         # TODO - implement!
         raise NotImplementedError
 
-    def add_idling_noise(self, idling_noise: Union[OneQubitNoise,None]):
+    def add_idling_noise(self, idling_noise: Union[OneQubitNoise, None]):
         """Adds idling noise everywhere in the circuit
 
         Idling noise is added at every tick to qubits that have been
@@ -308,7 +309,7 @@ class Circuit:
 
     def to_stim(
         self,
-        idling_noise: Union[OneQubitNoise,None],
+        idling_noise: Union[OneQubitNoise, None],
         track_coords: bool = True,
         track_progress: bool = True,
     ) -> stim.Circuit:
@@ -333,7 +334,7 @@ class Circuit:
             return self._to_stim(idling_noise, track_coords, None)
 
     def _to_stim(
-        self, idling_noise: Union[OneQubitNoise,None], track_coords: bool, progress_bar: Any
+        self, idling_noise: Union[OneQubitNoise, None], track_coords: bool, progress_bar: Any
     ) -> stim.Circuit:
         """Called by to_stim() to transform the circuit to a stim circuit.
 
@@ -438,6 +439,7 @@ class Circuit:
         else:
             targets = [self.qubit_index(qubit) for qubit in instruction.qubits]
         circuit.append(instruction.name, targets, instruction.params)
+
 
     def entered_repeat_block(self, tick: int, last_tick: int):
         """Checks if a repeat block started between last_tick and tick.

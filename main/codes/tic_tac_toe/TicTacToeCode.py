@@ -1,5 +1,5 @@
 from collections import defaultdict
-from typing import List
+from typing import Dict, Tuple, List
 
 from main.building_blocks.Check import Check
 from main.building_blocks.detectors.Drum import Drum
@@ -8,7 +8,9 @@ from main.building_blocks.pauli.PauliLetter import PauliLetter
 from main.codes.ToricHexagonalCode import ToricHexagonalCode
 from main.codes.tic_tac_toe.detectors.TicTacToeDrumBlueprint import TicTacToeDrumBlueprint
 from main.codes.tic_tac_toe.logical.TicTacToeLogicalQubit import TicTacToeLogicalQubit
-from main.codes.tic_tac_toe.utils import TicTacToeRoute, rest_of_row, rest_of_column
+from main.codes.tic_tac_toe.utils import TicTacToeRoute, rest_of_row, rest_of_column, TicTacToeSquare
+from main.utils.Colour import Colour
+from main.utils.types import Coordinates, Tick
 from main.utils.utils import coords_mid, xor, coords_minus, embed_coords
 
 
@@ -31,29 +33,23 @@ class TicTacToeCode(ToricHexagonalCode):
         assert self.follows_tic_tac_toe_rules(tic_tac_toe_route)
         assert self.is_good_code(tic_tac_toe_route)
         self.tic_tac_toe_route = tic_tac_toe_route
-
-        checks, borders = self.create_checks()
-        self.checks_by_type = checks
+        self.checks_by_type, self.borders = self.create_checks()
         stabilizers, relearned = self.find_stabilized_plaquettes()
-        detector_blueprints = self.plan_detectors(stabilizers, relearned)
-        detector_schedule = self.create_detectors(detector_blueprints, borders)
+        self.detector_blueprints = self.plan_detectors(stabilizers, relearned)
+        schedule_length = len(self.tic_tac_toe_route)
+        detector_schedule = self.create_detectors(
+            self.detector_blueprints, schedule_length)
 
         check_schedule = [
-            checks[(colour, pauli_letter)]
+            self.checks_by_type[(colour, pauli_letter)]
             for colour, pauli_letter in tic_tac_toe_route]
 
         self.set_schedules(check_schedule, detector_schedule)
         self.logical_qubits = self.get_init_logical_qubits()
-
-        # Save some of the variables used above so that we can reference
-        # them in tests. TODO - yuck!
-        self.borders = borders
-        self.stabilizers = stabilizers
-        self.relearned = relearned
-        self.detector_blueprints = detector_blueprints
+        self.final_check_schedule = None
 
     @staticmethod
-    def follows_tic_tac_toe_rules(tic_tac_toe_route):
+    def follows_tic_tac_toe_rules(tic_tac_toe_route) -> bool:
         """Tic-tac-toe rules state that the type of edges measured at each
         timestep must differ in column and row from those measured at the
         previous timestep.
@@ -74,7 +70,7 @@ class TicTacToeCode(ToricHexagonalCode):
         return valid
 
     @staticmethod
-    def is_good_code(tic_tac_toe_route):
+    def is_good_code(tic_tac_toe_route) -> bool:
         """This method assumes code follows tic tac toe rules already.
         Once a tic-tac-toe code has seven of the nine plaquette types in its
         stabilizer group, it will always have seven, regardless of which
@@ -89,7 +85,10 @@ class TicTacToeCode(ToricHexagonalCode):
         start_colours_form_cycle = start[0] == start[3 % length]
         return first_three_colours_differ and start_colours_form_cycle
 
-    def create_checks(self):
+    def create_checks(self) -> \
+            Tuple[
+                Dict[TicTacToeSquare, List[Check]],
+                Dict[Coordinates, Dict[TicTacToeSquare, List[Check]]]]:
         # Idea: a plaquette of colour colours[i] is responsible for creating
         # any checks of colour colours[i+1] around its border. If this is
         # repeated across all plaquettes, we will create exactly all the
@@ -110,7 +109,7 @@ class TicTacToeCode(ToricHexagonalCode):
         # Start by iterating over all the red plaquettes, then green, etc.
         for i in range(3):
             plaquette_colour = self.colours[i]
-            edge_colour = self.colours[(i+1) % 3]
+            edge_colour = self.colours[(i + 1) % 3]
             # Only do anything with plaquettes of this colour (colours[i])
             # if checks of next colour (colours[i+1]) are actually used.
             pauli_letters = edge_types_used[edge_colour]
@@ -152,9 +151,25 @@ class TicTacToeCode(ToricHexagonalCode):
                 borders[anchor][(edge_colour, letter)].append(check)
                 borders[neighbour_anchor][(edge_colour, letter)].append(check)
 
-    def find_stabilized_plaquettes(self):
-        # Track which plaquettes are stabilized, at what times, and which
-        # edge measurements most recently stabilized them.
+    def find_stabilized_plaquettes(self) -> \
+            Tuple[
+                Dict[Tick, Dict[TicTacToeSquare,
+                                List[Tuple[Tick, Colour, PauliLetter]]]],
+                Dict[Tick, Dict[TicTacToeSquare, bool]]]:
+        """
+        Track which plaquettes are stabilized, at what times, and which edge
+        measurements most recently stabilized them.
+
+        Returns:
+            stabilized: A dictionary whose keys are timesteps and whose values are another dictionary.
+                        In this second dictionary the keys are plaquettes that don't anticommute with the
+                        edges that have been measured at the timestep. The values consits of a tuple
+                        representing the edge measurements from which you can learn the value of the plaquette.
+                        The tuple has three elements, (timestep, colour, pauliletter). For example in round 0
+                        of the honeycomb code a stabilized plaquette is GX which you learnt with (0, Red, X).
+
+            relearned: A dictionary whose keys are timesteps and whose values are another dictionary.
+        """
         stabilized = defaultdict(lambda: defaultdict(list))
         relearned = defaultdict(lambda: defaultdict(bool))
 
@@ -168,14 +183,13 @@ class TicTacToeCode(ToricHexagonalCode):
             edge_colour, edge_letter = self.tic_tac_toe_route[t % length]
             # Picture tic-tac-toe grid: let (edge_colour, edge_letter) be the
             # 'current element' of the grid.
-            
+
             # (Re)learn the rest of the 'row' of plaquettes
             relearned_plaquettes = self.relearn_plaquettes(
                 t, stabilized, relearned, edge_colour, edge_letter)
             # Kick out anti-commuting plaquettes in the rest of the 'column'
             removed_plaquettes = self.remove_plaquettes(
                 t, stabilized, edge_colour, edge_letter)
-
             if t > 0:
                 # All other types of plaquettes remain in the stabilizer group,
                 # if they were there before.
@@ -187,7 +201,6 @@ class TicTacToeCode(ToricHexagonalCode):
                 self.reinfer_plaquettes(
                     t, stabilized, relearned, relearned_plaquettes,
                     removed_plaquettes)
-
         return stabilized, relearned
 
     def reinfer_plaquettes(
@@ -241,14 +254,18 @@ class TicTacToeCode(ToricHexagonalCode):
             stabilized[t][(colour, letter)] = \
                 stabilized[t - 1][(colour, letter)]
 
-    def remove_plaquettes(self, t, stabilized, edge_colour, edge_letter):
+    def remove_plaquettes(
+            self, t, stabilized, edge_colour, edge_letter
+    ) -> List[TicTacToeSquare]:
         anti_commuting_plaquettes = \
             rest_of_column(edge_colour, edge_letter)
         for colour, letter in anti_commuting_plaquettes:
             stabilized[t][(colour, letter)] = []
         return anti_commuting_plaquettes
 
-    def relearn_plaquettes(self, t, stabilized, relearned, edge_colour, edge_letter):
+    def relearn_plaquettes(
+            self, t, stabilized, relearned, edge_colour, edge_letter
+    ) -> List[TicTacToeSquare]:
         relearned_plaquettes = rest_of_row(edge_colour, edge_letter)
         for colour, letter in relearned_plaquettes:
             edge_type = (t, edge_colour, edge_letter)
@@ -256,9 +273,10 @@ class TicTacToeCode(ToricHexagonalCode):
             relearned[t][(colour, letter)] = True
         return relearned_plaquettes
 
-    def plan_detectors(self, stabilizers, relearned):
+    def plan_detectors(
+            self, stabilizers, relearned
+    ) -> Dict[Colour, List[TicTacToeDrumBlueprint]]:
         detector_blueprints = defaultdict(list)
-
         for colour in self.colours:
             for letter in self.letters:
                 blueprints = self.plan_detectors_of_type(
@@ -267,11 +285,11 @@ class TicTacToeCode(ToricHexagonalCode):
 
         return detector_blueprints
 
-    def time_within_repeating_part_of_code(self, time: int):
+    def time_within_repeating_part_of_code(self, time: int) -> int:
         """Since we assumed this code is 'good', after 4 timesteps it repeats
         every `length` timesteps. So we can learn everything about the code
-        by looking in the interval [4, length+4). This method returns the
-        corresponding timestep in (or 'modulo') this interval. So e.g.
+        by looking in the interval [4, length+4). This method returns a
+        timestep in this interval equal to `time`, modulo `length`. e.g.:
             0 -> length
             1 -> length + 1
             ...
@@ -286,7 +304,9 @@ class TicTacToeCode(ToricHexagonalCode):
         length = len(self.tic_tac_toe_route)
         return ((length - 4 + time) % length) + 4
 
-    def plan_detectors_of_type(self, colour, letter, stabilizers, relearned):
+    def plan_detectors_of_type(
+            self, colour, letter, stabilizers, relearned
+    ) -> List[TicTacToeDrumBlueprint]:
         detector_blueprints = []
         length = len(self.tic_tac_toe_route)
         # Make a note of the first potential detector we find. Since the code
@@ -334,32 +354,52 @@ class TicTacToeCode(ToricHexagonalCode):
 
         return detector_blueprints
 
-    def create_detectors(self, detector_blueprints, borders):
-        detectors: List[List[Drum]] = [[] for _ in self.tic_tac_toe_route]
+    def create_detectors(
+            self,
+            detector_blueprints: Dict[Colour, List[TicTacToeDrumBlueprint]],
+            schedule_length: int
+    ) -> List[List[Drum]]:
+        detectors: List[List[Drum]] = [[] for _ in range(schedule_length)]
         # Loop through all red plaquettes, then green, then blue.
         for colour in self.colours:
             anchors = self.colourful_plaquette_anchors[colour]
             for anchor in anchors:
-                for blueprint in detector_blueprints[colour]:
-                    # Create an actual detector object from each blueprint.
-                    floor, lid = [], []
-                    for (t, edge_colour, edge_letter) in blueprint.floor:
-                        checks = borders[anchor][(edge_colour, edge_letter)]
-                        floor.extend((t, check) for check in checks)
-                    for (t, edge_colour, edge_letter) in blueprint.lid:
-                        checks = borders[anchor][(edge_colour, edge_letter)]
-                        lid.extend((t, check) for check in checks)
-                    drum_anchor = embed_coords(anchor, 3)
-                    detector = Drum(floor, lid, blueprint.learned, drum_anchor)
-                    detectors[blueprint.learned].append(detector)
-
+                if colour in detector_blueprints:
+                    for blueprint in detector_blueprints[colour]:
+                        if blueprint != None:
+                            # Create an actual detector object from each blueprint.
+                            floor, lid = [], []
+                            for (t, edge_colour, edge_letter) in blueprint.floor:
+                                checks = self.borders[anchor][(
+                                    edge_colour, edge_letter)]
+                                floor.extend((t, check) for check in checks)
+                            for (t, edge_colour, edge_letter) in blueprint.lid:
+                                checks = self.borders[anchor][(
+                                    edge_colour, edge_letter)]
+                                lid.extend((t, check) for check in checks)
+                            drum_anchor = embed_coords(anchor, 3)
+                            detector = Drum(
+                                floor, lid, blueprint.learned, drum_anchor)
+                            detectors[blueprint.learned].append(detector)
         return detectors
 
-    def get_init_logical_qubits(self):
-        # Choose convention that the X operator is horizontal on qubit 0 but
-        # vertical on qubit 1, and vice verse for Z operator.
+    def get_init_logical_qubits(self) -> List[TicTacToeLogicalQubit]:
+        # Choose convention that qubit 0 has horizontal X operator and
+        # vertical Z operator, and vice versa for Z operator.
+        # Similarly, for qubit 0 choose convention that at even timesteps
+        # the row of the tic-tac-toe grid containing condensed boson
+        # describes the support of the X operator, while the column describes
+        # the support of Z operator, and vice versa for qubit 1.
         logical_0 = TicTacToeLogicalQubit(
-            vertical=PauliLetter('Z'), horizontal=PauliLetter('X'), code=self)
+            vertical=PauliLetter('Z'),
+            horizontal=PauliLetter('X'),
+            even_rows=PauliLetter('X'),
+            odd_rows=PauliLetter('Z'),
+            code=self)
         logical_1 = TicTacToeLogicalQubit(
-            vertical=PauliLetter('X'), horizontal=PauliLetter('Z'), code=self)
+            vertical=PauliLetter('X'),
+            horizontal=PauliLetter('Z'),
+            even_rows=PauliLetter('X'),
+            odd_rows=PauliLetter('Z'),
+            code=self)
         return [logical_0, logical_1]

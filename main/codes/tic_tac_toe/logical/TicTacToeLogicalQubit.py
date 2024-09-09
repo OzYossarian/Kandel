@@ -17,11 +17,48 @@ class TicTacToeLogicalQubit(LogicalQubit):
             self,
             vertical: PauliLetter,
             horizontal: PauliLetter,
-            code: TicTacToeCode):
+            even_rows: PauliLetter,
+            odd_rows: PauliLetter,
+            code: TicTacToeCode,
+    ):
+        """Class for the dynamical logical operators of TicTacToe codes.
+
+        Args:
+            vertical:
+                The Pauli letter (X or Z) we label the vertical observable with.
+            horizontal:
+                The Pauli letter (X or Z) we label the horizontal observable with.
+            even_rows:
+                At any timestep t, suppose we've just measured edges with
+                colour c and Pauli type p. Consider the tic-tac-toe square
+                (c, p). The row containing this square describes the types of
+                edges that support one logical operator (X or Z) immediately
+                after timestep t, while the column containing this square
+                describes the types of edges supporting the other operator.
+
+                At every timestep, this alternates: if the support of logical
+                X (say) was described by the row containing (c, p) immediately
+                after time t, then it's described by the column containing
+                (c', p') immediately after time t+1, where c' and p' are the
+                colour and Pauli type of the edges measured at time t+1.
+
+                This parameter `even_rows` thus tells us which logical
+                operator (X or Z) has support described by rows of the
+                tic-tac-toe grid immediately after even timesteps (and hence
+                by columns of the grid immediately after odd timesteps).
+            odd_rows:
+                As above, but for odd rather than even timesteps.
+            code: TicTacToeCode that this qubit is part of
+        """
         self.code = code
         self.vertical = vertical
         self.horizontal = horizontal
-        assert {self.vertical, self.horizontal} == {PauliLetter('X'), PauliLetter('Z')}
+        self.even_rows = even_rows
+        self.odd_rows = odd_rows
+
+        x_and_z = {PauliLetter("X"), PauliLetter("Z")}
+        assert {self.vertical, self.horizontal} == x_and_z
+        assert {self.even_rows, self.odd_rows} == x_and_z
 
         self.vertical_operator_starts = {
             Red: (6, 4),
@@ -60,43 +97,64 @@ class TicTacToeLogicalQubit(LogicalQubit):
         next_row = rest_of_row(next_colour, next_letter)
         next_column = rest_of_column(next_colour, next_letter)
 
-        row_column_intersection = \
+        prev_row_next_column_intersection = \
             set(prev_row).intersection(next_column).pop()
-        column_row_intersection = \
+        prev_column_next_row_intersection = \
             set(prev_column).intersection(next_row).pop()
 
-        if round % 2 == 0:
-            x_type = row_column_intersection
-            z_type = column_row_intersection
+        row_describes_x_support = \
+            round % 2 == 0 and self.even_rows == PauliLetter('X') or \
+            round % 2 == 1 and self.odd_rows == PauliLetter('X')
+        if row_describes_x_support:
+            x_type = prev_row_next_column_intersection
+            z_type = prev_column_next_row_intersection
         else:
-            x_type = column_row_intersection
-            z_type = row_column_intersection
+            x_type = prev_column_next_row_intersection
+            z_type = prev_row_next_column_intersection
 
         return x_type, z_type
 
     def get_initial_horizontal_operator(
             self,
-            logical_letter: PauliLetter,
+            logical_pauli_letter: PauliLetter,
             tic_tac_toe_square: TicTacToeSquare):
-        colour, letter = tic_tac_toe_square
+        """Initializes one of the two horizontal logical operators.
+
+        Args:
+            logical_pauli_letter: The label of this operator.
+            tic_tac_toe_square: The boson colour and boson pauli letter of the logical operator.
+
+        Returns:
+            A TicTacToeLogicalOperator
+        """
+        colour, _ = tic_tac_toe_square
         start = self.horizontal_operator_starts[colour]
         paulis = []
         for i in range(self.code.distance // 2):
-            u = (start[0] + 12*i, start[1])
+            u = (start[0] + 12 * i, start[1])
             v = (u[0] + 4, u[1])
             qubit_u = self.code.data_qubits[self.code.wrap_coords(u)]
             qubit_v = self.code.data_qubits[self.code.wrap_coords(v)]
-            pauli_u = Pauli(qubit_u, letter)
-            pauli_v = Pauli(qubit_v, letter)
+            pauli_u = Pauli(qubit_u, logical_pauli_letter)
+            pauli_v = Pauli(qubit_v, logical_pauli_letter)
             paulis.extend([pauli_u, pauli_v])
         is_vertical = False
         return TicTacToeLogicalOperator(
-            paulis, is_vertical, logical_letter, logical_qubit=self)
+            paulis, is_vertical, logical_pauli_letter, logical_qubit=self)
 
     def get_initial_vertical_operator(
             self,
-            logical_letter: PauliLetter,
+            logical_pauli_letter: PauliLetter,
             tic_tac_toe_square: TicTacToeSquare):
+        """Initializes one of the two vertical logical operators.
+
+        Args:
+            logical_pauli_letter: The label of this operator.
+            tic_tac_toe_square: The boson colour and boson pauli letter of the logical operator.
+
+        Returns:
+            A TicTacToeLogicalOperator
+        """
         colour, letter = tic_tac_toe_square
         start = self.vertical_operator_starts[colour]
         paulis = []
@@ -110,4 +168,4 @@ class TicTacToeLogicalQubit(LogicalQubit):
             paulis.extend([pauli_u, pauli_v])
         is_vertical = True
         return TicTacToeLogicalOperator(
-            paulis, is_vertical, logical_letter, logical_qubit=self)
+            paulis, is_vertical, logical_pauli_letter, logical_qubit=self)

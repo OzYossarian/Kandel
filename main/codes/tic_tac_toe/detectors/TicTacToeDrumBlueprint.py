@@ -18,7 +18,7 @@ class TicTacToeDrumBlueprint(NiceRepr):
             self, schedule_length: int, learned: int,
             floor: List[Tuple[int, Colour, PauliLetter]],
             lid: List[Tuple[int, Colour, PauliLetter]]):
-        """Constructs a drum blueprint 
+        """Constructs a drum blueprint
 
         Args:
             schedule_length:
@@ -29,7 +29,7 @@ class TicTacToeDrumBlueprint(NiceRepr):
                 at which final checks are measured.
             floor:
                 A list of tuples (t, colour, letter) which specifies which
-                check types (colour, letter) consititute the floor of the
+                check types (colour, letter) constitute the floor of the
                 detector, and when they are measured (t).
             lid:
                 As above, but replace the word floor with lid.
@@ -48,6 +48,7 @@ class TicTacToeDrumBlueprint(NiceRepr):
         self.lid = relative_to_when_detector_is_learned(lid)
         self.checks = self.floor + self.lid
         self.learned = learned % schedule_length
+
         super().__init__(['learned', 'floor', 'lid'])
 
     def equivalent_to(self, other):

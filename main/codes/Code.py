@@ -21,6 +21,7 @@ class Code:
     """
     Base class for all quantum error correction codes.
     """
+
     def __init__(
             self, data_qubits: Union[Dict[Coordinates, Qubit], List[Qubit]],
             check_schedule: List[List[Check]] = None,
@@ -71,6 +72,7 @@ class Code:
         # Allows for a code to be partially instantiated (e.g. in order to
         # create the data qubits) but then for the code and detector
         # schedules to be set later.
+        self.final_check_schedule: List[List[Check]] = [[]]
         self.check_schedule: List[List[Check]] = [[]]
         self.detector_schedule: List[List[Drum]] = [[]]
         self.schedule_length: int = 1
