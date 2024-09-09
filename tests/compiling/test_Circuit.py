@@ -339,31 +339,6 @@ def test_circuit_get_idle_qubits(mocker: MockerFixture):
     assert idle_qubits == set(qubits[2:])
 
 
-def test_circuit_instruction_to_stim_when_targets_are_none(mocker: MockerFixture):
-    circuit = Circuit()
-    stim_circuit = mocker.Mock(spec=stim.Circuit)
-    stim_circuit.append = mocker.Mock()
-
-    qubit = mocker.Mock(spec=Qubit)
-    instruction = Instruction([qubit], 'Something')
-    circuit.instruction_to_stim(instruction, stim_circuit)
-
-    stim_circuit.append.assert_called_with('Something', [0], ())
-
-
-def test_circuit_instruction_to_stim_when_targets_are_not_none(mocker: MockerFixture):
-    circuit = Circuit()
-    stim_circuit = mocker.Mock(spec=stim.Circuit)
-    stim_circuit.append = mocker.Mock()
-
-    qubit = mocker.Mock(spec=Qubit)
-    target = mocker.Mock(spec=stim.GateTarget)
-    instruction = Instruction([qubit], 'Something', targets=[target])
-    circuit.instruction_to_stim(instruction, stim_circuit)
-
-    stim_circuit.append.assert_called_with('Something', [target], ())
-
-
 def test_circuit_entered_repeat_block():
     circuit = Circuit()
     circuit.repeat_blocks = {

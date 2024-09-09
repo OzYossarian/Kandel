@@ -358,8 +358,6 @@ class Circuit:
         # Go through the circuit and add idling noise.
         self.add_idling_noise(idling_noise)
 
-        # Track which instructions have been compiled to stim.
-        compiled = defaultdict(bool)
 
         # Let 'circuit' denote the circuit we're currently compiling to - if
         # using repeat blocks, this need not always be the full circuit itself
