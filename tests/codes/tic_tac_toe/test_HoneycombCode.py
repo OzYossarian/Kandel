@@ -31,19 +31,16 @@ def generate_circuit(rounds: int,
         logical_observables = [code.x_stability_operator]
         initial_stabilizers = [Stabilizer([(0, check)], 0)
                                for check in code.check_schedule[2]]
-
-        measurement_letters = ['Y', 'Y', 'Y', 'Y', 'Z', 'Z']
-        final_measurements = [Pauli(qubit, PauliLetter(
-            measurement_letters[rounds % 6])) for qubit in code.data_qubits.values()]
+        final_measurements = code.get_possible_final_measurement(
+            code.logical_qubits[1].z, rounds)
     elif observable_type == 'stability_z':
         logical_observables = [code.z_stability_operator]
         initial_stabilizers = [Stabilizer([(0, check)], 0)
                                for check in code.check_schedule[0]]
         # I just found this by drawing the detectors by hand and checking which measurements
         # create the right timelike boundary.
-        measurement_letters = ['Y', 'Z', 'Z', 'Z', 'Z', 'Y']
-        final_measurements = [Pauli(qubit, PauliLetter(
-            measurement_letters[rounds % 6])) for qubit in code.data_qubits.values()]
+        final_measurements = code.get_possible_final_measurement(
+            code.logical_qubits[1].x, rounds)
 
     elif observable_type == 'X':
         logical_observables = [code.logical_qubits[1].x]
@@ -201,3 +198,16 @@ def test_stability_x():
 
         check_parity_of_number_of_violated_detectors_d4(circuit)
         check_graphlike_distance(circuit, distance_of_stability(n_rounds, 'x'))
+
+
+def test_get_final_measurement():
+    code = HoneycombCode(4)
+    final_measurement = code.get_possible_final_measurement(
+        code.logical_qubits[1].x, 12)
+    assert final_measurement == [Pauli(qubit, PauliLetter('X'))
+                                 for qubit in code.data_qubits.values()]
+
+    final_measurement = code.get_possible_final_measurement(
+        code.logical_qubits[1].z, 12)
+    assert final_measurement == [Pauli(qubit, PauliLetter('Y'))
+                                 for qubit in code.data_qubits.values()]
