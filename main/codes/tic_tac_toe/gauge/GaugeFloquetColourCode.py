@@ -170,7 +170,7 @@ class GaugeFloquetColourCode(GaugeTicTacToeCode):
 
     @staticmethod
     def repeat_list_to_length(original_list: List, desired_length: int) -> List:
-        ""R"epeats a list until it reaches a certain length."""
+        """Repeats a list until it reaches a certain length."""
         repeated_list = (original_list * (desired_length //
                          len(original_list) + 1))[:desired_length]
         return repeated_list
@@ -178,8 +178,8 @@ class GaugeFloquetColourCode(GaugeTicTacToeCode):
     def get_measurement_error_distance(self, rounds: int, letter: Literal['X', 'Z']) -> int:
         """Returns the minimum weight of a timelike logical consisting of measurement errors.
 
-        For an 'X' stability experiment this weight (distance) can be calculated from looking at 
-        how letter appears in the measurement pattern.
+        For an 'X' ('Z') stability experiment this weight (distance) can be calculated from looking at 
+        how often the letter 'X' ('Z') appears in the measurement pattern.
 
         Args:
             rounds: The number of rounds in the experiment.
@@ -200,8 +200,8 @@ class GaugeFloquetColourCode(GaugeTicTacToeCode):
         """Returns the minimum weight of a timelike logical consisting of X,Y, or Z errors on 
         data qubits.
 
-        For an 'X' stability experiment this weight (distance) can be calculated from looking at 
-        how letter appears in the measurement pattern.
+        For an 'X' ('Z') stability experiment this weight (distance) can be calculated from looking at 
+        how often the letter 'X' ('Z') appears in the measurement pattern.
 
         Args:
             rounds: The number of rounds in the experiment.

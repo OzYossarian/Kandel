@@ -8,8 +8,6 @@ from main.compiling.noise.models.PhenomenologicalNoise import PhenomenologicalNo
 from main.compiling.syndrome_extraction.extractors.ancilla_per_check.mixed.CxCyCzExtractor import CxCyCzExtractor
 import stim
 
-from main.utils.enums import State
-
 
 def generate_circuit(rounds: int,
                      distance: int,
@@ -33,6 +31,10 @@ def generate_circuit(rounds: int,
                                for check in code.check_schedule[2]]
         final_measurements = code.get_possible_final_measurement(
             code.logical_qubits[1].z, rounds)
+
+        measurement_letters = ['Z', 'Y', 'Y', 'Y', 'Z', 'Z']
+        final_measurements = [Pauli(qubit, PauliLetter(
+            measurement_letters[rounds % 6])) for qubit in code.data_qubits.values()]
     elif observable_type == 'stability_z':
         logical_observables = [code.z_stability_operator]
         initial_stabilizers = [Stabilizer([(0, check)], 0)
@@ -89,37 +91,33 @@ def check_parity_of_number_of_violated_detectors_d4(circuit: stim.Circuit):
 
 
 def check_graphlike_distance(circuit: stim.Circuit, distance):
-    print(len(circuit.detector_error_model(
-        approximate_disjoint_errors=True, decompose_errors=False).shortest_graphlike_error()
-    ))
+
     assert len(circuit.detector_error_model(
         approximate_disjoint_errors=True, decompose_errors=False).shortest_graphlike_error()) == distance
 
 
-def check_hyper_edge_distance(circuit: stim.Circuit):
+def check_hyper_edge_distance(circuit: stim.Circuit, distance):
 
     logical_errors = circuit.search_for_undetectable_logical_errors(
         dont_explore_detection_event_sets_with_size_above=6,
         dont_explore_edges_with_degree_above=6,
         dont_explore_edges_increasing_symptom_degree=False,
     )
-    for error in logical_errors:
-        print(error)
-    print(len(logical_errors))
+    assert len(logical_errors) == distance
 
 
 def test_properties_of_d4_codes():
     for n_rounds in range(12, 24):
         circuit: stim.Circuit = generate_circuit(n_rounds, 4, 'X')
         check_parity_of_number_of_violated_detectors_d4(circuit)
-        check_distance(circuit, 4)
+        check_graphlike_distance(circuit, 4)
 
 
 def test_z_obs():
     circuit: stim.Circuit = generate_circuit(
         rounds=12, distance=4, observable_type='Z')
     check_parity_of_number_of_violated_detectors_d4(circuit)
-    check_distance(circuit, 4)
+    check_graphlike_distance(circuit, 4)
 
 
 def distance_of_stability(rounds: int, letter: str) -> int:
@@ -141,9 +139,7 @@ def remove_detectors(circuit: stim.Circuit, layers_to_skip_detectors) -> stim.Ci
         if layer.name == "DETECTOR":
             if (vertical_layer % 6) not in layers_to_skip_detectors:
                 new_circuit.append(layer)
-#        elif layer.name == "OBSERVABLE_INCLUDE":
- #           if (vertical_layer % 6) not in layers_to_skip_detectors:
-  #              new_circuit.append(layer)
+
         else:
             new_circuit.append(layer)
 
@@ -171,7 +167,7 @@ def test_stability_z_measurement_noise_graphlike_distance():
 
 
 def test_stability_x_measurement_noise_graphlike_distance():
-    for n_rounds in range(12, 18):
+    for n_rounds in range(12, 24):
         circuit: stim.Circuit = generate_circuit(
             rounds=n_rounds, distance=4, observable_type='stability_x',
             measurement_noise_probability=0.1, pauli_noise_probability=0)
@@ -180,7 +176,41 @@ def test_stability_x_measurement_noise_graphlike_distance():
         check_graphlike_distance(new_circuit, (n_rounds+1)//4)
 
 
-def test_stability_x():
+def test_stability_x_19():
+    n_rounds = 19
+    circuit: stim.Circuit = generate_circuit(
+        rounds=n_rounds, distance=4, observable_type='stability_x',
+        measurement_noise_probability=0.1, pauli_noise_probability=0)
+    print(circuit)
+
+    new_circuit = remove_detectors(circuit, [1, 3, 5])
+    check_graphlike_distance(new_circuit, (n_rounds+1)//4)
+
+
+def test_stability_z_measurement_noise_non_graphlike_distance():
+    for n_rounds in range(12, 18):
+        circuit: stim.Circuit = generate_circuit(
+            rounds=n_rounds, distance=4, observable_type='stability_z',
+            measurement_noise_probability=0.1, pauli_noise_probability=0)
+        d = (n_rounds+1)//6 * 3
+        if ((n_rounds+1) % 6) - 4 > 0:
+            d += (n_rounds+1) % 6 - 4
+        check_hyper_edge_distance(circuit, d)
+
+
+def test_stability_x_measurement_noise_non_graphlike_distance():
+    for n_rounds in range(12, 18):
+        circuit: stim.Circuit = generate_circuit(
+            rounds=n_rounds, distance=4, observable_type='stability_x',
+            measurement_noise_probability=0.1, pauli_noise_probability=0)
+        d = (n_rounds+1)//6 * 3
+        if ((n_rounds+1) % 6) - 3 > 0:
+            d += (n_rounds+1) % 6 - 3
+
+        check_hyper_edge_distance(circuit, d)
+
+
+def test_stability_x_pauli_noise_graphlike_distance():
     for n_rounds in range(12, 18):
         circuit: stim.Circuit = generate_circuit(
             rounds=n_rounds, distance=4, observable_type='stability_x',
@@ -201,3 +231,38 @@ def test_get_final_measurement():
         code.logical_qubits[1].z, 12)
     assert final_measurement == [Pauli(qubit, PauliLetter('Y'))
                                  for qubit in code.data_qubits.values()]
+
+
+def test_spacelike_distance():
+    code = HoneycombCode(4)
+    logical_observables = [code.logical_qubits[1].x]
+    initial_stabilizers = [Stabilizer([(0, check)], 0)
+                           for check in code.check_schedule[0]]
+    final_measurements = None
+    compiler = AncillaPerCheckCompiler(
+        noise_model=PhenomenologicalNoise(0.1, 0.1),
+        syndrome_extractor=CxCyCzExtractor()
+    )
+    stim_circuit = compiler.compile_to_stim(
+        code=code,
+        total_rounds=12,
+        initial_stabilizers=initial_stabilizers,
+        observables=logical_observables,
+        final_measurements=final_measurements
+    )
+    check_graphlike_distance(stim_circuit, 4)
+
+    logical_observables = [code.logical_qubits[0].x]
+
+    compiler = AncillaPerCheckCompiler(
+        noise_model=PhenomenologicalNoise(0.1, 0.1),
+        syndrome_extractor=CxCyCzExtractor()
+    )
+    stim_circuit = compiler.compile_to_stim(
+        code=code,
+        total_rounds=12,
+        initial_stabilizers=initial_stabilizers,
+        observables=logical_observables,
+        final_measurements=final_measurements
+    )
+    check_graphlike_distance(stim_circuit, 4)

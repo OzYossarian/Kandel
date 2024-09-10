@@ -7,18 +7,24 @@ from main.codes.tic_tac_toe.HoneycombCode import HoneycombCode
 from main.codes.tic_tac_toe.TicTacToeCode import TicTacToeCode
 from main.codes.tic_tac_toe.detectors.TicTacToeDrumBlueprint import TicTacToeDrumBlueprint
 from main.codes.tic_tac_toe.gauge.GaugeTicTacToeCode import GaugeTicTacToeCode
+from main.codes.tic_tac_toe.stability_observable.stability_logical_operator import StabilityOperator
 from main.codes.tic_tac_toe.logical.TicTacToeLogicalOperator import TicTacToeLogicalOperator
 from main.utils.Colour import Red, Green, Blue
 
 
 class GaugeHoneycombCode(GaugeTicTacToeCode):
-    def __init__(self, distance: int, gauge_factors: List[int]):
+    def __init__(self, distance: int,
+                 gauge_factors: List[int],
+                 create_e_detectors: bool = True,
+                 create_m_detectors: bool = True):
         """A gauge-fixed honeycomb code.
 
         Args:
             distance: The distance of the code.
             gauge_factors: A list containing the number of times each check is repeated.
                             Entry 1 means the check is repeated once, entry 2 means the check is repeated twice, etc.
+            create_e_detectors: Whether to create E-type detectors. 
+            create_m_detectors: Whether to create M-type detectors.
         """
         assert len(gauge_factors) == 3
         self.rx_gf = gauge_factors[0]
@@ -28,7 +34,19 @@ class GaugeHoneycombCode(GaugeTicTacToeCode):
             (Red, PauliLetter('X')) for _ in range(self.rx_gf)] + \
             [(Green, PauliLetter('Y')) for _ in range(self.gy_gf)] + \
             [(Blue, PauliLetter('Z')) for _ in range(self.bz_gf)]
+        self.get_stability_observables()
         super().__init__(distance, gauge_factors)
+
+    def get_stability_observables(self):
+        self.x_stability_operator = StabilityOperator(
+            [self.rx_gf+self.gy_gf,
+             self.rx_gf+self.gy_gf+self.bz_gf,
+             2*self.rx_gf+self.gy_gf+self.bz_gf], self)
+
+        self.z_stability_operator = StabilityOperator(
+            [2*self.rx_gf+self.gy_gf+self.bz_gf,
+             2*self.rx_gf+2*self.gy_gf+self.bz_gf,
+             3*self.rx_gf+2*self.gy_gf+self.bz_gf], self)
 
     def get_ungauged_code(self, distance: int) -> TicTacToeCode:
         return HoneycombCode(distance)

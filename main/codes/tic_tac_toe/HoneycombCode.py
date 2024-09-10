@@ -11,7 +11,7 @@ class HoneycombCode(TicTacToeCode):
     def __init__(self, distance: int):
         tic_tac_toe = [
             (Red, PauliLetter('X')),
-            (Green, PauliLetter('Y')),
+            (Green, PauliLetter('Y')), 
             (Blue, PauliLetter('Z'))]
         self.get_stability_observables()
         super().__init__(distance, tic_tac_toe)

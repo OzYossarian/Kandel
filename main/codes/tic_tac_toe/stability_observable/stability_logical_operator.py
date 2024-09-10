@@ -23,4 +23,5 @@ class StabilityOperator(LogicalOperator):
                                               self.code.schedule_length]
         else:
             checks = []
+
         return checks

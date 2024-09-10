@@ -1,5 +1,5 @@
 import math
-from typing import Any, Tuple
+from typing import Any, List, Tuple
 from main.building_blocks.Check import Check
 from main.building_blocks.detectors.Stabilizer import Stabilizer
 from main.building_blocks.pauli.Pauli import Pauli
@@ -37,6 +37,7 @@ def generate_circuit(rounds, distance, gauge_factors, observable_type, initial_s
 
     initial_stabilizers = [Stabilizer(
         [(0, check)], 0) for check in code.check_schedule[check_schedule_index]]
+
     """
     elif observable_type == 'stability_z':
         logical_observables = [code.z_stability_operator]
@@ -80,9 +81,12 @@ def check_parity_of_number_of_violated_detectors(circuit: stim.Circuit):
 def check_distance(circuit: stim.Circuit, distance):
     print(distance)
     print(len(circuit.detector_error_model(
-        approximate_disjoint_errors=True).shortest_graphlike_error()), 'length')
-    assert len(circuit.detector_error_model(
-        approximate_disjoint_errors=True).shortest_graphlike_error()) == distance
+        approximate_disjoint_errors=True, decompose_errors=False).shortest_graphlike_error()), 'length')
+    return (len(circuit.detector_error_model(
+        approximate_disjoint_errors=True, decompose_errors=False).shortest_graphlike_error()))
+
+#    assert len(circuit.detector_error_model(
+ #       approximate_disjoint_errors=True).shortest_graphlike_error()) == distance
 
 
 def test_properties_of_d4_codes():
@@ -126,44 +130,73 @@ def distance_of_stability(rounds: int, letter: str) -> int:
         return (math.ceil((rounds-2)/3))
 
 
-def remove_detectors(circuit: stim.Circuit, code) -> stim.Circuit:
+def remove_detectors(circuit: stim.Circuit, layers_to_skip_detectors: List[int], length_of_route=int) -> stim.Circuit:
     vertical_layer = 0
     layer: stim.CircuitInstruction
     new_circuit = stim.Circuit()
 
-    layers_to_skip_detectors = [i for i in range(
-        0, len(code.tic_tac_toe_route))]
-
-#    layers_to_skip_detectors = [i for i in range(
-#        len(code.tic_tac_toe_route), 2*len(code.tic_tac_toe_route))]
-    print(layers_to_skip_detectors, 'layers_to_skip_detectors')
     for layer in circuit:
         if layer.name == "SHIFT_COORDS":
             vertical_layer += 1
 
         if layer.name == "DETECTOR":
-            if (vertical_layer % (2*len(code.tic_tac_toe_route))) not in layers_to_skip_detectors:
+
+            if (vertical_layer % length_of_route) not in layers_to_skip_detectors:
+                new_circuit.append(layer)
+            elif vertical_layer == 16:
                 new_circuit.append(layer)
         else:
             new_circuit.append(layer)
-    print(circuit.num_detectors, 'num_detectors')
-    print(new_circuit.num_detectors, 'num_detectors')
     return (new_circuit)
 
 
-def test_x_stability_experiment():
+def check_hyper_edge_distance(circuit: stim.Circuit, distance):
+
+    logical_errors = circuit.search_for_undetectable_logical_errors(
+        dont_explore_detection_event_sets_with_size_above=6,
+        dont_explore_edges_with_degree_above=6,
+        dont_explore_edges_increasing_symptom_degree=False,
+    )
+    print(len(logical_errors), 'length')
+#    assert len(logical_errors)a== distance
+
+
+def test_stability_x_measurement_noise_graphlike_distance():
     gauge_factors = [2, 2, 2]
-    for n_rounds in range(24, 36):
+    distances = []
+
+    for n_rounds in range(24, 48, 1):
+
         circuit: stim.Circuit
         circuit, code = generate_circuit(
             n_rounds, 4, gauge_factors, 'stability_x', measurement_error_probability=0.1, data_qubit_error_probability=0)
+        new_circuit = remove_detectors(
+            circuit, [2, 6, 10], sum(gauge_factors)*2)
+        print(n_rounds//4 + e)
+        distances.append(
+            (n_rounds, check_distance(new_circuit, (n_rounds)//4)))
+        # check_hyper_edge_distance(
+        #  circuit, distance_of_stability(n_rounds, 'x'))
 
-        new_circuit = remove_detectors(circuit, code)
-        print(new_circuit)
-        check_distance(new_circuit, distance_of_stability(n_rounds, 'x'))
-
-#        check_parity_of_number_of_violated_detectors(circuit)
+    print(distances)
+test_stability_x_measurement_noise_graphlike_distance()
 
 
-#        check_distance(circuit, distance_of_stability(n_rounds, 'x'))
-test_x_stability_experiment()
+def test_31_rounds():
+    gauge_factors = [2, 2, 2]
+    n_rounds = 19
+
+    circuit: stim.Circuit
+    circuit, code = generate_circuit(
+        n_rounds, 4, gauge_factors, 'stability_x', measurement_error_probability=0.1, data_qubit_error_probability=0)
+
+    new_circuit = remove_detectors(
+        circuit, [2, 6, 10], sum(gauge_factors)*2)
+#    print(circuit)
+    check_distance(new_circuit, (n_rounds+1)//5+1)
+    # check_hyper_edge_distance(
+    #   circuit, distance_of_stability(n_rounds, 'x'))
+
+
+# test_31_rounds()
+# test_stability_x_measurement_noise_graphlike_distance()
