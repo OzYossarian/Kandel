@@ -180,16 +180,6 @@ def test_stability_x_measurement_noise_graphlike_distance():
         check_graphlike_distance(new_circuit, (n_rounds+1)//4)
 
 
-def test_stability_z_measurement_noise_non_graphlike_distance():
-    # TODO
-    pass
-
-
-def test_stability_x_measurement_noise_non_graphlike_distance():
-    # TODO
-    pass
-
-
 def test_stability_x():
     for n_rounds in range(12, 18):
         circuit: stim.Circuit = generate_circuit(

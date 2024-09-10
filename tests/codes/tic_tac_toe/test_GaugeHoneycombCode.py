@@ -30,8 +30,10 @@ def generate_circuit(rounds, distance, gauge_factors, observable_type, initial_s
     elif observable_type == 'stability_x':
         logical_observables = [code.x_stability_operator]
         check_schedule_index = gauge_factors[0] + gauge_factors[1]
-        final_measurements = [Pauli(qubit, PauliLetter(
-            'Z')) for qubit in code.data_qubits.values()]
+        final_measurements = code.get_possible_final_measurement(
+            code.logical_qubits[1].z, rounds)
+#        final_measurements = [Pauli(qubit, PauliLetter(
+#            'Z')) for qubit in code.data_qubits.values()]
 
     initial_stabilizers = [Stabilizer(
         [(0, check)], 0) for check in code.check_schedule[check_schedule_index]]
