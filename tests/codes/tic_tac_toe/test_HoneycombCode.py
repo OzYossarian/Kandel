@@ -196,6 +196,7 @@ def test_stability_z_measurement_noise_non_graphlike_distance():
             d += (n_rounds+1) % 6 - 4
         check_hyper_edge_distance(circuit, d)
 
+test_stability_z_measurement_noise_non_graphlike_distance()
 
 def test_stability_x_measurement_noise_non_graphlike_distance():
     for n_rounds in range(12, 18):
