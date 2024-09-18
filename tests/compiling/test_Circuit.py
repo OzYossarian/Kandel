@@ -34,6 +34,14 @@ two_qubit_circuit.initialise(0, Instruction([qubit_1], "R"))
 two_qubit_circuit.add_instruction(2, Instruction([qubit_1], "Z"))
 two_qubit_circuit.initialise(0, Instruction([qubit_2], "R"))
 
+circuit_with_two_gates_on_same_qubit = Circuit()
+qubit = Qubit(1)
+circuit_with_two_gates_on_same_qubit.initialise(0, Instruction([qubit], "R"))
+idling_noise_1 = OneQubitNoise(0.1, 0.1, 0.1).instruction([qubit])
+idling_noise_2 = OneQubitNoise(0.2, 0.2, 0.2).instruction([qubit])
+circuit_with_two_gates_on_same_qubit.add_instruction(1, idling_noise_1)
+circuit_with_two_gates_on_same_qubit.add_instruction(1, idling_noise_2)
+
 
 def create_rsc_circuit():
     code = RotatedSurfaceCode(3)
@@ -277,6 +285,16 @@ def test__to_stim():
             Z 0"""
     )
 
+    circuit = circuit_with_two_gates_on_same_qubit._to_stim(None, True, None)
+
+    assert stim.Circuit(str(circuit)) == stim.Circuit(
+        """
+        QUBIT_COORDS(1) 0
+        R 0
+        TICK
+        PAULI_CHANNEL_1(0.1, 0.1, 0.1) 0
+        PAULI_CHANNEL_1(0.2, 0.2, 0.2) 0
+    """)
     rsc_circuit_one_layer = create_rsc_circuit()
     stim_rsc_circuit_one_layer = rsc_circuit_one_layer._to_stim(
         None, True, None)
