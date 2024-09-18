@@ -35,10 +35,11 @@ two_qubit_circuit.add_instruction(2, Instruction([qubit_1], "Z"))
 two_qubit_circuit.initialise(0, Instruction([qubit_2], "R"))
 
 circuit_with_two_gates_on_same_qubit = Circuit()
-qubit = Qubit(1)
-circuit_with_two_gates_on_same_qubit.initialise(0, Instruction([qubit], "R"))
-idling_noise_1 = OneQubitNoise(0.1, 0.1, 0.1).instruction([qubit])
-idling_noise_2 = OneQubitNoise(0.2, 0.2, 0.2).instruction([qubit])
+busy_qubit = Qubit(1)
+circuit_with_two_gates_on_same_qubit.initialise(
+    0, Instruction([busy_qubit], "R"))
+idling_noise_1 = OneQubitNoise(0.1, 0.1, 0.1).instruction([busy_qubit])
+idling_noise_2 = OneQubitNoise(0.2, 0.2, 0.2).instruction([busy_qubit])
 circuit_with_two_gates_on_same_qubit.add_instruction(1, idling_noise_1)
 circuit_with_two_gates_on_same_qubit.add_instruction(1, idling_noise_2)
 
