@@ -1,3 +1,4 @@
+import stim
 from main.building_blocks.pauli import Pauli
 from main.building_blocks.pauli.PauliLetter import PauliLetter
 from main.codes.RotatedSurfaceCode import RotatedSurfaceCode
@@ -36,8 +37,7 @@ def test_rotated_surface_code_compilation_end_to_end_1():
         initial_states=initial_states,
         final_measurements=final_measurements,
         observables=[code.logical_qubits[0].z])
-
-    expected = """QUBIT_COORDS(0, 2) 0
+    assert str(stim_circuit) == """QUBIT_COORDS(0, 2) 0
 QUBIT_COORDS(0, 3) 1
 QUBIT_COORDS(1, 0) 2
 QUBIT_COORDS(1, 1) 3
@@ -54,93 +54,79 @@ QUBIT_COORDS(3, 3) 13
 QUBIT_COORDS(3, 4) 14
 QUBIT_COORDS(4, 1) 15
 QUBIT_COORDS(4, 2) 16
-R 0 3 6 5 8 11 10 13 16
+R 0 3 5 6 8 10 11 13 16
 TICK
-R 4
-RX 7 9
-R 12 2 14
-RX 1 15
+RX 1 7 9 15
+R 2 4 12 14
 TICK
-CX 8 4 7 11 9 13 16 12 6 2 1 5
+CX 1 5 6 2 7 11 8 4 9 13 16 12
 TICK
-CX 5 4 7 6 9 8 13 12 3 2 1 0
+CX 1 0 3 2 5 4 7 6 9 8 13 12
 TICK
 CX 3 4 7 8 9 10 11 12 13 14 15 16
 TICK
-CX 0 4 7 3 9 5 8 12 10 14 15 11
+CX 0 4 7 3 8 12 9 5 10 14 15 11
 TICK
-M 4
-MX 7 9
-M 12 2 14
-MX 1 15
-DETECTOR(1, 2, 0) rec[-8]
-DETECTOR(3, 2, 0) rec[-5]
+MX 1 7 9 15
+M 2 4 12 14
 DETECTOR(1, 0, 0) rec[-4]
-DETECTOR(3, 4, 0) rec[-3]
+DETECTOR(1, 2, 0) rec[-3]
+DETECTOR(3, 2, 0) rec[-2]
+DETECTOR(3, 4, 0) rec[-1]
 SHIFT_COORDS(0, 0, 1)
 TICK
-R 4
-RX 7 9
-R 12 2 14
-RX 1 15
+RX 1 7 9 15
+R 2 4 12 14
 TICK
-CX 8 4 7 11 9 13 16 12 6 2 1 5
+CX 1 5 6 2 7 11 8 4 9 13 16 12
 TICK
-CX 5 4 7 6 9 8 13 12 3 2 1 0
+CX 1 0 3 2 5 4 7 6 9 8 13 12
 TICK
 CX 3 4 7 8 9 10 11 12 13 14 15 16
 TICK
-CX 0 4 7 3 9 5 8 12 10 14 15 11
+CX 0 4 7 3 8 12 9 5 10 14 15 11
 TICK
-M 4
-MX 7 9
-M 12 2 14
-MX 1 15
-DETECTOR(1, 2, 0) rec[-16] rec[-8]
+MX 1 7 9 15
+M 2 4 12 14
+DETECTOR(0, 3, 0) rec[-16] rec[-8]
 DETECTOR(2, 1, 0) rec[-15] rec[-7]
 DETECTOR(2, 3, 0) rec[-14] rec[-6]
-DETECTOR(3, 2, 0) rec[-13] rec[-5]
+DETECTOR(4, 1, 0) rec[-13] rec[-5]
 DETECTOR(1, 0, 0) rec[-12] rec[-4]
-DETECTOR(3, 4, 0) rec[-11] rec[-3]
-DETECTOR(0, 3, 0) rec[-10] rec[-2]
-DETECTOR(4, 1, 0) rec[-9] rec[-1]
+DETECTOR(1, 2, 0) rec[-11] rec[-3]
+DETECTOR(3, 2, 0) rec[-10] rec[-2]
+DETECTOR(3, 4, 0) rec[-9] rec[-1]
 SHIFT_COORDS(0, 0, 1)
 TICK
-R 4
-RX 7 9
-R 12 2 14
-RX 1 15
+RX 1 7 9 15
+R 2 4 12 14
 TICK
-CX 8 4 7 11 9 13 16 12 6 2 1 5
+CX 1 5 6 2 7 11 8 4 9 13 16 12
 TICK
-CX 5 4 7 6 9 8 13 12 3 2 1 0
+CX 1 0 3 2 5 4 7 6 9 8 13 12
 TICK
 CX 3 4 7 8 9 10 11 12 13 14 15 16
 TICK
-CX 0 4 7 3 9 5 8 12 10 14 15 11
+CX 0 4 7 3 8 12 9 5 10 14 15 11
 TICK
-M 4
-MX 7 9
-M 12 2 14
-MX 1 15
-DETECTOR(1, 2, 0) rec[-16] rec[-8]
+MX 1 7 9 15
+M 2 4 12 14
+DETECTOR(0, 3, 0) rec[-16] rec[-8]
 DETECTOR(2, 1, 0) rec[-15] rec[-7]
 DETECTOR(2, 3, 0) rec[-14] rec[-6]
-DETECTOR(3, 2, 0) rec[-13] rec[-5]
+DETECTOR(4, 1, 0) rec[-13] rec[-5]
 DETECTOR(1, 0, 0) rec[-12] rec[-4]
-DETECTOR(3, 4, 0) rec[-11] rec[-3]
-DETECTOR(0, 3, 0) rec[-10] rec[-2]
-DETECTOR(4, 1, 0) rec[-9] rec[-1]
+DETECTOR(1, 2, 0) rec[-11] rec[-3]
+DETECTOR(3, 2, 0) rec[-10] rec[-2]
+DETECTOR(3, 4, 0) rec[-9] rec[-1]
 SHIFT_COORDS(0, 0, 1)
 TICK
-M 0 3 6 5 8 11 10 13 16
-DETECTOR(1, 0, 0) rec[-13] rec[-8] rec[-7]
-DETECTOR(1, 2, 0) rec[-17] rec[-9] rec[-8] rec[-6] rec[-5]
-DETECTOR(3, 4, 0) rec[-12] rec[-3] rec[-2]
-DETECTOR(3, 2, 0) rec[-14] rec[-5] rec[-4] rec[-2] rec[-1]
-OBSERVABLE_INCLUDE(0) rec[-9] rec[-6] rec[-3]"""
-
-    assert str(stim_circuit) == expected
+M 0 3 5 6 8 10 11 13 16
+DETECTOR(1, 0, 0) rec[-13] rec[-8] rec[-6]
+DETECTOR(1, 2, 0) rec[-12] rec[-9] rec[-8] rec[-7] rec[-5]
+DETECTOR(3, 4, 0) rec[-10] rec[-4] rec[-2]
+DETECTOR(3, 2, 0) rec[-11] rec[-5] rec[-3] rec[-2] rec[-1]
+OBSERVABLE_INCLUDE(0) rec[-9] rec[-7] rec[-4]"""
 
 
 def test_rotated_surface_code_compilation_end_to_end_2():
@@ -168,7 +154,6 @@ def test_rotated_surface_code_compilation_end_to_end_2():
         initial_states=initial_states,
         final_measurements=final_measurements,
         observables=[code.logical_qubits[0].x])
-
     expected = """QUBIT_COORDS(0, 2) 0
 QUBIT_COORDS(0, 3) 1
 QUBIT_COORDS(1, 0) 2
@@ -186,92 +171,79 @@ QUBIT_COORDS(3, 3) 13
 QUBIT_COORDS(3, 4) 14
 QUBIT_COORDS(4, 1) 15
 QUBIT_COORDS(4, 2) 16
-RX 0 3 6 5 8 11 10 13 16
+RX 0 3 5 6 8 10 11 13 16
 TICK
-R 4
-RX 7 9
-R 12 2 14
-RX 1 15
+RX 1 7 9 15
+R 2 4 12 14
 TICK
-CX 8 4 7 11 9 13 16 12 6 2 1 5
+CX 1 5 6 2 7 11 8 4 9 13 16 12
 TICK
-CX 5 4 7 6 9 8 13 12 3 2 1 0
+CX 1 0 3 2 5 4 7 6 9 8 13 12
 TICK
 CX 3 4 7 8 9 10 11 12 13 14 15 16
 TICK
-CX 0 4 7 3 9 5 8 12 10 14 15 11
+CX 0 4 7 3 8 12 9 5 10 14 15 11
 TICK
-M 4
-MX 7 9
-M 12 2 14
-MX 1 15
+MX 1 7 9 15
+M 2 4 12 14
+DETECTOR(0, 3, 0) rec[-8]
 DETECTOR(2, 1, 0) rec[-7]
 DETECTOR(2, 3, 0) rec[-6]
-DETECTOR(0, 3, 0) rec[-2]
-DETECTOR(4, 1, 0) rec[-1]
+DETECTOR(4, 1, 0) rec[-5]
 SHIFT_COORDS(0, 0, 1)
 TICK
-R 4
-RX 7 9
-R 12 2 14
-RX 1 15
+RX 1 7 9 15
+R 2 4 12 14
 TICK
-CX 8 4 7 11 9 13 16 12 6 2 1 5
+CX 1 5 6 2 7 11 8 4 9 13 16 12
 TICK
-CX 5 4 7 6 9 8 13 12 3 2 1 0
+CX 1 0 3 2 5 4 7 6 9 8 13 12
 TICK
 CX 3 4 7 8 9 10 11 12 13 14 15 16
 TICK
-CX 0 4 7 3 9 5 8 12 10 14 15 11
+CX 0 4 7 3 8 12 9 5 10 14 15 11
 TICK
-M 4
-MX 7 9
-M 12 2 14
-MX 1 15
-DETECTOR(1, 2, 0) rec[-16] rec[-8]
+MX 1 7 9 15
+M 2 4 12 14
+DETECTOR(0, 3, 0) rec[-16] rec[-8]
 DETECTOR(2, 1, 0) rec[-15] rec[-7]
 DETECTOR(2, 3, 0) rec[-14] rec[-6]
-DETECTOR(3, 2, 0) rec[-13] rec[-5]
+DETECTOR(4, 1, 0) rec[-13] rec[-5]
 DETECTOR(1, 0, 0) rec[-12] rec[-4]
-DETECTOR(3, 4, 0) rec[-11] rec[-3]
-DETECTOR(0, 3, 0) rec[-10] rec[-2]
-DETECTOR(4, 1, 0) rec[-9] rec[-1]
+DETECTOR(1, 2, 0) rec[-11] rec[-3]
+DETECTOR(3, 2, 0) rec[-10] rec[-2]
+DETECTOR(3, 4, 0) rec[-9] rec[-1]
 SHIFT_COORDS(0, 0, 1)
 TICK
-R 4
-RX 7 9
-R 12 2 14
-RX 1 15
+RX 1 7 9 15
+R 2 4 12 14
 TICK
-CX 8 4 7 11 9 13 16 12 6 2 1 5
+CX 1 5 6 2 7 11 8 4 9 13 16 12
 TICK
-CX 5 4 7 6 9 8 13 12 3 2 1 0
+CX 1 0 3 2 5 4 7 6 9 8 13 12
 TICK
 CX 3 4 7 8 9 10 11 12 13 14 15 16
 TICK
-CX 0 4 7 3 9 5 8 12 10 14 15 11
+CX 0 4 7 3 8 12 9 5 10 14 15 11
 TICK
-M 4
-MX 7 9
-M 12 2 14
-MX 1 15
-DETECTOR(1, 2, 0) rec[-16] rec[-8]
+MX 1 7 9 15
+M 2 4 12 14
+DETECTOR(0, 3, 0) rec[-16] rec[-8]
 DETECTOR(2, 1, 0) rec[-15] rec[-7]
 DETECTOR(2, 3, 0) rec[-14] rec[-6]
-DETECTOR(3, 2, 0) rec[-13] rec[-5]
+DETECTOR(4, 1, 0) rec[-13] rec[-5]
 DETECTOR(1, 0, 0) rec[-12] rec[-4]
-DETECTOR(3, 4, 0) rec[-11] rec[-3]
-DETECTOR(0, 3, 0) rec[-10] rec[-2]
-DETECTOR(4, 1, 0) rec[-9] rec[-1]
+DETECTOR(1, 2, 0) rec[-11] rec[-3]
+DETECTOR(3, 2, 0) rec[-10] rec[-2]
+DETECTOR(3, 4, 0) rec[-9] rec[-1]
 SHIFT_COORDS(0, 0, 1)
 TICK
-MX 0 3 6 5 8 11 10 13 16
-DETECTOR(0, 3, 0) rec[-11] rec[-9] rec[-6]
-DETECTOR(2, 1, 0) rec[-16] rec[-8] rec[-7] rec[-5] rec[-4]
-DETECTOR(2, 3, 0) rec[-15] rec[-6] rec[-5] rec[-3] rec[-2]
-DETECTOR(4, 1, 0) rec[-10] rec[-4] rec[-1]
-OBSERVABLE_INCLUDE(0) rec[-9] rec[-8] rec[-7]"""
-
+MX 0 3 5 6 8 10 11 13 16
+DETECTOR(0, 3, 0) rec[-17] rec[-9] rec[-7]
+DETECTOR(2, 1, 0) rec[-16] rec[-8] rec[-6] rec[-5] rec[-3]
+DETECTOR(2, 3, 0) rec[-15] rec[-7] rec[-5] rec[-4] rec[-2]
+DETECTOR(4, 1, 0) rec[-14] rec[-3] rec[-1]
+OBSERVABLE_INCLUDE(0) rec[-9] rec[-8] rec[-6]"""
     assert str(stim_circuit) == expected
 
 
@@ -302,7 +274,6 @@ def test_rotated_surface_code_compilation_end_to_end_3():
         initial_states=initial_states,
         final_measurements=final_measurements,
         observables=[code.logical_qubits[0].z])
-
     expected = """QUBIT_COORDS(0, 2) 0
 QUBIT_COORDS(0, 3) 1
 QUBIT_COORDS(1, 0) 2
@@ -320,98 +291,85 @@ QUBIT_COORDS(3, 3) 13
 QUBIT_COORDS(3, 4) 14
 QUBIT_COORDS(4, 1) 15
 QUBIT_COORDS(4, 2) 16
-R 0 3 6 5 8 11 10 13 16
+R 0 3 5 6 8 10 11 13 16
 TICK
-PAULI_CHANNEL_1(0.0333333, 0.0333333, 0.0333333) 0 3 6 5 8 11 10 13 16
+PAULI_CHANNEL_1(0.0333333, 0.0333333, 0.0333333) 0 3 5 6 8 10 11 13 16
 TICK
-R 4
-RX 7 9
-R 12 2 14
-RX 1 15
+RX 1 7 9 15
+R 2 4 12 14
 TICK
-CX 8 4 7 11 9 13 16 12 6 2 1 5
+CX 1 5 6 2 7 11 8 4 9 13 16 12
 TICK
-CX 5 4 7 6 9 8 13 12 3 2 1 0
+CX 1 0 3 2 5 4 7 6 9 8 13 12
 TICK
 CX 3 4 7 8 9 10 11 12 13 14 15 16
 TICK
-CX 0 4 7 3 9 5 8 12 10 14 15 11
+CX 0 4 7 3 8 12 9 5 10 14 15 11
 TICK
-M(0.2) 4
-MX(0.2) 7 9
-M(0.2) 12 2 14
-MX(0.2) 1 15
-DETECTOR(1, 2, 0) rec[-8]
-DETECTOR(3, 2, 0) rec[-5]
+MX(0.2) 1 7 9 15
+M(0.2) 2 4 12 14
 DETECTOR(1, 0, 0) rec[-4]
-DETECTOR(3, 4, 0) rec[-3]
+DETECTOR(1, 2, 0) rec[-3]
+DETECTOR(3, 2, 0) rec[-2]
+DETECTOR(3, 4, 0) rec[-1]
 SHIFT_COORDS(0, 0, 1)
 TICK
-PAULI_CHANNEL_1(0.0333333, 0.0333333, 0.0333333) 0 3 6 5 8 11 10 13 16
+PAULI_CHANNEL_1(0.0333333, 0.0333333, 0.0333333) 0 3 5 6 8 10 11 13 16
 TICK
-R 4
-RX 7 9
-R 12 2 14
-RX 1 15
+RX 1 7 9 15
+R 2 4 12 14
 TICK
-CX 8 4 7 11 9 13 16 12 6 2 1 5
+CX 1 5 6 2 7 11 8 4 9 13 16 12
 TICK
-CX 5 4 7 6 9 8 13 12 3 2 1 0
+CX 1 0 3 2 5 4 7 6 9 8 13 12
 TICK
 CX 3 4 7 8 9 10 11 12 13 14 15 16
 TICK
-CX 0 4 7 3 9 5 8 12 10 14 15 11
+CX 0 4 7 3 8 12 9 5 10 14 15 11
 TICK
-M(0.2) 4
-MX(0.2) 7 9
-M(0.2) 12 2 14
-MX(0.2) 1 15
-DETECTOR(1, 2, 0) rec[-16] rec[-8]
+MX(0.2) 1 7 9 15
+M(0.2) 2 4 12 14
+DETECTOR(0, 3, 0) rec[-16] rec[-8]
 DETECTOR(2, 1, 0) rec[-15] rec[-7]
 DETECTOR(2, 3, 0) rec[-14] rec[-6]
-DETECTOR(3, 2, 0) rec[-13] rec[-5]
+DETECTOR(4, 1, 0) rec[-13] rec[-5]
 DETECTOR(1, 0, 0) rec[-12] rec[-4]
-DETECTOR(3, 4, 0) rec[-11] rec[-3]
-DETECTOR(0, 3, 0) rec[-10] rec[-2]
-DETECTOR(4, 1, 0) rec[-9] rec[-1]
+DETECTOR(1, 2, 0) rec[-11] rec[-3]
+DETECTOR(3, 2, 0) rec[-10] rec[-2]
+DETECTOR(3, 4, 0) rec[-9] rec[-1]
 SHIFT_COORDS(0, 0, 1)
 TICK
-PAULI_CHANNEL_1(0.0333333, 0.0333333, 0.0333333) 0 3 6 5 8 11 10 13 16
+PAULI_CHANNEL_1(0.0333333, 0.0333333, 0.0333333) 0 3 5 6 8 10 11 13 16
 TICK
-R 4
-RX 7 9
-R 12 2 14
-RX 1 15
+RX 1 7 9 15
+R 2 4 12 14
 TICK
-CX 8 4 7 11 9 13 16 12 6 2 1 5
+CX 1 5 6 2 7 11 8 4 9 13 16 12
 TICK
-CX 5 4 7 6 9 8 13 12 3 2 1 0
+CX 1 0 3 2 5 4 7 6 9 8 13 12
 TICK
 CX 3 4 7 8 9 10 11 12 13 14 15 16
 TICK
-CX 0 4 7 3 9 5 8 12 10 14 15 11
+CX 0 4 7 3 8 12 9 5 10 14 15 11
 TICK
-M(0.2) 4
-MX(0.2) 7 9
-M(0.2) 12 2 14
-MX(0.2) 1 15
-DETECTOR(1, 2, 0) rec[-16] rec[-8]
+MX(0.2) 1 7 9 15
+M(0.2) 2 4 12 14
+DETECTOR(0, 3, 0) rec[-16] rec[-8]
 DETECTOR(2, 1, 0) rec[-15] rec[-7]
 DETECTOR(2, 3, 0) rec[-14] rec[-6]
-DETECTOR(3, 2, 0) rec[-13] rec[-5]
+DETECTOR(4, 1, 0) rec[-13] rec[-5]
 DETECTOR(1, 0, 0) rec[-12] rec[-4]
-DETECTOR(3, 4, 0) rec[-11] rec[-3]
-DETECTOR(0, 3, 0) rec[-10] rec[-2]
-DETECTOR(4, 1, 0) rec[-9] rec[-1]
+DETECTOR(1, 2, 0) rec[-11] rec[-3]
+DETECTOR(3, 2, 0) rec[-10] rec[-2]
+DETECTOR(3, 4, 0) rec[-9] rec[-1]
 SHIFT_COORDS(0, 0, 1)
 TICK
-M(0.2) 0 3 6 5 8 11 10 13 16
-DETECTOR(1, 0, 0) rec[-13] rec[-8] rec[-7]
-DETECTOR(1, 2, 0) rec[-17] rec[-9] rec[-8] rec[-6] rec[-5]
-DETECTOR(3, 4, 0) rec[-12] rec[-3] rec[-2]
-DETECTOR(3, 2, 0) rec[-14] rec[-5] rec[-4] rec[-2] rec[-1]
-OBSERVABLE_INCLUDE(0) rec[-9] rec[-6] rec[-3]"""
-
+M(0.2) 0 3 5 6 8 10 11 13 16
+DETECTOR(1, 0, 0) rec[-13] rec[-8] rec[-6]
+DETECTOR(1, 2, 0) rec[-12] rec[-9] rec[-8] rec[-7] rec[-5]
+DETECTOR(3, 4, 0) rec[-10] rec[-4] rec[-2]
+DETECTOR(3, 2, 0) rec[-11] rec[-5] rec[-3] rec[-2] rec[-1]
+OBSERVABLE_INCLUDE(0) rec[-9] rec[-7] rec[-4]"""
     assert str(stim_circuit) == expected
 
 
@@ -442,7 +400,7 @@ def test_rotated_surface_code_compilation_end_to_end_4():
         initial_states=initial_states,
         final_measurements=final_measurements,
         observables=[code.logical_qubits[0].z])
-
+    print(stim_circuit)
     expected = """QUBIT_COORDS(0, 2) 0
 QUBIT_COORDS(0, 3) 1
 QUBIT_COORDS(1, 0) 2
@@ -460,145 +418,132 @@ QUBIT_COORDS(3, 3) 13
 QUBIT_COORDS(3, 4) 14
 QUBIT_COORDS(4, 1) 15
 QUBIT_COORDS(4, 2) 16
-R 0 3 6 5 8 11 10 13 16
+R 0 3 5 6 8 10 11 13 16
 TICK
-PAULI_CHANNEL_1(0.0333333, 0.0333333, 0.0333333) 0 3 6 5 8 11 10 13 16
+PAULI_CHANNEL_1(0.0333333, 0.0333333, 0.0333333) 0 3 5 6 8 10 11 13 16
 TICK
-R 4
-RX 7 9
-R 12 2 14
-RX 1 15
+RX 1 7 9 15
+R 2 4 12 14
 TICK
-PAULI_CHANNEL_1(0.0333333, 0.0333333, 0.0333333) 4 7 9 12 2 14 1 15
 PAULI_CHANNEL_1(0.0666667, 0.0666667, 0.0666667) 0 3 5 6 8 10 11 13 16
+PAULI_CHANNEL_1(0.0333333, 0.0333333, 0.0333333) 1 2 4 7 9 12 14 15
 TICK
-CX 8 4 7 11 9 13 16 12 6 2 1 5
+CX 1 5 6 2 7 11 8 4 9 13 16 12
 TICK
-PAULI_CHANNEL_2(0.0266667, 0.0266667, 0.0266667, 0.0266667, 0.0266667, 0.0266667, 0.0266667, 0.0266667, 0.0266667, 0.0266667, 0.0266667, 0.0266667, 0.0266667, 0.0266667, 0.0266667) 8 4 7 11 9 13 16 12 6 2 1 5
 PAULI_CHANNEL_1(0.0666667, 0.0666667, 0.0666667) 0 3 10 14 15
+PAULI_CHANNEL_2(0.0266667, 0.0266667, 0.0266667, 0.0266667, 0.0266667, 0.0266667, 0.0266667, 0.0266667, 0.0266667, 0.0266667, 0.0266667, 0.0266667, 0.0266667, 0.0266667, 0.0266667) 1 5 6 2 7 11 8 4 9 13 16 12
 TICK
-CX 5 4 7 6 9 8 13 12 3 2 1 0
+CX 1 0 3 2 5 4 7 6 9 8 13 12
 TICK
-PAULI_CHANNEL_2(0.0266667, 0.0266667, 0.0266667, 0.0266667, 0.0266667, 0.0266667, 0.0266667, 0.0266667, 0.0266667, 0.0266667, 0.0266667, 0.0266667, 0.0266667, 0.0266667, 0.0266667) 5 4 7 6 9 8 13 12 3 2 1 0
 PAULI_CHANNEL_1(0.0666667, 0.0666667, 0.0666667) 10 11 14 15 16
+PAULI_CHANNEL_2(0.0266667, 0.0266667, 0.0266667, 0.0266667, 0.0266667, 0.0266667, 0.0266667, 0.0266667, 0.0266667, 0.0266667, 0.0266667, 0.0266667, 0.0266667, 0.0266667, 0.0266667) 1 0 3 2 5 4 7 6 9 8 13 12
 TICK
 CX 3 4 7 8 9 10 11 12 13 14 15 16
 TICK
-PAULI_CHANNEL_2(0.0266667, 0.0266667, 0.0266667, 0.0266667, 0.0266667, 0.0266667, 0.0266667, 0.0266667, 0.0266667, 0.0266667, 0.0266667, 0.0266667, 0.0266667, 0.0266667, 0.0266667) 3 4 7 8 9 10 11 12 13 14 15 16
 PAULI_CHANNEL_1(0.0666667, 0.0666667, 0.0666667) 0 1 2 5 6
+PAULI_CHANNEL_2(0.0266667, 0.0266667, 0.0266667, 0.0266667, 0.0266667, 0.0266667, 0.0266667, 0.0266667, 0.0266667, 0.0266667, 0.0266667, 0.0266667, 0.0266667, 0.0266667, 0.0266667) 3 4 7 8 9 10 11 12 13 14 15 16
 TICK
-CX 0 4 7 3 9 5 8 12 10 14 15 11
+CX 0 4 7 3 8 12 9 5 10 14 15 11
 TICK
-PAULI_CHANNEL_2(0.0266667, 0.0266667, 0.0266667, 0.0266667, 0.0266667, 0.0266667, 0.0266667, 0.0266667, 0.0266667, 0.0266667, 0.0266667, 0.0266667, 0.0266667, 0.0266667, 0.0266667) 0 4 7 3 9 5 8 12 10 14 15 11
 PAULI_CHANNEL_1(0.0666667, 0.0666667, 0.0666667) 1 2 6 13 16
+PAULI_CHANNEL_2(0.0266667, 0.0266667, 0.0266667, 0.0266667, 0.0266667, 0.0266667, 0.0266667, 0.0266667, 0.0266667, 0.0266667, 0.0266667, 0.0266667, 0.0266667, 0.0266667, 0.0266667) 0 4 7 3 8 12 9 5 10 14 15 11
 TICK
-M(0.5) 4
-MX(0.5) 7 9
-M(0.5) 12 2 14
-MX(0.5) 1 15
-DETECTOR(1, 2, 0) rec[-8]
-DETECTOR(3, 2, 0) rec[-5]
+MX(0.5) 1 7 9 15
+M(0.5) 2 4 12 14
 DETECTOR(1, 0, 0) rec[-4]
-DETECTOR(3, 4, 0) rec[-3]
+DETECTOR(1, 2, 0) rec[-3]
+DETECTOR(3, 2, 0) rec[-2]
+DETECTOR(3, 4, 0) rec[-1]
 SHIFT_COORDS(0, 0, 1)
 TICK
 PAULI_CHANNEL_1(0.0666667, 0.0666667, 0.0666667) 0 3 5 6 8 10 11 13 16
 TICK
-R 4
-RX 7 9
-R 12 2 14
-RX 1 15
+RX 1 7 9 15
+R 2 4 12 14
 TICK
-PAULI_CHANNEL_1(0.0333333, 0.0333333, 0.0333333) 4 7 9 12 2 14 1 15
 PAULI_CHANNEL_1(0.0666667, 0.0666667, 0.0666667) 0 3 5 6 8 10 11 13 16
+PAULI_CHANNEL_1(0.0333333, 0.0333333, 0.0333333) 1 2 4 7 9 12 14 15
 TICK
-CX 8 4 7 11 9 13 16 12 6 2 1 5
+CX 1 5 6 2 7 11 8 4 9 13 16 12
 TICK
-PAULI_CHANNEL_2(0.0266667, 0.0266667, 0.0266667, 0.0266667, 0.0266667, 0.0266667, 0.0266667, 0.0266667, 0.0266667, 0.0266667, 0.0266667, 0.0266667, 0.0266667, 0.0266667, 0.0266667) 8 4 7 11 9 13 16 12 6 2 1 5
 PAULI_CHANNEL_1(0.0666667, 0.0666667, 0.0666667) 0 3 10 14 15
+PAULI_CHANNEL_2(0.0266667, 0.0266667, 0.0266667, 0.0266667, 0.0266667, 0.0266667, 0.0266667, 0.0266667, 0.0266667, 0.0266667, 0.0266667, 0.0266667, 0.0266667, 0.0266667, 0.0266667) 1 5 6 2 7 11 8 4 9 13 16 12
 TICK
-CX 5 4 7 6 9 8 13 12 3 2 1 0
+CX 1 0 3 2 5 4 7 6 9 8 13 12
 TICK
-PAULI_CHANNEL_2(0.0266667, 0.0266667, 0.0266667, 0.0266667, 0.0266667, 0.0266667, 0.0266667, 0.0266667, 0.0266667, 0.0266667, 0.0266667, 0.0266667, 0.0266667, 0.0266667, 0.0266667) 5 4 7 6 9 8 13 12 3 2 1 0
 PAULI_CHANNEL_1(0.0666667, 0.0666667, 0.0666667) 10 11 14 15 16
+PAULI_CHANNEL_2(0.0266667, 0.0266667, 0.0266667, 0.0266667, 0.0266667, 0.0266667, 0.0266667, 0.0266667, 0.0266667, 0.0266667, 0.0266667, 0.0266667, 0.0266667, 0.0266667, 0.0266667) 1 0 3 2 5 4 7 6 9 8 13 12
 TICK
 CX 3 4 7 8 9 10 11 12 13 14 15 16
 TICK
-PAULI_CHANNEL_2(0.0266667, 0.0266667, 0.0266667, 0.0266667, 0.0266667, 0.0266667, 0.0266667, 0.0266667, 0.0266667, 0.0266667, 0.0266667, 0.0266667, 0.0266667, 0.0266667, 0.0266667) 3 4 7 8 9 10 11 12 13 14 15 16
 PAULI_CHANNEL_1(0.0666667, 0.0666667, 0.0666667) 0 1 2 5 6
+PAULI_CHANNEL_2(0.0266667, 0.0266667, 0.0266667, 0.0266667, 0.0266667, 0.0266667, 0.0266667, 0.0266667, 0.0266667, 0.0266667, 0.0266667, 0.0266667, 0.0266667, 0.0266667, 0.0266667) 3 4 7 8 9 10 11 12 13 14 15 16
 TICK
-CX 0 4 7 3 9 5 8 12 10 14 15 11
+CX 0 4 7 3 8 12 9 5 10 14 15 11
 TICK
-PAULI_CHANNEL_2(0.0266667, 0.0266667, 0.0266667, 0.0266667, 0.0266667, 0.0266667, 0.0266667, 0.0266667, 0.0266667, 0.0266667, 0.0266667, 0.0266667, 0.0266667, 0.0266667, 0.0266667) 0 4 7 3 9 5 8 12 10 14 15 11
 PAULI_CHANNEL_1(0.0666667, 0.0666667, 0.0666667) 1 2 6 13 16
+PAULI_CHANNEL_2(0.0266667, 0.0266667, 0.0266667, 0.0266667, 0.0266667, 0.0266667, 0.0266667, 0.0266667, 0.0266667, 0.0266667, 0.0266667, 0.0266667, 0.0266667, 0.0266667, 0.0266667) 0 4 7 3 8 12 9 5 10 14 15 11
 TICK
-M(0.5) 4
-MX(0.5) 7 9
-M(0.5) 12 2 14
-MX(0.5) 1 15
-DETECTOR(1, 2, 0) rec[-16] rec[-8]
+MX(0.5) 1 7 9 15
+M(0.5) 2 4 12 14
+DETECTOR(0, 3, 0) rec[-16] rec[-8]
 DETECTOR(2, 1, 0) rec[-15] rec[-7]
 DETECTOR(2, 3, 0) rec[-14] rec[-6]
-DETECTOR(3, 2, 0) rec[-13] rec[-5]
+DETECTOR(4, 1, 0) rec[-13] rec[-5]
 DETECTOR(1, 0, 0) rec[-12] rec[-4]
-DETECTOR(3, 4, 0) rec[-11] rec[-3]
-DETECTOR(0, 3, 0) rec[-10] rec[-2]
-DETECTOR(4, 1, 0) rec[-9] rec[-1]
+DETECTOR(1, 2, 0) rec[-11] rec[-3]
+DETECTOR(3, 2, 0) rec[-10] rec[-2]
+DETECTOR(3, 4, 0) rec[-9] rec[-1]
 SHIFT_COORDS(0, 0, 1)
 TICK
 PAULI_CHANNEL_1(0.0666667, 0.0666667, 0.0666667) 0 3 5 6 8 10 11 13 16
 TICK
-R 4
-RX 7 9
-R 12 2 14
-RX 1 15
+RX 1 7 9 15
+R 2 4 12 14
 TICK
-PAULI_CHANNEL_1(0.0333333, 0.0333333, 0.0333333) 4 7 9 12 2 14 1 15
 PAULI_CHANNEL_1(0.0666667, 0.0666667, 0.0666667) 0 3 5 6 8 10 11 13 16
+PAULI_CHANNEL_1(0.0333333, 0.0333333, 0.0333333) 1 2 4 7 9 12 14 15
 TICK
-CX 8 4 7 11 9 13 16 12 6 2 1 5
+CX 1 5 6 2 7 11 8 4 9 13 16 12
 TICK
-PAULI_CHANNEL_2(0.0266667, 0.0266667, 0.0266667, 0.0266667, 0.0266667, 0.0266667, 0.0266667, 0.0266667, 0.0266667, 0.0266667, 0.0266667, 0.0266667, 0.0266667, 0.0266667, 0.0266667) 8 4 7 11 9 13 16 12 6 2 1 5
 PAULI_CHANNEL_1(0.0666667, 0.0666667, 0.0666667) 0 3 10 14 15
+PAULI_CHANNEL_2(0.0266667, 0.0266667, 0.0266667, 0.0266667, 0.0266667, 0.0266667, 0.0266667, 0.0266667, 0.0266667, 0.0266667, 0.0266667, 0.0266667, 0.0266667, 0.0266667, 0.0266667) 1 5 6 2 7 11 8 4 9 13 16 12
 TICK
-CX 5 4 7 6 9 8 13 12 3 2 1 0
+CX 1 0 3 2 5 4 7 6 9 8 13 12
 TICK
-PAULI_CHANNEL_2(0.0266667, 0.0266667, 0.0266667, 0.0266667, 0.0266667, 0.0266667, 0.0266667, 0.0266667, 0.0266667, 0.0266667, 0.0266667, 0.0266667, 0.0266667, 0.0266667, 0.0266667) 5 4 7 6 9 8 13 12 3 2 1 0
 PAULI_CHANNEL_1(0.0666667, 0.0666667, 0.0666667) 10 11 14 15 16
+PAULI_CHANNEL_2(0.0266667, 0.0266667, 0.0266667, 0.0266667, 0.0266667, 0.0266667, 0.0266667, 0.0266667, 0.0266667, 0.0266667, 0.0266667, 0.0266667, 0.0266667, 0.0266667, 0.0266667) 1 0 3 2 5 4 7 6 9 8 13 12
 TICK
 CX 3 4 7 8 9 10 11 12 13 14 15 16
 TICK
-PAULI_CHANNEL_2(0.0266667, 0.0266667, 0.0266667, 0.0266667, 0.0266667, 0.0266667, 0.0266667, 0.0266667, 0.0266667, 0.0266667, 0.0266667, 0.0266667, 0.0266667, 0.0266667, 0.0266667) 3 4 7 8 9 10 11 12 13 14 15 16
 PAULI_CHANNEL_1(0.0666667, 0.0666667, 0.0666667) 0 1 2 5 6
+PAULI_CHANNEL_2(0.0266667, 0.0266667, 0.0266667, 0.0266667, 0.0266667, 0.0266667, 0.0266667, 0.0266667, 0.0266667, 0.0266667, 0.0266667, 0.0266667, 0.0266667, 0.0266667, 0.0266667) 3 4 7 8 9 10 11 12 13 14 15 16
 TICK
-CX 0 4 7 3 9 5 8 12 10 14 15 11
+CX 0 4 7 3 8 12 9 5 10 14 15 11
 TICK
-PAULI_CHANNEL_2(0.0266667, 0.0266667, 0.0266667, 0.0266667, 0.0266667, 0.0266667, 0.0266667, 0.0266667, 0.0266667, 0.0266667, 0.0266667, 0.0266667, 0.0266667, 0.0266667, 0.0266667) 0 4 7 3 9 5 8 12 10 14 15 11
 PAULI_CHANNEL_1(0.0666667, 0.0666667, 0.0666667) 1 2 6 13 16
+PAULI_CHANNEL_2(0.0266667, 0.0266667, 0.0266667, 0.0266667, 0.0266667, 0.0266667, 0.0266667, 0.0266667, 0.0266667, 0.0266667, 0.0266667, 0.0266667, 0.0266667, 0.0266667, 0.0266667) 0 4 7 3 8 12 9 5 10 14 15 11
 TICK
-M(0.5) 4
-MX(0.5) 7 9
-M(0.5) 12 2 14
-MX(0.5) 1 15
-DETECTOR(1, 2, 0) rec[-16] rec[-8]
+MX(0.5) 1 7 9 15
+M(0.5) 2 4 12 14
+DETECTOR(0, 3, 0) rec[-16] rec[-8]
 DETECTOR(2, 1, 0) rec[-15] rec[-7]
 DETECTOR(2, 3, 0) rec[-14] rec[-6]
-DETECTOR(3, 2, 0) rec[-13] rec[-5]
+DETECTOR(4, 1, 0) rec[-13] rec[-5]
 DETECTOR(1, 0, 0) rec[-12] rec[-4]
-DETECTOR(3, 4, 0) rec[-11] rec[-3]
-DETECTOR(0, 3, 0) rec[-10] rec[-2]
-DETECTOR(4, 1, 0) rec[-9] rec[-1]
+DETECTOR(1, 2, 0) rec[-11] rec[-3]
+DETECTOR(3, 2, 0) rec[-10] rec[-2]
+DETECTOR(3, 4, 0) rec[-9] rec[-1]
 SHIFT_COORDS(0, 0, 1)
 TICK
 PAULI_CHANNEL_1(0.0666667, 0.0666667, 0.0666667) 0 3 5 6 8 10 11 13 16
 TICK
-M(0.5) 0 3 6 5 8 11 10 13 16
-DETECTOR(1, 0, 0) rec[-13] rec[-8] rec[-7]
-DETECTOR(1, 2, 0) rec[-17] rec[-9] rec[-8] rec[-6] rec[-5]
-DETECTOR(3, 4, 0) rec[-12] rec[-3] rec[-2]
-DETECTOR(3, 2, 0) rec[-14] rec[-5] rec[-4] rec[-2] rec[-1]
-OBSERVABLE_INCLUDE(0) rec[-9] rec[-6] rec[-3]"""
-
+M(0.5) 0 3 5 6 8 10 11 13 16
+DETECTOR(1, 0, 0) rec[-13] rec[-8] rec[-6]
+DETECTOR(1, 2, 0) rec[-12] rec[-9] rec[-8] rec[-7] rec[-5]
+DETECTOR(3, 4, 0) rec[-10] rec[-4] rec[-2]
+DETECTOR(3, 2, 0) rec[-11] rec[-5] rec[-3] rec[-2] rec[-1]
+OBSERVABLE_INCLUDE(0) rec[-9] rec[-7] rec[-4]"""
     assert str(stim_circuit) == expected
 
 
@@ -627,7 +572,6 @@ def test_rotated_surface_code_compilation_end_to_end_5():
         initial_states=initial_states,
         final_measurements=final_measurements,
         observables=[code.logical_qubits[0].z])
-
     expected = """QUBIT_COORDS(0, 2) 0
 QUBIT_COORDS(0, 3) 1
 QUBIT_COORDS(1, 0) 2
@@ -645,21 +589,21 @@ QUBIT_COORDS(3, 3) 13
 QUBIT_COORDS(3, 4) 14
 QUBIT_COORDS(4, 1) 15
 QUBIT_COORDS(4, 2) 16
-R 0 3 6 5 8 11 10 13 16
+R 0 3 5 6 8 10 11 13 16
 TICK
-R 4 7 9 12 2 14 1 15
+R 1 2 4 7 9 12 14 15
 TICK
-H 11 13 5
+H 5 11 13
 TICK
-CX 8 4 11 7 13 9 16 12 6 2 5 1
+CX 5 1 6 2 8 4 11 7 13 9 16 12
 TICK
-H 11 13 5
+H 5 11 13
 TICK
-H 6 8 0
+H 0 6 8
 TICK
-CX 5 4 6 7 8 9 13 12 3 2 0 1
+CX 0 1 3 2 5 4 6 7 8 9 13 12
 TICK
-H 6 8 0
+H 0 6 8
 TICK
 H 8 10 16
 TICK
@@ -673,26 +617,26 @@ CX 0 4 3 7 5 9 8 12 10 14 11 15
 TICK
 H 3 5 11
 TICK
-M 4 7 9 12 2 14 1 15
-DETECTOR(1, 2, 0) rec[-8]
-DETECTOR(3, 2, 0) rec[-5]
-DETECTOR(1, 0, 0) rec[-4]
-DETECTOR(3, 4, 0) rec[-3]
+M 1 2 4 7 9 12 14 15
+DETECTOR(1, 0, 0) rec[-7]
+DETECTOR(1, 2, 0) rec[-6]
+DETECTOR(3, 2, 0) rec[-3]
+DETECTOR(3, 4, 0) rec[-2]
 SHIFT_COORDS(0, 0, 1)
 TICK
-R 4 7 9 12 2 14 1 15
+R 1 2 4 7 9 12 14 15
 TICK
-H 11 13 5
+H 5 11 13
 TICK
-CX 8 4 11 7 13 9 16 12 6 2 5 1
+CX 5 1 6 2 8 4 11 7 13 9 16 12
 TICK
-H 11 13 5
+H 5 11 13
 TICK
-H 6 8 0
+H 0 6 8
 TICK
-CX 5 4 6 7 8 9 13 12 3 2 0 1
+CX 0 1 3 2 5 4 6 7 8 9 13 12
 TICK
-H 6 8 0
+H 0 6 8
 TICK
 H 8 10 16
 TICK
@@ -706,30 +650,30 @@ CX 0 4 3 7 5 9 8 12 10 14 11 15
 TICK
 H 3 5 11
 TICK
-M 4 7 9 12 2 14 1 15
-DETECTOR(1, 2, 0) rec[-16] rec[-8]
-DETECTOR(2, 1, 0) rec[-15] rec[-7]
-DETECTOR(2, 3, 0) rec[-14] rec[-6]
-DETECTOR(3, 2, 0) rec[-13] rec[-5]
-DETECTOR(1, 0, 0) rec[-12] rec[-4]
-DETECTOR(3, 4, 0) rec[-11] rec[-3]
-DETECTOR(0, 3, 0) rec[-10] rec[-2]
+M 1 2 4 7 9 12 14 15
+DETECTOR(0, 3, 0) rec[-16] rec[-8]
+DETECTOR(1, 0, 0) rec[-15] rec[-7]
+DETECTOR(1, 2, 0) rec[-14] rec[-6]
+DETECTOR(2, 1, 0) rec[-13] rec[-5]
+DETECTOR(2, 3, 0) rec[-12] rec[-4]
+DETECTOR(3, 2, 0) rec[-11] rec[-3]
+DETECTOR(3, 4, 0) rec[-10] rec[-2]
 DETECTOR(4, 1, 0) rec[-9] rec[-1]
 SHIFT_COORDS(0, 0, 1)
 TICK
-R 4 7 9 12 2 14 1 15
+R 1 2 4 7 9 12 14 15
 TICK
-H 11 13 5
+H 5 11 13
 TICK
-CX 8 4 11 7 13 9 16 12 6 2 5 1
+CX 5 1 6 2 8 4 11 7 13 9 16 12
 TICK
-H 11 13 5
+H 5 11 13
 TICK
-H 6 8 0
+H 0 6 8
 TICK
-CX 5 4 6 7 8 9 13 12 3 2 0 1
+CX 0 1 3 2 5 4 6 7 8 9 13 12
 TICK
-H 6 8 0
+H 0 6 8
 TICK
 H 8 10 16
 TICK
@@ -743,25 +687,28 @@ CX 0 4 3 7 5 9 8 12 10 14 11 15
 TICK
 H 3 5 11
 TICK
-M 4 7 9 12 2 14 1 15
-DETECTOR(1, 2, 0) rec[-16] rec[-8]
-DETECTOR(2, 1, 0) rec[-15] rec[-7]
-DETECTOR(2, 3, 0) rec[-14] rec[-6]
-DETECTOR(3, 2, 0) rec[-13] rec[-5]
-DETECTOR(1, 0, 0) rec[-12] rec[-4]
-DETECTOR(3, 4, 0) rec[-11] rec[-3]
-DETECTOR(0, 3, 0) rec[-10] rec[-2]
+M 1 2 4 7 9 12 14 15
+DETECTOR(0, 3, 0) rec[-16] rec[-8]
+DETECTOR(1, 0, 0) rec[-15] rec[-7]
+DETECTOR(1, 2, 0) rec[-14] rec[-6]
+DETECTOR(2, 1, 0) rec[-13] rec[-5]
+DETECTOR(2, 3, 0) rec[-12] rec[-4]
+DETECTOR(3, 2, 0) rec[-11] rec[-3]
+DETECTOR(3, 4, 0) rec[-10] rec[-2]
 DETECTOR(4, 1, 0) rec[-9] rec[-1]
 SHIFT_COORDS(0, 0, 1)
 TICK
-M 0 3 6 5 8 11 10 13 16
-DETECTOR(1, 0, 0) rec[-13] rec[-8] rec[-7]
-DETECTOR(1, 2, 0) rec[-17] rec[-9] rec[-8] rec[-6] rec[-5]
-DETECTOR(3, 4, 0) rec[-12] rec[-3] rec[-2]
-DETECTOR(3, 2, 0) rec[-14] rec[-5] rec[-4] rec[-2] rec[-1]
-OBSERVABLE_INCLUDE(0) rec[-9] rec[-6] rec[-3]"""
+M 0 3 5 6 8 10 11 13 16
+DETECTOR(1, 0, 0) rec[-16] rec[-8] rec[-6]
+DETECTOR(1, 2, 0) rec[-15] rec[-9] rec[-8] rec[-7] rec[-5]
+DETECTOR(3, 4, 0) rec[-11] rec[-4] rec[-2]
+DETECTOR(3, 2, 0) rec[-12] rec[-5] rec[-3] rec[-2] rec[-1]
+OBSERVABLE_INCLUDE(0) rec[-9] rec[-7] rec[-4]"""
 
     assert str(stim_circuit) == expected
+
+
+test_rotated_surface_code_compilation_end_to_end_5()
 
 
 def test_rotated_surface_code_compilation_end_to_end_6():
@@ -789,7 +736,6 @@ def test_rotated_surface_code_compilation_end_to_end_6():
         initial_states=initial_states,
         final_measurements=final_measurements,
         observables=[code.logical_qubits[0].z])
-
     expected = """QUBIT_COORDS(0, 2) 0
 QUBIT_COORDS(0, 3) 1
 QUBIT_COORDS(1, 0) 2
@@ -807,21 +753,21 @@ QUBIT_COORDS(3, 3) 13
 QUBIT_COORDS(3, 4) 14
 QUBIT_COORDS(4, 1) 15
 QUBIT_COORDS(4, 2) 16
-R 0 3 6 5 8 11 10 13 16
+R 0 3 5 6 8 10 11 13 16
 TICK
-RX 4 7 9 12 2 14 1 15
+RX 1 2 4 7 9 12 14 15
 TICK
-H 11 13 5
+H 5 11 13
 TICK
-CZ 8 4 11 7 13 9 16 12 6 2 5 1
+CZ 5 1 6 2 8 4 11 7 13 9 16 12
 TICK
-H 11 13 5
+H 5 11 13
 TICK
-H 6 8 0
+H 0 6 8
 TICK
-CZ 5 4 6 7 8 9 13 12 3 2 0 1
+CZ 0 1 3 2 5 4 6 7 8 9 13 12
 TICK
-H 6 8 0
+H 0 6 8
 TICK
 H 8 10 16
 TICK
@@ -835,26 +781,26 @@ CZ 0 4 3 7 5 9 8 12 10 14 11 15
 TICK
 H 3 5 11
 TICK
-MX 4 7 9 12 2 14 1 15
-DETECTOR(1, 2, 0) rec[-8]
-DETECTOR(3, 2, 0) rec[-5]
-DETECTOR(1, 0, 0) rec[-4]
-DETECTOR(3, 4, 0) rec[-3]
+MX 1 2 4 7 9 12 14 15
+DETECTOR(1, 0, 0) rec[-7]
+DETECTOR(1, 2, 0) rec[-6]
+DETECTOR(3, 2, 0) rec[-3]
+DETECTOR(3, 4, 0) rec[-2]
 SHIFT_COORDS(0, 0, 1)
 TICK
-RX 4 7 9 12 2 14 1 15
+RX 1 2 4 7 9 12 14 15
 TICK
-H 11 13 5
+H 5 11 13
 TICK
-CZ 8 4 11 7 13 9 16 12 6 2 5 1
+CZ 5 1 6 2 8 4 11 7 13 9 16 12
 TICK
-H 11 13 5
+H 5 11 13
 TICK
-H 6 8 0
+H 0 6 8
 TICK
-CZ 5 4 6 7 8 9 13 12 3 2 0 1
+CZ 0 1 3 2 5 4 6 7 8 9 13 12
 TICK
-H 6 8 0
+H 0 6 8
 TICK
 H 8 10 16
 TICK
@@ -868,30 +814,30 @@ CZ 0 4 3 7 5 9 8 12 10 14 11 15
 TICK
 H 3 5 11
 TICK
-MX 4 7 9 12 2 14 1 15
-DETECTOR(1, 2, 0) rec[-16] rec[-8]
-DETECTOR(2, 1, 0) rec[-15] rec[-7]
-DETECTOR(2, 3, 0) rec[-14] rec[-6]
-DETECTOR(3, 2, 0) rec[-13] rec[-5]
-DETECTOR(1, 0, 0) rec[-12] rec[-4]
-DETECTOR(3, 4, 0) rec[-11] rec[-3]
-DETECTOR(0, 3, 0) rec[-10] rec[-2]
+MX 1 2 4 7 9 12 14 15
+DETECTOR(0, 3, 0) rec[-16] rec[-8]
+DETECTOR(1, 0, 0) rec[-15] rec[-7]
+DETECTOR(1, 2, 0) rec[-14] rec[-6]
+DETECTOR(2, 1, 0) rec[-13] rec[-5]
+DETECTOR(2, 3, 0) rec[-12] rec[-4]
+DETECTOR(3, 2, 0) rec[-11] rec[-3]
+DETECTOR(3, 4, 0) rec[-10] rec[-2]
 DETECTOR(4, 1, 0) rec[-9] rec[-1]
 SHIFT_COORDS(0, 0, 1)
 TICK
-RX 4 7 9 12 2 14 1 15
+RX 1 2 4 7 9 12 14 15
 TICK
-H 11 13 5
+H 5 11 13
 TICK
-CZ 8 4 11 7 13 9 16 12 6 2 5 1
+CZ 5 1 6 2 8 4 11 7 13 9 16 12
 TICK
-H 11 13 5
+H 5 11 13
 TICK
-H 6 8 0
+H 0 6 8
 TICK
-CZ 5 4 6 7 8 9 13 12 3 2 0 1
+CZ 0 1 3 2 5 4 6 7 8 9 13 12
 TICK
-H 6 8 0
+H 0 6 8
 TICK
 H 8 10 16
 TICK
@@ -905,22 +851,25 @@ CZ 0 4 3 7 5 9 8 12 10 14 11 15
 TICK
 H 3 5 11
 TICK
-MX 4 7 9 12 2 14 1 15
-DETECTOR(1, 2, 0) rec[-16] rec[-8]
-DETECTOR(2, 1, 0) rec[-15] rec[-7]
-DETECTOR(2, 3, 0) rec[-14] rec[-6]
-DETECTOR(3, 2, 0) rec[-13] rec[-5]
-DETECTOR(1, 0, 0) rec[-12] rec[-4]
-DETECTOR(3, 4, 0) rec[-11] rec[-3]
-DETECTOR(0, 3, 0) rec[-10] rec[-2]
+MX 1 2 4 7 9 12 14 15
+DETECTOR(0, 3, 0) rec[-16] rec[-8]
+DETECTOR(1, 0, 0) rec[-15] rec[-7]
+DETECTOR(1, 2, 0) rec[-14] rec[-6]
+DETECTOR(2, 1, 0) rec[-13] rec[-5]
+DETECTOR(2, 3, 0) rec[-12] rec[-4]
+DETECTOR(3, 2, 0) rec[-11] rec[-3]
+DETECTOR(3, 4, 0) rec[-10] rec[-2]
 DETECTOR(4, 1, 0) rec[-9] rec[-1]
 SHIFT_COORDS(0, 0, 1)
 TICK
-M 0 3 6 5 8 11 10 13 16
-DETECTOR(1, 0, 0) rec[-13] rec[-8] rec[-7]
-DETECTOR(1, 2, 0) rec[-17] rec[-9] rec[-8] rec[-6] rec[-5]
-DETECTOR(3, 4, 0) rec[-12] rec[-3] rec[-2]
-DETECTOR(3, 2, 0) rec[-14] rec[-5] rec[-4] rec[-2] rec[-1]
-OBSERVABLE_INCLUDE(0) rec[-9] rec[-6] rec[-3]"""
+M 0 3 5 6 8 10 11 13 16
+DETECTOR(1, 0, 0) rec[-16] rec[-8] rec[-6]
+DETECTOR(1, 2, 0) rec[-15] rec[-9] rec[-8] rec[-7] rec[-5]
+DETECTOR(3, 4, 0) rec[-11] rec[-4] rec[-2]
+DETECTOR(3, 2, 0) rec[-12] rec[-5] rec[-3] rec[-2] rec[-1]
+OBSERVABLE_INCLUDE(0) rec[-9] rec[-7] rec[-4]"""
 
     assert str(stim_circuit) == expected
+
+
+test_rotated_surface_code_compilation_end_to_end_6()
