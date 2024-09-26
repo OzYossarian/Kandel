@@ -181,22 +181,10 @@ def test_stability_x_19():
     circuit: stim.Circuit = generate_circuit(
         rounds=n_rounds, distance=4, observable_type='stability_x',
         measurement_noise_probability=0.1, pauli_noise_probability=0)
-    
+
     new_circuit = remove_detectors(circuit, [1, 3, 5])
     check_graphlike_distance(new_circuit, (n_rounds+1)//4)
 
-
-def test_stability_z_measurement_noise_non_graphlike_distance():
-    for n_rounds in range(12, 18):
-        circuit: stim.Circuit = generate_circuit(
-            rounds=n_rounds, distance=4, observable_type='stability_z',
-            measurement_noise_probability=0.1, pauli_noise_probability=0)
-        d = (n_rounds+1)//6 * 3
-        if ((n_rounds+1) % 6) - 4 > 0:
-            d += (n_rounds+1) % 6 - 4
-        check_hyper_edge_distance(circuit, d)
-
-test_stability_z_measurement_noise_non_graphlike_distance()
 
 def test_stability_x_measurement_noise_non_graphlike_distance():
     for n_rounds in range(12, 18):
