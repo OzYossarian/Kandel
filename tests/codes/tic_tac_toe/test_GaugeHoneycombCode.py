@@ -72,6 +72,11 @@ def check_parity_of_number_of_violated_detectors(circuit: stim.Circuit):
         approximate_disjoint_errors=True)) == True
 
 
+def get_graphlike_distance(circuit: stim.Circuit) -> int:
+    return len(circuit.detector_error_model(
+        approximate_disjoint_errors=True).shortest_graphlike_error())
+
+
 def check_graphlike_distance(circuit: stim.Circuit, distance):
     assert len(circuit.detector_error_model(
         approximate_disjoint_errors=True).shortest_graphlike_error()) == distance
@@ -139,26 +144,43 @@ def test_get_timelike_distance(gauge_factors, n_rounds):
     check_hyper_edge_distance(circ, distance)
 
 
-def test_get_number_of_rounds_for_stability_experiment():
+@pytest.mark.parametrize("timelike_distance", [10, 12, 13])
+def test_get_number_of_rounds_for_stability_experiment(timelike_distance):
     code = GaugeHoneycombCode(4, [2, 1, 2])
-    rounds, distance_x, distance_z = code.get_number_of_rounds_for_stability_experiment(
-        6, graphlike=False)
+    rounds, distance_x, distance_z = code.get_number_of_rounds_for_timelike_distance(
+        timelike_distance, graphlike=False)
     circ_z, _ = generate_circuit(rounds, 4, [2, 1, 2], 'stability_z')
     check_hyper_edge_distance(circ_z, distance_z)
     circ_x, _ = generate_circuit(rounds, 4, [2, 1, 2], 'stability_x')
     check_hyper_edge_distance(circ_x, distance_x)
-
     circ_x_short, _ = generate_circuit(rounds-1, 4, [2, 1, 2], 'stability_x')
     circ_z_short, _ = generate_circuit(rounds-1, 4, [2, 1, 2], 'stability_z')
 
     assert get_hyper_edge_distsance(
-        circ_x_short) <= distance_x-1 or get_hyper_edge_distsance(circ_z_short) <= distance_z-1
+        circ_x_short) < timelike_distance or get_hyper_edge_distsance(circ_z_short) < timelike_distance
 
-    code = GaugeHoneycombCode(4, [1, 1, 1])
-    rounds, distance_x, distance_z = code.get_number_of_rounds_for_stability_experiment(
-        4, graphlike=True)
-    circ_z, _ = generate_circuit(rounds, 4, [1, 1, 1], 'stability_z')
+
+@pytest.mark.parametrize("gauge_factors,timelike_distance", [([1, 1, 1], 10, 4), ([1, 2, 1], 16, 4),
+                                                             ([2, 2, 2], 20, 4), ([
+                                                                 2, 1, 2], 24, 4),
+                                                             ([1, 1, 1], 8, 8), ([3, 3, 3], 8, 9)])
+def test_get_number_of_rounds_for_stability_experiment_graphlike(gauge_factors, timelike_distance, distance):
+    code = GaugeHoneycombCode(distance, gauge_factors)
+    rounds, distance_x, distance_z = code.get_number_of_rounds_for_timelike_distance(
+        timelike_distance, graphlike=True)
+    circ_z, _ = generate_circuit(
+        rounds, distance, gauge_factors, 'stability_z')
+    circ_x, _ = generate_circuit(
+        rounds, distance, gauge_factors, 'stability_x')
     check_graphlike_distance(circ_z, distance_z)
+    check_graphlike_distance(circ_x, distance_x)
+    assert distance_x == timelike_distance or distance_z == timelike_distance
+    circ_x_short, _ = generate_circuit(
+        rounds-1, distance, gauge_factors, 'stability_x')
+    circ_z_short, _ = generate_circuit(
+        rounds-1, distance, gauge_factors, 'stability_z')
+    assert get_graphlike_distance(
+        circ_x_short) < timelike_distance or get_graphlike_distance(circ_z_short) < timelike_distance
 
 
 """
