@@ -7,6 +7,7 @@ from main.compiling.noise.models.PhenomenologicalNoise import PhenomenologicalNo
 from main.compiling.syndrome_extraction.extractors.ancilla_per_check.mixed.CxCyCzExtractor import CxCyCzExtractor
 import stim
 import itertools
+import pytest
 
 
 def generate_circuit(rounds, distance, gauge_factors, observable_type, initial_stabilizers=None, measurement_error_probability=0.1, data_qubit_error_probability=0.1):
@@ -169,27 +170,32 @@ def test_distance_phenomenological_noise():
     check_distance(circuit, d)
 
 
-def test_get_number_of_rounds_for_stability_experiment():
-    distances = [4, 5, 7]
+@pytest.mark.parametrize("gauge_factors", [[1, 4], [3, 1], [4, 1], [1, 1], [3, 2]])
+def test_get_number_of_rounds_for_stability_experiment(gauge_factors):
+    distances = [4, 5, 6]
     for distance in distances:
-        code = GaugeFloquetColourCode(4, [1, 4])
-        r, d_x, d_z = code.get_number_of_rounds_for_stability_experiment(
+        code = GaugeFloquetColourCode(4, gauge_factors)
+        r, d_x, d_z = code.get_number_of_rounds_for_timelike_distance(
             distance)
+        print(r, "r")
         circuit_x_stability, code = generate_circuit(
-            r, 4, [1, 4], 'stability_x', measurement_error_probability=0.1, data_qubit_error_probability=0.1)
+            r, 4, gauge_factors, 'stability_x', measurement_error_probability=0.1, data_qubit_error_probability=0.1)
 
         circuit_z_stability, code = generate_circuit(
-            r, 4, [1, 4], 'stability_z', measurement_error_probability=0.1, data_qubit_error_probability=0.1)
+            r, 4, gauge_factors, 'stability_z', measurement_error_probability=0.1, data_qubit_error_probability=0.1)
 
         check_distance(circuit_x_stability, d_x)
         check_distance(circuit_z_stability, d_z)
         assert d_x == distance or d_z == distance
-
+        print(d_x, d_z, 'dx, dz')
         if d_z == distance:
             circuit, code = generate_circuit(
-                r-1, 4, [1, 4], 'stability_z', measurement_error_probability=0.1, data_qubit_error_probability=0.1)
+                r-1, 4, gauge_factors, 'stability_z', measurement_error_probability=0.1, data_qubit_error_probability=0.1)
             check_distance(circuit, distance-1)
         else:
             circuit, code = generate_circuit(
-                r-1, 4, [1, 4], 'stability_x', measurement_error_probability=0.1, data_qubit_error_probability=0.1)
+                r-1, 4, gauge_factors, 'stability_x', measurement_error_probability=0.1, data_qubit_error_probability=0.1)
             check_distance(circuit, distance-1)
+
+
+test_get_number_of_rounds_for_stability_experiment([2, 1])
