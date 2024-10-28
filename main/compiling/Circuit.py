@@ -54,7 +54,9 @@ class Circuit(object):
         # Track which measurements tell us the value of which checks
         self.measurer = Measurer()
 
-    def to_cirq_string(self, idling_noise: OneQubitNoise = None) -> str:
+    def to_cirq_string(self,
+                       idling_noise: Union[OneQubitNoise, None] = None,
+                       resonator_idling_noise: Union[OneQubitNoise, None] = None) -> str:
         """Represents an instance of this class as cirq ascii circuit, useful for debugging
 
         Args:
@@ -65,7 +67,7 @@ class Circuit(object):
         Returns:
             str : a drawing of the circuit generated using cirq.
         """
-        return str(stimcirq.stim_circuit_to_cirq_circuit(self.to_stim(idling_noise)))
+        return str(stimcirq.stim_circuit_to_cirq_circuit(self.to_stim(idling_noise, resonator_idling_noise)))
 
     def number_of_instructions(self, instruction_names: Iterable[str]) -> int:
         """Counts the number of times an instruction occurs.
@@ -76,13 +78,13 @@ class Circuit(object):
         Returns:
             Number of occurrences of instructions with these names.
         """
-        if not isinstance(instruction_names, Iterable):
+        if isinstance(instruction_names, str):
             instruction_names = [instruction_names]
         occurrences = 0
         for instructions_at_tick in self.instructions.values():
             for instructions_on_qubit_at_tick in instructions_at_tick.values():
                 for instruction in instructions_on_qubit_at_tick:
-                    if instruction.name == instruction_names:
+                    if instruction.name in instruction_names:
                         occurrences += 1
         return occurrences
 
@@ -329,6 +331,7 @@ class Circuit(object):
     def to_stim(
         self,
         idling_noise: Union[OneQubitNoise, None],
+        resonator_idling_noise: Union[OneQubitNoise, None],
         track_coords: bool = True,
         track_progress: bool = True,
     ) -> stim.Circuit:
@@ -348,12 +351,16 @@ class Circuit(object):
         if track_progress:
             # TODO - bug here: sometimes this progress bar overfills!
             with alive_bar(len(self.instructions), force_tty=True) as bar:
-                return self._to_stim(idling_noise, track_coords, bar)
+                return self._to_stim(idling_noise, resonator_idling_noise, track_coords, bar)
         else:
-            return self._to_stim(idling_noise, track_coords, None)
+            return self._to_stim(idling_noise, resonator_idling_noise, track_coords, None)
 
     def _to_stim(
-        self, idling_noise: Union[OneQubitNoise, None], track_coords: bool, progress_bar: Any
+        self,
+        idling_noise: Union[OneQubitNoise, None],
+        resonator_idling_noise: Union[OneQubitNoise, None],
+        track_coords: bool,
+        progress_bar: Any
     ) -> stim.Circuit:
         """Called by to_stim() to transform the circuit to a stim circuit.
 
@@ -375,7 +382,7 @@ class Circuit(object):
             shift_coords = None
 
         # Go through the circuit and add idling noise.
-        self.add_idling_noise(idling_noise)
+        self.add_idling_noise(idling_noise, resonator_idling_noise)
 
         # Let 'circuit' denote the circuit we're currently compiling to - if
         # using repeat blocks, this need not always be the full circuit itself
