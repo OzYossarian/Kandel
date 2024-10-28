@@ -15,7 +15,7 @@ from main.utils.types import Tick
 RepeatBlock = Union[Tuple[int, int, int], None]
 
 
-class Circuit:
+class Circuit(object):
     def __init__(self):
         """Intermediate representation of a quantum circuit. Rather than
         compile directly to a Stim circuit, which is somewhat inflexible, we
@@ -76,11 +76,13 @@ class Circuit:
         Returns:
             Number of occurrences of instructions with these names.
         """
+        if not isinstance(instruction_names, Iterable):
+            instruction_names = [instruction_names]
         occurrences = 0
         for instructions_at_tick in self.instructions.values():
             for instructions_on_qubit_at_tick in instructions_at_tick.values():
                 for instruction in instructions_on_qubit_at_tick:
-                    if instruction.name in instruction_names:
+                    if instruction.name == instruction_names:
                         occurrences += 1
         return occurrences
 
@@ -259,7 +261,9 @@ class Circuit:
         # TODO - implement!
         raise NotImplementedError
 
-    def add_idling_noise(self, idling_noise: Union[OneQubitNoise, None]):
+    def add_idling_noise(self,
+                         idling_noise: Union[OneQubitNoise, None],
+                         resonator_idling_noise: Union[OneQubitNoise, None]):
         """Adds idling noise everywhere in the circuit
 
         Idling noise is added at every tick to qubits that have been
@@ -273,7 +277,7 @@ class Circuit:
         # If circuit is going to be compressed, then this should be done
         # before adding idling noise, since compression changes the amount
         # of idling time in the circuit.
-        if idling_noise is not None:
+        if idling_noise is not None or resonator_idling_noise is not None:
             # Note that this only loop through ticks at which there is at
             # least one instruction
             for tick in sorted(self.instructions.keys()):
@@ -285,9 +289,17 @@ class Circuit:
                     # Sort for reproducibility in tests.
                     idle_qubits = sorted(
                         idle_qubits, key=lambda qubit: qubit.coords)
+
+                    is_measurement_tick = self.check_for_measurement_at_tick(
+                        tick)
                     for qubit in idle_qubits:
-                        noise = idling_noise.instruction([qubit])
-                        self.add_instruction(tick + 1, noise)
+                        if idling_noise is not None:
+                            noise = idling_noise.instruction([qubit])
+                            self.add_instruction(tick + 1, noise)
+
+                        if is_measurement_tick == True and resonator_idling_noise is not None:
+                            noise = resonator_idling_noise.instruction([qubit])
+                            self.add_instruction(tick + 1, noise)
 
     def get_idle_qubits(self, tick: Tick):
         # A qubit is idle at a given tick if it has been initialised but
@@ -306,6 +318,13 @@ class Circuit:
             if is_active(instructions)}
         idle_qubits = initialised_qubits.difference(active_qubits)
         return idle_qubits
+
+    def check_for_measurement_at_tick(self, tick: Tick):
+        for instructions_on_qubit in self.instructions[tick].values():
+            for instruction in instructions_on_qubit:
+                if instruction.is_measurement:
+                    return True
+        return False
 
     def to_stim(
         self,
