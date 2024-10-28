@@ -40,8 +40,6 @@ def generate_circuit(gauge_factors: List[int],
         logical_observables = [code.z_stability_operator]
         initial_stabilizers = [Stabilizer([(0, check)], 0)
                                for check in code.check_schedule[0]]
-        # I just found this by drawing the detectors by hand and checking which measurements
-        # create the right timelike boundary.
         final_measurements = code.get_possible_final_measurement(
             code.logical_qubits[1].x, rounds)
 
@@ -62,50 +60,8 @@ def generate_circuit(gauge_factors: List[int],
     return stim_circuit
 
 
-def remove_final_detectors(circuit: stim.Circuit) -> stim.Circuit:
-    layer = len(circuit) - 1
-
-    while layer >= 0:
-        if circuit[layer].name != "DETECTOR":
-            return (circuit[:(layer+1)])
-        else:
-            layer -= 1
-
-
-def remove_detectors(circuit: stim.Circuit, layers_to_skip_detectors: List[int], length_of_route=int) -> stim.Circuit:
-    vertical_layer = 0
-    layer: stim.CircuitInstruction
-    new_circuit = stim.Circuit()
-    for layer in circuit:
-        if layer.name == "SHIFT_COORDS":
-            vertical_layer += 1
-
-        if layer.name == "DETECTOR":
-
-            if (vertical_layer % length_of_route) not in layers_to_skip_detectors:
-                new_circuit.append(layer)
-        else:
-            new_circuit.append(layer)
-
-    new_circuit = remove_final_detectors(new_circuit)
-    return (new_circuit)
-
-
 def get_graphlike_distance(circuit: stim.Circuit) -> int:
     return len(circuit.detector_error_model(approximate_disjoint_errors=True).shortest_graphlike_error())
-
-
-"""
-def get_hyper_edge_distance(circuit: stim.Circuit) -> int:
-
-    logical_errors = circuit.search_for_undetectable_logical_errors(
-        dont_explore_detection_event_sets_with_size_above=4,
-        dont_explore_edges_with_degree_above=4,
-        dont_explore_edges_increasing_symptom_degree=False,
-    )
-
-    return len(logical_errors)
-"""
 
 
 def get_td_bulk_and_boundary(gauge_factors, letter: Literal['X', 'Z']) -> int:
@@ -113,7 +69,6 @@ def get_td_bulk_and_boundary(gauge_factors, letter: Literal['X', 'Z']) -> int:
 
     td_boundary = dict()
     for i in range(bulk_length):
-        print(letter)
         circ_1 = generate_circuit(
             gauge_factors, 2*bulk_length+i, 4, letter, 0.1, 0.1)
 
@@ -151,7 +106,7 @@ def main():
     json_object = json.dumps(timelike_distance_dict, indent=4)
 
     # Writing to sample.json
-    with open("graphlike_td_data.json", "w") as outfile:
+    with open("test_data.json", "w") as outfile:
         outfile.write(json_object)
 
 

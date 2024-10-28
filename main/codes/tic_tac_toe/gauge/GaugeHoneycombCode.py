@@ -184,7 +184,7 @@ class GaugeHoneycombCode(GaugeTicTacToeCode):
             timelike_distance_dict = json.load(openfile)
         return (self.distance_from_timelike_distance_dict(n_rounds, pauli_letter, timelike_distance_dict))
 
-    def get_number_of_rounds_for_stability_experiment(self, desired_distance: int, graphlike=False) -> Tuple[int, int, int]:
+    def get_number_of_rounds_for_timelike_distance(self, desired_distance: int, graphlike=False) -> Tuple[int, int, int]:
         """Get the minimal number of rounds needed to perform a stability experiment 
 
         This method assumes a phenmenological noise model is used. The number of rounds 

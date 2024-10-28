@@ -1,11 +1,13 @@
 from typing import List, Literal, Tuple
 
 from main.building_blocks.detectors.Drum import Drum
+from main.building_blocks.pauli.Pauli import Pauli
 from main.building_blocks.pauli.PauliLetter import PauliLetter
 from main.codes.tic_tac_toe.FloquetColourCode import FloquetColourCode
 from main.codes.tic_tac_toe.TicTacToeCode import TicTacToeCode
 from main.codes.tic_tac_toe.detectors.TicTacToeDrumBlueprint import TicTacToeDrumBlueprint
 from main.codes.tic_tac_toe.gauge.GaugeTicTacToeCode import GaugeTicTacToeCode
+from main.codes.tic_tac_toe.logical.TicTacToeLogicalOperator import TicTacToeLogicalOperator
 from main.codes.tic_tac_toe.stability_observable.stability_logical_operator import StabilityOperator
 from main.utils.Colour import Red, Green, Blue
 from main.building_blocks.pauli.PauliLetter import PauliLetter
@@ -196,6 +198,13 @@ class GaugeFloquetColourCode(GaugeTicTacToeCode):
             measurement_pattern, letter)
         return (measurement_error_distance)
 
+    def get_possible_final_measurement(self, logical_operator: TicTacToeLogicalOperator, rounds: int) -> List[Tuple[int, StabilityOperator]]:
+        measurement_basis = logical_operator.logical_letter.letter
+
+        final_measurement = [Pauli(qubit, PauliLetter(measurement_basis))
+                             for qubit in self.data_qubits.values()]
+        return final_measurement
+
     def get_pauli_error_distance(self, rounds: int, letter: Literal['X', 'Z']) -> int:
         """Returns the minimum weight of a timelike logical consisting of X,Y, or Z errors on 
         data qubits.
@@ -219,7 +228,7 @@ class GaugeFloquetColourCode(GaugeTicTacToeCode):
             measurement_pattern[(self.x_gf + self.z_gf):], letter)
         return (pauli_error_distance)
 
-    def get_number_of_rounds_for_stability_experiment(self, desired_distance: int) -> Tuple[int, int, int]:
+    def get_number_of_rounds_for_timelike_distance(self, desired_distance: int, graphlike: bool = False) -> Tuple[int, int, int]:
         """Get the minimal number of rounds needed to perform a stability experiment 
 
         This method assumes a phenmenological noise model is used. The number of rounds 

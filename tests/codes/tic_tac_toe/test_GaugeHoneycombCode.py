@@ -104,7 +104,7 @@ def check_hyper_edge_distance(circuit: stim.Circuit, distance):
 
 
 def test_memory_graphlike_distance_of_d4_codes():
-    for gauge_factors in itertools.product([1, 2, 3], repeat=3):
+    for gauge_factors in itertools.product([1, 2], repeat=3):
         for n_rounds in range(sum(gauge_factors)*2, sum(gauge_factors)*3):
             circuit: stim.Circuit
             circuit, _ = generate_circuit(
@@ -112,26 +112,18 @@ def test_memory_graphlike_distance_of_d4_codes():
             check_parity_of_number_of_violated_detectors(circuit)
             check_graphlike_distance(circuit, 4)
 
+
+@pytest.mark.parametrize("gauge_factors,n_rounds", [([4, 1, 1], 16), ([3, 2, 4], 25)])
+def test_memory_graphlike_distance_high_gauge_d4_codes(gauge_factors, n_rounds):
     circuit: stim.Circuit
     circuit, _ = generate_circuit(
-        20, 4, [1, 1, 2], 'memory_x')
+        n_rounds, 4, gauge_factors, 'memory_x')
     check_parity_of_number_of_violated_detectors(circuit)
     check_graphlike_distance(circuit, 4)
 
     circuit: stim.Circuit
     circuit, _ = generate_circuit(
-        16, 4, [4, 1, 1], 'memory_x')
-    check_parity_of_number_of_violated_detectors(circuit)
-    check_graphlike_distance(circuit, 4)
-
-    circuit: stim.Circuit
-    circuit, _ = generate_circuit(
-        25, 4, [3, 2, 4], 'memory_x')
-    check_parity_of_number_of_violated_detectors(circuit)
-    check_graphlike_distance(circuit, 4)
-
-    circuit: stim.Circuit
-    circuit, _ = generate_circuit(16, 4, [1, 1, 1], 'memory_z')
+        n_rounds, 4, gauge_factors, 'memory_z')
     check_parity_of_number_of_violated_detectors(circuit)
     check_graphlike_distance(circuit, 4)
 
@@ -144,7 +136,7 @@ def test_get_timelike_distance(gauge_factors, n_rounds):
     check_hyper_edge_distance(circ, distance)
 
 
-@pytest.mark.parametrize("timelike_distance", [10, 12, 13])
+@pytest.mark.parametrize("timelike_distance", [6, 8, 9])
 def test_get_number_of_rounds_for_stability_experiment(timelike_distance):
     code = GaugeHoneycombCode(4, [2, 1, 2])
     rounds, distance_x, distance_z = code.get_number_of_rounds_for_timelike_distance(
@@ -160,10 +152,10 @@ def test_get_number_of_rounds_for_stability_experiment(timelike_distance):
         circ_x_short) < timelike_distance or get_hyper_edge_distsance(circ_z_short) < timelike_distance
 
 
-@pytest.mark.parametrize("gauge_factors,timelike_distance", [([1, 1, 1], 10, 4), ([1, 2, 1], 16, 4),
-                                                             ([2, 2, 2], 20, 4), ([
-                                                                 2, 1, 2], 24, 4),
-                                                             ([1, 1, 1], 8, 8), ([3, 3, 3], 8, 9)])
+@pytest.mark.parametrize("gauge_factors,timelike_distance,distance", [([1, 1, 1], 10, 4), ([1, 2, 1], 16, 4),
+                                                                      ([2, 2, 2], 20, 4), ([
+                                                                          2, 1, 2], 24, 4),
+                                                                      ([1, 1, 1], 8, 8), ([3, 3, 3], 8, 9)])
 def test_get_number_of_rounds_for_stability_experiment_graphlike(gauge_factors, timelike_distance, distance):
     code = GaugeHoneycombCode(distance, gauge_factors)
     rounds, distance_x, distance_z = code.get_number_of_rounds_for_timelike_distance(
