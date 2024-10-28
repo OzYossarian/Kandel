@@ -358,9 +358,6 @@ class Circuit:
         # Go through the circuit and add idling noise.
         self.add_idling_noise(idling_noise)
 
-        # Track which instructions have been compiled to stim.
-        compiled = defaultdict(bool)
-
         # Let 'circuit' denote the circuit we're currently compiling to - if
         # using repeat blocks, this need not always be the full circuit itself
         full_circuit = stim.Circuit()
@@ -445,27 +442,29 @@ class Circuit:
         measurements = []
         qubits_by_instruction = {}
         compiled_instruction = defaultdict(bool)
+
+        # Sorting the instructions such that the order of operations and qubits in the resulting stim circuit is stable.
         instructions = sorted(qubit_instructions.values(),
-                              key=lambda value: (value[0].name, self.qubit_index(value[0].qubits[0])))
-        for instruction in instructions:
+                              key=lambda value: [(v.name, [self.qubit_index(q) for q in v.qubits]) for v in value])
+        for instruction_on_qubit in instructions:
+            for instruction in instruction_on_qubit:
 
-            first_instruction = instruction[0]
-            if not compiled_instruction[first_instruction]:
+                if not compiled_instruction[instruction]:
 
-                if first_instruction.is_measurement:
-                    measurements.append(first_instruction)
+                    if instruction.is_measurement:
+                        measurements.append(instruction)
 
-                key = (first_instruction.name, first_instruction.params)
-                if key not in qubits_by_instruction:
-                    qubits_by_instruction[key] = []
+                    key = (instruction.name, instruction.params)
+                    if key not in qubits_by_instruction:
+                        qubits_by_instruction[key] = []
 
-                if first_instruction.targets is not None:
-                    qubits_by_instruction[key].extend(
-                        first_instruction.targets)
-                else:
-                    qubits_by_instruction[key].extend(
-                        [self.qubit_index(qubit) for qubit in first_instruction.qubits])
-                compiled_instruction[first_instruction] = True
+                    if instruction.targets is not None:
+                        qubits_by_instruction[key].extend(
+                            instruction.targets)
+                    else:
+                        qubits_by_instruction[key].extend(
+                            [self.qubit_index(qubit) for qubit in instruction.qubits])
+                    compiled_instruction[instruction] = True
 
         return qubits_by_instruction, measurements
 
