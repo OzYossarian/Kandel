@@ -1,6 +1,6 @@
 import json
 from pathlib import Path
-from typing import List, Literal, Tuple
+from typing import List, Literal, Tuple, Union
 
 from main.building_blocks.detectors.Drum import Drum
 from main.building_blocks.pauli.Pauli import Pauli
@@ -16,7 +16,9 @@ from main.building_blocks.pauli.PauliLetter import PauliLetter
 
 
 class GaugeFloquetColourCode(GaugeTicTacToeCode):
-    def __init__(self, distance: int, gauge_factors: List[int]):
+    def __init__(self,
+                 distance: Union[int, List[int]],
+                 gauge_factors: List[int]):
         """A gauge-fixed Floquet colour code.
 
         Args:

@@ -100,6 +100,21 @@ def check_distance(circuit: stim.Circuit, distance):
         approximate_disjoint_errors=True).shortest_graphlike_error()) == distance
 
 
+def test_rectangular_distances():
+    circuit: stim.Circuit
+    circuit, _ = generate_circuit([1, 1, 1], 12, [4, 8], 'memory_x')
+    check_distance(circuit, 8)
+
+    circuit, _ = generate_circuit([1, 1, 1], 12, [8, 4],  'memory_x')
+    check_distance(circuit, 4)
+
+    circuit, _ = generate_circuit([1, 1, 1], 12, [4, 8],  'memory_z')
+    check_distance(circuit, 8)
+
+    circuit, _ = generate_circuit([1, 1, 1], 12, [8, 4],  'memory_z')
+    check_distance(circuit, 4)
+
+
 def test_properties_of_d4_codes_g123():
     for gauge_factors in itertools.product([1, 2, 3], repeat=2):
         for n_rounds in range(sum(gauge_factors)*4, sum(gauge_factors)*6):
