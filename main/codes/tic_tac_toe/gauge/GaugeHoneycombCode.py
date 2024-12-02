@@ -168,7 +168,7 @@ class GaugeHoneycombCode(GaugeTicTacToeCode):
             timelike_distance_dict = json.load(openfile)
         return (self.distance_from_timelike_distance_dict(n_rounds, pauli_letter, timelike_distance_dict))
 
-    def get_graphlike_timelike_distance(self, n_rounds: int, pauli_letter: Literal['X', 'Z']) -> int:
+    def get_graphlike_timelike_distance(self, n_rounds: int, pauli_letter: Literal['X', 'Z'], noise_model) -> int:
         """ Returns the distance of the code if one decodes using a matching decoder.
 
         Args:
@@ -178,13 +178,16 @@ class GaugeHoneycombCode(GaugeTicTacToeCode):
         Returns:
             int: The timelike distance of the code.
         """
-        p = Path(__file__).with_name('graphlike_td_data.json')
+        if noise_model == "phenomenological_noise":
+            p = Path(__file__).with_name('graphlike_td_data.json')
+        elif noise_model == "circuit_level_noise":
+            p = Path(__file__).with_name('graphlike_td_data_cln.json')
 
         with p.open('r') as openfile:
             timelike_distance_dict = json.load(openfile)
         return (self.distance_from_timelike_distance_dict(n_rounds, pauli_letter, timelike_distance_dict))
 
-    def get_number_of_rounds_for_timelike_distance(self, desired_distance: int, graphlike=False) -> Tuple[int, int, int]:
+    def get_number_of_rounds_for_timelike_distance(self, desired_distance: int, graphlike=False, noise_model="phenomenological_noise") -> Tuple[int, int, int]:
         """Get the minimal number of rounds needed to perform a stability experiment 
 
         This method assumes a phenmenological noise model is used. The number of rounds 
@@ -202,7 +205,6 @@ class GaugeHoneycombCode(GaugeTicTacToeCode):
                 - The number of rounds needed to perform a stability experiment
                 - The distance of the x-stability experiment with the given number of rounds
                 - The distance of the z-stability experiment with the given number of rounds
-
         """
         n_rounds = len(self.tic_tac_toe_route)
 
@@ -211,12 +213,12 @@ class GaugeHoneycombCode(GaugeTicTacToeCode):
         else:
             distance_func = self.get_graphlike_timelike_distance
 
-        distance_x = distance_func(n_rounds, 'X')
-        distance_z = distance_func(n_rounds, 'Z')
+        distance_x = distance_func(n_rounds, 'X', noise_model)
+        distance_z = distance_func(n_rounds, 'Z', noise_model)
 
         while min(distance_x, distance_z) < desired_distance:
             n_rounds += 1
-            distance_x = distance_func(n_rounds, 'X')
-            distance_z = distance_func(n_rounds, 'Z')
+            distance_x = distance_func(n_rounds, 'X', noise_model)
+            distance_z = distance_func(n_rounds, 'Z', noise_model)
 
         return n_rounds, distance_x, distance_z

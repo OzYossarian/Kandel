@@ -1,5 +1,5 @@
 from collections import defaultdict
-from typing import Dict, Tuple, List
+from typing import Dict, Tuple, List, Union
 
 from main.building_blocks.Check import Check
 from main.building_blocks.detectors.Drum import Drum
@@ -15,11 +15,18 @@ from main.utils.utils import coords_mid, xor, coords_minus, embed_coords
 
 
 class TicTacToeCode(ToricHexagonalCode):
-    def __init__(self, distance: int, tic_tac_toe_route: TicTacToeRoute):
+    def __init__(self, distance: Union[int, List[int]], tic_tac_toe_route: TicTacToeRoute):
         # Initialise parent class immediately so that we have data qubits
         # etc. available for use in the rest of this init.
-        rows = 3 * (distance // 4)
-        columns = 4 * (distance // 4)
+        if isinstance(distance, int):
+            rows = 3 * (distance // 4)
+            columns = 4 * (distance // 4)
+        elif isinstance(distance, list) and len(distance) == 2 and all(isinstance(d, int) for d in distance):
+            rows = 3 * (distance[0] // 4)
+            columns = 4 * (distance[1] // 4)
+        else:
+            raise ValueError("Distance must be an int or a list of two ints.")
+
         super().__init__(
             rows=rows,
             columns=columns,

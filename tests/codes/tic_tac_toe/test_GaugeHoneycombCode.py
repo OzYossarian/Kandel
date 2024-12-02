@@ -78,6 +78,9 @@ def get_graphlike_distance(circuit: stim.Circuit) -> int:
 
 
 def check_graphlike_distance(circuit: stim.Circuit, distance):
+    print(len(circuit.detector_error_model(
+        approximate_disjoint_errors=True).shortest_graphlike_error())
+    )
     assert len(circuit.detector_error_model(
         approximate_disjoint_errors=True).shortest_graphlike_error()) == distance
 
@@ -111,6 +114,21 @@ def test_memory_graphlike_distance_of_d4_codes():
                 n_rounds, 4, gauge_factors, 'memory_x')
             check_parity_of_number_of_violated_detectors(circuit)
             check_graphlike_distance(circuit, 4)
+
+
+def test_rectangular_distances():
+    circuit: stim.Circuit
+    circuit, _ = generate_circuit(12, [4, 8], [1, 1, 1], 'memory_x')
+    check_graphlike_distance(circuit, 8)
+
+    circuit, _ = generate_circuit(12, [8, 4], [1, 1, 1], 'memory_x')
+    check_graphlike_distance(circuit, 4)
+
+    circuit, _ = generate_circuit(12, [4, 8], [1, 1, 1], 'memory_z')
+    check_graphlike_distance(circuit, 8)
+
+    circuit, _ = generate_circuit(12, [8, 4], [1, 1, 1], 'memory_z')
+    check_graphlike_distance(circuit, 4)
 
 
 @pytest.mark.parametrize("gauge_factors,n_rounds", [([4, 1, 1], 16), ([3, 2, 4], 25)])

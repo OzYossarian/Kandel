@@ -88,7 +88,8 @@ class TicTacToeLogicalQubit(LogicalQubit):
         # The types returned will be the types of the operators immediately
         # after round 'round' up until right before round 'round + 1'.
         relative_round = round % len(self.code.tic_tac_toe_route)
-        (prev_colour, prev_letter) = self.code.tic_tac_toe_route[relative_round]
+        (prev_colour,
+         prev_letter) = self.code.tic_tac_toe_route[relative_round]
         prev_row = rest_of_row(prev_colour, prev_letter)
         prev_column = rest_of_column(prev_colour, prev_letter)
 
@@ -130,7 +131,7 @@ class TicTacToeLogicalQubit(LogicalQubit):
         colour, _ = tic_tac_toe_square
         start = self.horizontal_operator_starts[colour]
         paulis = []
-        for i in range(self.code.distance // 2):
+        for i in range(self.code.columns // 2):
             u = (start[0] + 12 * i, start[1])
             v = (u[0] + 4, u[1])
             qubit_u = self.code.data_qubits[self.code.wrap_coords(u)]
@@ -158,7 +159,7 @@ class TicTacToeLogicalQubit(LogicalQubit):
         colour, letter = tic_tac_toe_square
         start = self.vertical_operator_starts[colour]
         paulis = []
-        for i in range(self.code.distance // 2):
+        for i in range(int((4/3*self.code.rows) // 2)):
             u = (start[0] + (i % 2) * 2, start[1] + 6 * i)
             v = (start[0] + 2 - (i % 2) * 2, start[1] + 2 + 6 * i)
             qubit_u = self.code.data_qubits[self.code.wrap_coords(u)]

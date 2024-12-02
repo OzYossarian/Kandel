@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from typing import List, Tuple
+from typing import List, Tuple, Union
 
 from main.building_blocks.detectors.Drum import Drum
 from main.codes.ToricHexagonalCode import ToricHexagonalCode
@@ -13,7 +13,7 @@ from main.utils.utils import coords_mid, xor, coords_minus, embed_coords
 
 
 class GaugeTicTacToeCode(ABC, ToricHexagonalCode):
-    def __init__(self, distance: int, gauge_factors: List[int]):
+    def __init__(self, distance: Union[int, List[int]], gauge_factors: List[int]):
         # NOTE - haven't figured out a general way of repeating measurements
         # for any tic-tac-toe code. Have only done this for honeycomb code
         # and Floquet colour code. Hence this class is abstract, and just
@@ -23,8 +23,14 @@ class GaugeTicTacToeCode(ABC, ToricHexagonalCode):
         if any(gauge_factor < 1 for gauge_factor in gauge_factors):
             raise ValueError("Gauge factor must be a positive integer.")
 
-        rows = 3 * (distance // 4)
-        columns = 4 * (distance // 4)
+        if isinstance(distance, int):
+            rows = 3 * (distance // 4)
+            columns = 4 * (distance // 4)
+        elif isinstance(distance, list) and len(distance) == 2 and all(isinstance(d, int) for d in distance):
+            rows = 3 * (distance[0] // 4)
+            columns = 4 * (distance[1] // 4)
+        else:
+            raise ValueError("Distance must be an int or a list of two ints.")
 
         # Start with an "ungauged" honeycomb code,
         # then edit the checks and detectors to get the gauged version.
