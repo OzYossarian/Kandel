@@ -215,10 +215,11 @@ class Compiler(ABC):
         # That is why we do this here.
         if isinstance(code, TicTacToeCode) or isinstance(code, GaugeTicTacToeCode):
             # We are assuming that there is only one observable in the list.
-            pauli_letter_observable = observables[0].at_round(round-1)[
-                0].letter.letter
+            if observables is not None and len(observables) > 0:
+                pauli_letter_observable = observables[0].at_round(round-1)[
+                    0].letter.letter
 
-            final_measurements = [Pauli(qubit, PauliLetter(pauli_letter_observable))
+                final_measurements = [Pauli(qubit, PauliLetter(pauli_letter_observable))
                                   for qubit in code.data_qubits.values()]
 
         # Finish with data qubit measurements, and use these to reconstruct
@@ -684,7 +685,7 @@ class Compiler(ABC):
         # First, compile instructions for actually measuring the qubits.
         paulis = [list(check.paulis.values())[0]
                   for check in code.final_check_schedule[-1]]
-        self.measure_qubits(
+        self.measure_individual_qubits(
             paulis,
             code.final_check_schedule[-1], round+1, tick, circuit
         )
@@ -757,18 +758,23 @@ class Compiler(ABC):
             for pauli in final_measurements:
                 check = Check([pauli], pauli.qubit.coords)
                 final_checks[pauli.qubit] = check
+            # A hack!
             if isinstance(code, TicTacToeCode) or isinstance(code, GaugeTicTacToeCode):
-
-                if (pauli.letter == code.tic_tac_toe_route[(
-                        round-1) % code.schedule_length][1]):
+                final_pauli_letters = {pauli.letter for pauli in final_measurements}
+                if len(final_pauli_letters) > 1:
+                    raise ValueError(
+                        f"All final measurements must have the same letter. "
+                        f"Instead, got: "f"{final_measurements}.")
+                pauli_letter = final_pauli_letters.pop()
+                route_final_letter = code.tic_tac_toe_route[(round-1) % code.schedule_length][1] 
+                if (pauli_letter == route_final_letter):
                     add_small_detectors = True
                 else:
                     add_small_detectors = False
-
             else:
                 add_small_detectors = False
             # First, compile instructions for actually measuring the qubits.
-            self.measure_qubits(
+            self.measure_individual_qubits(
                 final_measurements, final_checks.values(), round, tick, circuit
             )
             # Now try to use these as lids for any detectors that at this point
@@ -961,7 +967,7 @@ class Compiler(ABC):
                 )
     # TODO - generalise for native multi-qubit measurements.
 
-    def measure_qubits(
+    def measure_individual_qubits(
             self,
             paulis: Iterable[Pauli],
             checks: Iterable[Check],
