@@ -368,9 +368,6 @@ class Circuit:
         # Go through the circuit and add idling noise.
         self.add_idling_noise(idling_noise)
 
-        # Track which instructions have been compiled to stim.
-        compiled = defaultdict(bool)
-
         # Let 'circuit' denote the circuit we're currently compiling to - if
         # using repeat blocks, this need not always be the full circuit itself
         full_circuit = stim.Circuit()
@@ -383,7 +380,8 @@ class Circuit:
                 index = self.qubit_index(qubit)
                 circuit.append("QUBIT_COORDS", [index], qubit.coords)
 
-        for tick, qubit_instructions in sorted(self.instructions.items()):
+        sorted_instructions = sorted(self.instructions.items())
+        for tick, qubit_instructions in sorted_instructions:
             # Check whether we need to close a repeat block
             repeats = self.left_repeat_block(tick, most_recent_tick)
             if repeats is not None:
@@ -394,15 +392,12 @@ class Circuit:
             if self.entered_repeat_block(tick, most_recent_tick):
                 circuit = stim.Circuit()
 
-            # Now actually compile instructions at this tick
-            measurements = []
-            for qubit, instructions in qubit_instructions.items():
-                for instruction in instructions:
-                    if not compiled[instruction]:
-                        self.instruction_to_stim(instruction, circuit)
-                        if instruction.is_measurement:
-                            measurements.append(instruction)
-                        compiled[instruction] = True
+            targets_by_instruction, measurements = self.split_instructions_according_to_gate(
+                qubit_instructions)
+
+            for instruction in targets_by_instruction:
+                circuit.append(instruction[0],
+                               targets_by_instruction[instruction], instruction[1])
 
             # Let the measurer determine if these measurements trigger any
             # further instructions - e.g. compiling detectors, adding checks
@@ -412,6 +407,7 @@ class Circuit:
                     measurements, shift_coords
                 )
             )
+
             for instruction in further_instructions:
                 circuit.append(instruction)
 
@@ -437,24 +433,57 @@ class Circuit:
         self.measurer.reset_compilation()
         return full_circuit
 
-    def instruction_to_stim(self, instruction: Instruction, circuit: stim.Circuit):
-        """Adds an individual Instruction to a circuit
+    def split_instructions_according_to_gate(self, qubit_instructions: Dict[Qubit, List[Instruction]]):
+        """Splits the instructions into gates and measurements
+
+        Qubit instructions is a dictionary whose keys are Qubits and values are lists of Instructions.
+        This function generates a dictionary whose keys are a instruction and whose values are lists of qubits.
+        This is done to reduce the amount of times we need to call Stim's append function.
+
+        It also generates a list of measurements.
 
         Args:
-            instruction: The instruction to be translated
-            circuit: A stim circuit to add the instruction to.
+            qubit_instructions: A dictionary whose keys are Qubits and values are lists of Instructions.
+
+        Returns:
+            A tuple of two dictionaries. The first dictionary has keys of Instructions and values of lists of qubits.
+            The second dictionary has keys of Instructions which are measurements and values of lists of qubits.        
         """
-        if instruction.targets is not None:
-            targets = instruction.targets
-        elif instruction.name == "MPP":
-            # Stim's strange syntax for these means we need to 
-            # retrieve the check associated to this instruction, 
-            # in order to set the targets correctly.
-            check, _ = self.measurer.measurement_checks[instruction]
-            targets = self.product_measurement_targets(check)
-        else:
-            targets = [self.qubit_index(qubit) for qubit in instruction.qubits]
-        circuit.append(instruction.name, targets, instruction.params)
+        measurements = []
+        targets_by_instruction = {}
+        compiled_instruction = defaultdict(bool)
+
+        # Sorting the instructions such that the order of operations and qubits in the resulting stim circuit is stable.
+        instructions = sorted(qubit_instructions.values(),
+                              key=lambda value: [(v.name, [self.qubit_index(q) for q in v.qubits]) for v in value])
+        for instruction_on_qubit in instructions:
+            for instruction in instruction_on_qubit:
+
+                if not compiled_instruction[instruction]:
+
+                    if instruction.is_measurement:
+                        measurements.append(instruction)
+
+                    key = (instruction.name, instruction.params)
+                    if key not in targets_by_instruction:
+                        targets_by_instruction[key] = []
+                    
+                    if instruction.name == "MPP":
+                        # Stim's strange syntax for these means we need to 
+                        # retrieve the check associated to this instruction, 
+                        # in order to set the targets correctly.
+                        check, _ = self.measurer.measurement_checks[instruction]
+                        instruction.targets = self.product_measurement_targets(check)
+                        
+                    if instruction.targets is not None:
+                        targets_by_instruction[key].extend(
+                            instruction.targets)
+                    else:
+                        targets_by_instruction[key].extend(
+                            [self.qubit_index(qubit) for qubit in instruction.qubits])
+                    compiled_instruction[instruction] = True
+
+        return targets_by_instruction, measurements
 
     def product_measurement_targets(self, check: Check) -> List[stim.GateTarget]:
         """
@@ -489,7 +518,6 @@ class Circuit:
             targeter = self.pauli_targeters[pauli.letter.letter]
             targets.append(targeter(self.qubit_index(pauli.qubit)))
         return targets
-
 
     def entered_repeat_block(self, tick: int, last_tick: int):
         """Checks if a repeat block started between last_tick and tick.
