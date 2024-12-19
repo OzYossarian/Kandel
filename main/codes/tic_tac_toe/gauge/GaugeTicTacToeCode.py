@@ -4,12 +4,7 @@ from typing import List, Tuple, Union
 from main.building_blocks.detectors.Drum import Drum
 from main.codes.ToricHexagonalCode import ToricHexagonalCode
 from main.codes.tic_tac_toe.TicTacToeCode import TicTacToeCode
-from main.building_blocks.pauli import Pauli
-from main.building_blocks.pauli.PauliLetter import PauliLetter
-from main.building_blocks.Check import Check
-from main.codes.tic_tac_toe.detectors.TicTacToeDrumBlueprint import TicTacToeDrumBlueprint
-from main.utils.Colour import Red, Green, Blue
-from main.utils.utils import coords_mid, xor, coords_minus, embed_coords
+from typing import Literal
 
 
 class GaugeTicTacToeCode(ABC, ToricHexagonalCode):
@@ -94,6 +89,10 @@ class GaugeTicTacToeCode(ABC, ToricHexagonalCode):
 
     @abstractmethod
     def get_plaquette_detector_schedule(self) -> List[List[Drum]]:
+        pass
+
+    @abstractmethod
+    def get_number_of_rounds_for_single_timelike_distance(self, desired_distance: int, pauli_letter: Literal['X', 'Z'], graphlike=False) -> int:
         pass
 
     @abstractmethod

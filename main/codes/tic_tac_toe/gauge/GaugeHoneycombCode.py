@@ -164,9 +164,11 @@ class GaugeHoneycombCode(GaugeTicTacToeCode):
             int: The timelike distance of the code.
         """
         if noise_model == "phenomenological_noise":
-            p = Path(__file__).with_name('non_graphlike_td_data.json')
+            p = Path(__file__).parent / 'timelike_distance_data' / \
+                'hcc_non_graphlike_td_data_phenomenological.json'
         elif noise_model == "circuit_level_noise":
-            p = Path(__file__).with_name('non_graphlike_td_data_cln.json')
+            p = Path(__file__).parent / 'timelike_distance_data' / \
+                'hcc_non_graphlike_td_data_circuit_level_depolarizing.json'
         with p.open('r') as openfile:
             timelike_distance_dict = json.load(openfile)
         return (self.distance_from_timelike_distance_dict(n_rounds, pauli_letter, timelike_distance_dict))
@@ -181,14 +183,32 @@ class GaugeHoneycombCode(GaugeTicTacToeCode):
         Returns:
             int: The timelike distance of the code.
         """
+
         if noise_model == "phenomenological_noise":
-            p = Path(__file__).with_name('graphlike_td_data.json')
+            p = Path(__file__).parent / 'timelike_distance_data' / \
+                'hcc_graphlike_td_data_phenomenological.json'
         elif noise_model == "circuit_level_noise":
-            p = Path(__file__).with_name('graphlike_td_data_cln.json')
+            p = Path(__file__).parent / 'timelike_distance_data' / \
+                'hcc_graphlike_td_data_circuit_level_depolarizing.json'
 
         with p.open('r') as openfile:
             timelike_distance_dict = json.load(openfile)
         return (self.distance_from_timelike_distance_dict(n_rounds, pauli_letter, timelike_distance_dict))
+
+    def get_number_of_rounds_for_single_timelike_distance(self, desired_distance: int, pauli_letter: Literal['X', 'Z'], graphlike=False, noise_model="phenomenological_noise") -> int:
+        n_rounds = len(self.tic_tac_toe_route)
+
+        if graphlike == False:
+            distance_func = self.get_non_graphlike_timelike_distance
+        else:
+            distance_func = self.get_graphlike_timelike_distance
+
+        distance = distance_func(n_rounds, pauli_letter, noise_model)
+
+        while distance < desired_distance:
+            n_rounds += 1
+            distance = distance_func(n_rounds, pauli_letter, noise_model)
+        return n_rounds
 
     def get_number_of_rounds_for_timelike_distance(self, desired_distance: int, graphlike=False, noise_model="phenomenological_noise") -> Tuple[int, int, int]:
         """Get the minimal number of rounds needed to perform a stability experiment 

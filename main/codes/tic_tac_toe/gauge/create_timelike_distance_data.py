@@ -1,3 +1,6 @@
+#!/usr/bin/env python3
+
+import argparse
 import itertools
 from main.codes.tic_tac_toe.gauge.GaugeHoneycombCode import GaugeHoneycombCode
 from main.codes.tic_tac_toe.gauge.GaugeFloquetColourCode import GaugeFloquetColourCode
@@ -10,6 +13,7 @@ from matplotlib import pyplot as plt
 from typing import List, Literal
 import stim
 import json
+import pathlib
 
 
 def generate_circuit(gauge_factors: List[int],
@@ -75,26 +79,28 @@ def generate_circuit(gauge_factors: List[int],
 
 
 def get_graphlike_distance(circuit: stim.Circuit) -> int:
-    return len(circuit.detector_error_model(approximate_disjoint_errors=True).shortest_graphlike_error())
+    return len(circuit.detector_error_model(decompose_errors=True, approximate_disjoint_errors=True).shortest_graphlike_error())
 
 
-def get_td_bulk_and_boundary(noise_model, gauge_factors, letter: Literal['X', 'Z'], code) -> int:
-    if code == 'GaugeHoneycombCode':
-        bulk_length = 2*sum(gauge_factors)
-    elif code == 'GaugeFloquetColourCode':
-        bulk_length = 6*sum(gauge_factors)
+def get_td_bulk_and_boundary_fcc(noise_model, gauge_factors, letter: Literal['X', 'Z'], graphlike) -> int:
+    bulk_length = 6*sum(gauge_factors)
     td_boundary = dict()
+
     for i in range(bulk_length):
 
         circ_1 = generate_circuit(
 
-            gauge_factors, bulk_length+i, 4, letter, noise_model, code)
+            gauge_factors, bulk_length+i, 4, letter, noise_model, "GaugeFloquetColourCode")
 
         circ_2 = generate_circuit(
-            gauge_factors, 2*bulk_length+i, 4, letter, noise_model, code)
+            gauge_factors, 2*bulk_length+i, 4, letter, noise_model,  "GaugeFloquetColourCode")
 
-        d_1 = get_graphlike_distance(circ_1)
-        d_2 = get_graphlike_distance(circ_2)
+        if graphlike == True:
+            d_1 = get_graphlike_distance(circ_1)
+            d_2 = get_graphlike_distance(circ_2)
+        else:
+            d_1 = get_hyper_edge_distance(circ_1)
+            d_2 = get_hyper_edge_distance(circ_2)
 
         if i == 0:
             td_bulk = d_2 - d_1
@@ -103,7 +109,43 @@ def get_td_bulk_and_boundary(noise_model, gauge_factors, letter: Literal['X', 'Z
     return (td_bulk, td_boundary)
 
 
-def generate_data(noise_model, code):
+def get_td_bulk_and_boundary_hcc(noise_model, gauge_factors, letter: Literal['X', 'Z'], graphlike) -> int:
+    bulk_length = 2*sum(gauge_factors)
+    td_boundary = dict()
+    for i in range(bulk_length):
+
+        circ_1 = generate_circuit(
+            gauge_factors, 2*bulk_length+i, 4, letter, noise_model, "GaugeHoneycombCode")
+
+        circ_2 = generate_circuit(
+            gauge_factors, 3*bulk_length+i, 4, letter, noise_model, "GaugeHoneycombCode")
+
+        if graphlike == True:
+            d_1 = get_graphlike_distance(circ_1)
+            d_2 = get_graphlike_distance(circ_2)
+        else:
+            d_1 = get_hyper_edge_distance(circ_1)
+            d_2 = get_hyper_edge_distance(circ_2)
+
+        if i == 0:
+            td_bulk = d_2 - d_1
+        td_boundary[i] = d_1
+
+    return (td_bulk, td_boundary)
+
+
+def get_hyper_edge_distance(circuit: stim.Circuit) -> int:
+    logical_errors = circuit.search_for_undetectable_logical_errors(
+        dont_explore_detection_event_sets_with_size_above=4,
+        dont_explore_edges_with_degree_above=4,
+        dont_explore_edges_increasing_symptom_degree=False,
+        canonicalize_circuit_errors=True
+    )
+
+    return len(logical_errors)
+
+
+def generate_data(noise_model, code, graphlike=True):
     timelike_distance_dict = dict()
     timelike_distance_dict["X"] = dict()
     timelike_distance_dict["Z"] = dict()
@@ -113,8 +155,17 @@ def generate_data(noise_model, code):
         gauge_factor_combinations = itertools.product([1, 2, 3], repeat=2)
     for gauge_factors in gauge_factor_combinations:
         for letter in ["X", "Z"]:
-            td_bulk, td_boundary = get_td_bulk_and_boundary(noise_model,
-                                                            gauge_factors, letter, code)
+            if code == "GaugeFloquetColourCode":
+                td_bulk, td_boundary = get_td_bulk_and_boundary_fcc(noise_model,
+                                                                    gauge_factors,
+                                                                     letter,
+                                                                    graphlike)
+            elif code == "GaugeHoneycombCode":
+                td_bulk, td_boundary = get_td_bulk_and_boundary_hcc(noise_model,
+                                                                    gauge_factors,
+                                                                    letter,
+                                                                    graphlike)
+
             timelike_distance_dict[letter][str(gauge_factors)] = dict()
             timelike_distance_dict[letter][str(
                 gauge_factors)]["td_bulk"] = td_bulk
@@ -123,21 +174,24 @@ def generate_data(noise_model, code):
     return (timelike_distance_dict)
 
 
-def main():
+def main(code, noise_model, graphlike):
     timelike_distance_dict = generate_data(
-        'circuit_level_depolarizing', 'GaugeFloquetColourCode')
+        noise_model, code, graphlike)
     json_object = json.dumps(timelike_distance_dict, indent=4)
-    # Writing to sample.json
-    with open("fcc_graphlike_td_data_cln.json", "w") as outfile:
+    file_prefix = "fcc" if code == "GaugeFloquetColourCode" else "hcc"
+    with open(f"./timelike_distance_data/{file_prefix}_{'graphlike' if graphlike else 'non_graphlike'}_td_data_{noise_model}.json", "w") as outfile:
         outfile.write(json_object)
-
-    # timelike_distance_dict = generate_data(
-    #     'circuit_level_depolarizing', 'GaugeHoneycombCode')
-    # json_object = json.dumps(timelike_distance_dict, indent=4)
-    # # Writing to sample.json
-    # with open("hcc_graphlike_td_data_cln.json", "w") as outfile:
-    #     outfile.write(json_object)
 
 
 if __name__ == "__main__":
-    main()
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--code', type=str, required=True)
+    parser.add_argument('--noise_model', type=str, required=True)
+    parser.add_argument('--graphlike', type=int, required=True)
+    args = parser.parse_args()
+
+    main(
+        args.code,
+        args.noise_model,
+        bool(args.graphlike)
+    )
