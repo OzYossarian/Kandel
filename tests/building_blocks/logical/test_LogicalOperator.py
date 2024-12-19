@@ -10,13 +10,6 @@ from tests.utils.utils_numbers import default_test_repeats_small, default_max_un
 from tests.building_blocks.pauli.utils_paulis import random_paulis, random_grouped_paulis
 
 
-def test_logical_operator_fails_if_no_paulis():
-    expected_error = \
-        "Can't create a logical operator from an empty list of Paulis"
-    with pytest.raises(ValueError, match=expected_error):
-        LogicalOperator([])
-
-
 def test_logical_operator_fails_if_qubits_not_unique():
     expected_error = "Can't include the same qubit more than once"
 

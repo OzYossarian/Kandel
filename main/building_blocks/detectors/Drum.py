@@ -132,38 +132,6 @@ class Drum(Detector):
                   t + round >= 0]
         return checks
 
-    def checks_at_or_after(
-            self, round: int, schedule_length: int):
-        """
-        Returns the checks in the drum that would be measured either at or
-        after the given round.
-
-        Args:
-            round:
-                the round to consider. We're in the rare position here of
-                having the schedule length to hand too, so `round` can be
-                relative or absolute (i.e. modulo the schedule length or
-                not), and we'll just mod it anyway.
-            schedule_length:
-                Length of the code's schedule.
-
-        Returns:
-            Checks of the drum that will be measured at or after the given
-            round.
-        """
-        relative_round = round % schedule_length
-        # A drum might straddle two layers of the code schedule.
-        # Therefore two 'halves' of it might appear in a given layer.
-        # We want the one whose end is at or after the given relative
-        # round, so first find this.
-        lid_end = self.lid_end
-        if lid_end < relative_round:
-            # Want the later 'half' of the drum
-            lid_end += schedule_length
-        checks = [
-            (t, check) for t, check in self.timed_checks
-            if t + lid_end >= round]
-        return checks
 
     @staticmethod
     def _assert_lid_valid(lid: List[TimedCheck]):
