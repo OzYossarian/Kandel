@@ -169,7 +169,7 @@ class DetectorInitialiser:
         # First peek at the expectation of each potential lid-only
         # detector and see which are deterministic.
         stim_circuit = circuit.to_stim(
-            idling_noise=None, track_coords=False, track_progress=False)
+            idling_noise=None, resonator_idling_noise=None, track_coords=False, track_progress=False)
         simulator = stim.TableauSimulator()
         simulator.do(stim_circuit)
         round_detectors = self.get_round_detectors(

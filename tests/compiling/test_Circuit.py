@@ -4,6 +4,7 @@ import copy
 import pytest
 import stim
 from pytest_mock import MockerFixture
+from copy import deepcopy
 
 from main.building_blocks.Check import Check
 from main.building_blocks.Qubit import Qubit
@@ -42,6 +43,18 @@ idling_noise_1 = OneQubitNoise(0.1, 0.1, 0.1).instruction([busy_qubit])
 idling_noise_2 = OneQubitNoise(0.2, 0.2, 0.2).instruction([busy_qubit])
 circuit_with_two_gates_on_same_qubit.add_instruction(1, idling_noise_1)
 circuit_with_two_gates_on_same_qubit.add_instruction(1, idling_noise_2)
+
+circuit_with_resonator_idle = Circuit()
+qubit_1 = Qubit(1)
+qubit_2 = Qubit(2)
+circuit_with_resonator_idle.initialise(0, Instruction([qubit_1], "R"))
+circuit_with_resonator_idle.initialise(0, Instruction([qubit_2], "R"))
+circuit_with_resonator_idle.add_instruction(2, Instruction([qubit_1], "Z"))
+circuit_with_resonator_idle.add_instruction(
+    4, Instruction([qubit_2], "MX", is_measurement=True))
+circuit_with_resonator_idle.add_instruction(6, Instruction([qubit_2], "H"))
+circuit_with_resonator_idle.add_instruction(
+    6, Instruction([qubit_1], "MZ", is_measurement=True))
 
 
 def create_rsc_circuit():
@@ -86,6 +99,9 @@ def test_get_number_of_occurrences_gates():
 
     n_X_gates = single_qubit_circuit.number_of_instructions(["X"])
     assert n_X_gates == 0
+
+
+test_get_number_of_occurrences_gates()
 
 
 def test_qubit_index():
@@ -272,13 +288,13 @@ def test_circuit_add_repeat_block_succeeds_otherwise():
 
 
 def test_to_stim(capfd):
-    single_qubit_circuit.to_stim(None, track_progress=False)
+    single_qubit_circuit.to_stim(None, None, track_progress=False)
     out, _ = capfd.readouterr()
     assert out == ""
 
 
 def test__to_stim():
-    circuit = single_qubit_circuit._to_stim(None, True, None)
+    circuit = single_qubit_circuit._to_stim(None, None, True, None)
     assert stim.Circuit(str(circuit)) == stim.Circuit(
         """QUBIT_COORDS(1) 0
             R 0
@@ -286,7 +302,8 @@ def test__to_stim():
             Z 0"""
     )
 
-    circuit = circuit_with_two_gates_on_same_qubit._to_stim(None, True, None)
+    circuit = circuit_with_two_gates_on_same_qubit._to_stim(
+        None, None, True, None)
 
     assert stim.Circuit(str(circuit)) == stim.Circuit(
         """
@@ -298,7 +315,7 @@ def test__to_stim():
     """)
     rsc_circuit_one_layer = create_rsc_circuit()
     stim_rsc_circuit_one_layer = rsc_circuit_one_layer._to_stim(
-        None, True, None)
+        None, None, True, None)
 
     # testing if the properties of the measurer class are reset
     assert rsc_circuit_one_layer.measurer.measurement_numbers == {}
@@ -311,19 +328,34 @@ def test__to_stim():
     assert stim_rsc_circuit_one_layer.num_detectors == 8
 
 
-def add_idling_noise():
-    # test if no noise is added
-    single_qubit_circuit.add_idling_noise(None)
-    n_idling_gates = single_qubit_circuit.get_number_of_occurrences_of_gate(
+def test_add_idling_noise():
+    single_qubit_circuit.add_idling_noise(None, None)
+    n_idling_gates = single_qubit_circuit.number_of_instructions(
         "PAULI_CHANNEL_I"
     )
     assert n_idling_gates == 0
 
-    two_qubit_circuit.add_idling_noise(OneQubitNoise(0.1, 0.1, 0.1))
-    n_idling_errors = two_qubit_circuit.get_number_of_occurrences_of_gate(
+    two_qubit_circuit.add_idling_noise(OneQubitNoise(0.1, 0.1, 0.1), None)
+    n_idling_errors = two_qubit_circuit.number_of_instructions(
         "PAULI_CHANNEL_1"
     )
     assert n_idling_errors == 1
+
+    circ_w_res_idle = deepcopy(circuit_with_resonator_idle)
+    circ_w_res_idle.add_idling_noise(
+        None, OneQubitNoise(0.2, 0.2, 0.2))
+    n_idling_errors = circ_w_res_idle.number_of_instructions(
+        "PAULI_CHANNEL_1"
+    )
+
+    assert n_idling_errors == 1
+
+    n_idling_errors = circuit_with_resonator_idle.add_idling_noise(
+        OneQubitNoise(0.1, 0.1, 0.1), OneQubitNoise(0.2, 0.2, 0.2))
+    n_idling_errors = circuit_with_resonator_idle.number_of_instructions(
+        "PAULI_CHANNEL_1")
+
+    assert n_idling_errors == 3
 
 
 def test_circuit_add_idling_noise_does_not_add_idling_noise_after_identity_gate(
@@ -332,7 +364,7 @@ def test_circuit_add_idling_noise_does_not_add_idling_noise_after_identity_gate(
     qubit = mocker.Mock(spec=Qubit)
     identity = Instruction([qubit], 'I')
     circuit.instructions = {0: {qubit: [identity]}}
-    circuit.add_idling_noise(OneQubitNoise.uniform(0.1))
+    circuit.add_idling_noise(OneQubitNoise.uniform(0.1), None)
     # Assert that nothing has happened!
     assert circuit.instructions == {0: {qubit: [identity]}}
 

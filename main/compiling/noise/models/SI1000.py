@@ -5,8 +5,8 @@ from main.compiling.noise.noises.OneQubitNoise import OneQubitNoise
 from main.compiling.noise.noises.TwoQubitNoise import TwoQubitNoise
 
 
-class CircuitLevelNoise(NoiseModel):
-    """Noise channel where noise can be added to any location.
+class SI1000(NoiseModel):
+    """Noise model from https://quantum-journal.org/papers/q-2021-12-20-605/
 
     Args:
         initialisation: OneQubitNoise or float that acts after initialization.
@@ -17,14 +17,14 @@ class CircuitLevelNoise(NoiseModel):
     """
 
     def __init__(
-            self, initialisation: Union[OneQubitNoise, float, None] = None,
-            idling: Union[OneQubitNoise, float, None] = None,
-            one_qubit_gate: Union[OneQubitNoise, float, None] = None,
-            two_qubit_gate: Union[TwoQubitNoise, float, None] = None,
-            measurement: Union[OneBitNoise, float, None] = None):
+            self,
+            p: float):
         super().__init__(
-            initialisation=initialisation,
-            idling=idling,
-            one_qubit_gate=one_qubit_gate,
-            two_qubit_gate=two_qubit_gate,
-            measurement=measurement)
+            # 3 such that the sum of the two errors that act non trivially is 1.
+            initialisation=3*p,
+            idling=2*p,
+            one_qubit_gate=p/10,
+            two_qubit_gate=p,
+            measurement=5*p,
+            resonator_idle=2*p,
+        )

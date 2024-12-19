@@ -1,19 +1,14 @@
 from abc import ABC, abstractmethod
-from typing import List, Tuple
+from typing import List, Tuple, Union
 
 from main.building_blocks.detectors.Drum import Drum
 from main.codes.ToricHexagonalCode import ToricHexagonalCode
 from main.codes.tic_tac_toe.TicTacToeCode import TicTacToeCode
-from main.building_blocks.pauli import Pauli
-from main.building_blocks.pauli.PauliLetter import PauliLetter
-from main.building_blocks.Check import Check
-from main.codes.tic_tac_toe.detectors.TicTacToeDrumBlueprint import TicTacToeDrumBlueprint
-from main.utils.Colour import Red, Green, Blue
-from main.utils.utils import coords_mid, xor, coords_minus, embed_coords
+from typing import Literal
 
 
 class GaugeTicTacToeCode(ABC, ToricHexagonalCode):
-    def __init__(self, distance: int, gauge_factors: List[int]):
+    def __init__(self, distance: Union[int, List[int]], gauge_factors: List[int]):
         # NOTE - haven't figured out a general way of repeating measurements
         # for any tic-tac-toe code. Have only done this for honeycomb code
         # and Floquet colour code. Hence this class is abstract, and just
@@ -23,8 +18,14 @@ class GaugeTicTacToeCode(ABC, ToricHexagonalCode):
         if any(gauge_factor < 1 for gauge_factor in gauge_factors):
             raise ValueError("Gauge factor must be a positive integer.")
 
-        rows = 3 * (distance // 4)
-        columns = 4 * (distance // 4)
+        if isinstance(distance, int):
+            rows = 3 * (distance // 4)
+            columns = 4 * (distance // 4)
+        elif isinstance(distance, list) and len(distance) == 2 and all(isinstance(d, int) for d in distance):
+            rows = 3 * (distance[0] // 4)
+            columns = 4 * (distance[1] // 4)
+        else:
+            raise ValueError("Distance must be an int or a list of two ints.")
 
         # Start with an "ungauged" honeycomb code,
         # then edit the checks and detectors to get the gauged version.
@@ -88,6 +89,10 @@ class GaugeTicTacToeCode(ABC, ToricHexagonalCode):
 
     @abstractmethod
     def get_plaquette_detector_schedule(self) -> List[List[Drum]]:
+        pass
+
+    @abstractmethod
+    def get_number_of_rounds_for_single_timelike_distance(self, desired_distance: int, pauli_letter: Literal['X', 'Z'], graphlike=False) -> int:
         pass
 
     @abstractmethod

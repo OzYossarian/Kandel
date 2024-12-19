@@ -418,7 +418,7 @@ class Compiler(ABC):
             final_measurements=final_measurements,
             final_stabilizers=final_stabilizers,
             observables=observables)
-        return (circuit.to_stim(self.noise_model.idling))
+        return (circuit.to_stim(self.noise_model.idling, self.noise_model.resonator_idle))
 
     def compile_initialisation(
             self,

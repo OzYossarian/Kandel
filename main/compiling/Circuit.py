@@ -15,7 +15,7 @@ from main.utils.types import Tick
 RepeatBlock = Union[Tuple[int, int, int], None]
 
 
-class Circuit:
+class Circuit(object):
     def __init__(self):
         """Intermediate representation of a quantum circuit. Rather than
         compile directly to a Stim circuit, which is somewhat inflexible, we
@@ -61,7 +61,9 @@ class Circuit:
             'Z': stim.target_z}
 
         
-    def to_cirq_string(self, idling_noise: OneQubitNoise = None) -> str:
+    def to_cirq_string(self,
+                       idling_noise: Union[OneQubitNoise, None] = None,
+                       resonator_idling_noise: Union[OneQubitNoise, None] = None) -> str:
         """Represents an instance of this class as cirq ascii circuit, useful for debugging
 
         Args:
@@ -72,7 +74,7 @@ class Circuit:
         Returns:
             str : a drawing of the circuit generated using cirq.
         """
-        return str(stimcirq.stim_circuit_to_cirq_circuit(self.to_stim(idling_noise)))
+        return str(stimcirq.stim_circuit_to_cirq_circuit(self.to_stim(idling_noise, resonator_idling_noise)))
 
     def number_of_instructions(self, instruction_names: Iterable[str]) -> int:
         """Counts the number of times an instruction occurs.
@@ -83,6 +85,8 @@ class Circuit:
         Returns:
             Number of occurrences of instructions with these names.
         """
+        if isinstance(instruction_names, str):
+            instruction_names = [instruction_names]
         occurrences = 0
         for instructions_at_tick in self.instructions.values():
             for instructions_on_qubit_at_tick in instructions_at_tick.values():
@@ -269,7 +273,9 @@ class Circuit:
         # TODO - implement!
         raise NotImplementedError
 
-    def add_idling_noise(self, idling_noise: Union[OneQubitNoise, None]):
+    def add_idling_noise(self,
+                         idling_noise: Union[OneQubitNoise, None],
+                         resonator_idling_noise: Union[OneQubitNoise, None]):
         """Adds idling noise everywhere in the circuit
 
         Idling noise is added at every tick to qubits that have been
@@ -283,7 +289,7 @@ class Circuit:
         # If circuit is going to be compressed, then this should be done
         # before adding idling noise, since compression changes the amount
         # of idling time in the circuit.
-        if idling_noise is not None:
+        if idling_noise is not None or resonator_idling_noise is not None:
             # Note that this only loop through ticks at which there is at
             # least one instruction
             for tick in sorted(self.instructions.keys()):
@@ -295,9 +301,17 @@ class Circuit:
                     # Sort for reproducibility in tests.
                     idle_qubits = sorted(
                         idle_qubits, key=lambda qubit: qubit.coords)
+
+                    is_measurement_tick = self.check_for_measurement_at_tick(
+                        tick)
                     for qubit in idle_qubits:
-                        noise = idling_noise.instruction([qubit])
-                        self.add_instruction(tick + 1, noise)
+                        if idling_noise is not None:
+                            noise = idling_noise.instruction([qubit])
+                            self.add_instruction(tick + 1, noise)
+
+                        if is_measurement_tick == True and resonator_idling_noise is not None:
+                            noise = resonator_idling_noise.instruction([qubit])
+                            self.add_instruction(tick + 1, noise)
 
     def get_idle_qubits(self, tick: Tick):
         # A qubit is idle at a given tick if it has been initialised but
@@ -317,9 +331,17 @@ class Circuit:
         idle_qubits = initialised_qubits.difference(active_qubits)
         return idle_qubits
 
+    def check_for_measurement_at_tick(self, tick: Tick):
+        for instructions_on_qubit in self.instructions[tick].values():
+            for instruction in instructions_on_qubit:
+                if instruction.is_measurement:
+                    return True
+        return False
+
     def to_stim(
         self,
         idling_noise: Union[OneQubitNoise, None],
+        resonator_idling_noise: Union[OneQubitNoise, None],
         track_coords: bool = True,
         track_progress: bool = True,
     ) -> stim.Circuit:
@@ -339,12 +361,16 @@ class Circuit:
         if track_progress:
             # TODO - bug here: sometimes this progress bar overfills!
             with alive_bar(len(self.instructions), force_tty=True) as bar:
-                return self._to_stim(idling_noise, track_coords, bar)
+                return self._to_stim(idling_noise, resonator_idling_noise, track_coords, bar)
         else:
-            return self._to_stim(idling_noise, track_coords, None)
+            return self._to_stim(idling_noise, resonator_idling_noise, track_coords, None)
 
     def _to_stim(
-        self, idling_noise: Union[OneQubitNoise, None], track_coords: bool, progress_bar: Any
+        self,
+        idling_noise: Union[OneQubitNoise, None],
+        resonator_idling_noise: Union[OneQubitNoise, None],
+        track_coords: bool,
+        progress_bar: Any
     ) -> stim.Circuit:
         """Called by to_stim() to transform the circuit to a stim circuit.
 
@@ -366,7 +392,7 @@ class Circuit:
             shift_coords = None
 
         # Go through the circuit and add idling noise.
-        self.add_idling_noise(idling_noise)
+        self.add_idling_noise(idling_noise, resonator_idling_noise)
 
         # Let 'circuit' denote the circuit we're currently compiling to - if
         # using repeat blocks, this need not always be the full circuit itself
