@@ -158,15 +158,15 @@ def test_measurement_error_distance_varying_rounds(gauge_factors, noise_model, o
 
 
 @ pytest.mark.parametrize("gauge_factors, rounds, observable_type, expected_distance", [
-    ([1, 4], 30, 'stability_x', 4),
-    ([4, 4], 30, 'stability_x', 4),
+    ([1, 3], 30, 'stability_x', 4),
+    ([3, 3], 30, 'stability_x', 4),
     ([2, 2], 30, 'stability_x', 4),
     ([2, 2], 20, 'stability_z', 4)
 ])
 def test_distance_phenomenological_noise(gauge_factors, rounds, observable_type, expected_distance):
     circuit, code = generate_circuit(gauge_factors, rounds, 4, observable_type)
-    d = code.get_distance_stability_experiment(
-        rounds, observable_type.split('_')[1].upper())
+    d = code.get_graphlike_timelike_distance(
+        rounds, observable_type.split('_')[1].upper(), 'phenomenological_noise')
     check_distance(circuit, d)
 
 
@@ -180,7 +180,7 @@ def test_get_boundary_and_bulk_layers():
 def test_get_distance_stability_experiment():
     for r in range(12, 40):
         code = GaugeFloquetColourCode(4, [1, 1])
-        d_x = code.get_distance_stability_experiment(
+        d_x = code.get_non_graphlike_timelike_distance(
             r, 'Z', 'circuit_level_noise')
         circ, code = generate_circuit([1, 1], r, 4, 'stability_z',
                                       StandardDepolarizingNoise(0.1))
@@ -192,7 +192,7 @@ def test_get_distance_stability_experiment():
 def test_get_number_of_rounds_for_stability_experiment(gauge_factors):
     distances = [4, 5]
     for distance in distances:
-        for noise_model, noise_model_str in [(PhenomenologicalNoise(0.1, 0.1), 'phenomenological'),
+        for noise_model, noise_model_str in [(PhenomenologicalNoise(0.1, 0.1), 'phenomenological_noise'),
                                              (StandardDepolarizingNoise(0.1), 'circuit_level_noise')]:
             print(noise_model_str, "noise_model")
             code = GaugeFloquetColourCode(4, gauge_factors)

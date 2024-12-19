@@ -60,7 +60,6 @@ class Circuit(object):
             'Y': stim.target_y,
             'Z': stim.target_z}
 
-        
     def to_cirq_string(self,
                        idling_noise: Union[OneQubitNoise, None] = None,
                        resonator_idling_noise: Union[OneQubitNoise, None] = None) -> str:
@@ -172,7 +171,7 @@ class Circuit(object):
         # TODO - raise error if measurement.is_measurement is False?
         # Measure a qubit (perhaps multiple)
         self.add_instruction(tick, measurement)
-        # If the measurement is not a Pauli product measurement, 
+        # If the measurement is not a Pauli product measurement,
         # then this is a single qubit measurement which measures out the qubit.
         # Record that these qubits have been measured.
         if measurement.name != "MPP":
@@ -341,7 +340,7 @@ class Circuit(object):
     def to_stim(
         self,
         idling_noise: Union[OneQubitNoise, None],
-        resonator_idling_noise: Union[OneQubitNoise, None],
+        resonator_idling_noise: Union[OneQubitNoise, None] = None,
         track_coords: bool = True,
         track_progress: bool = True,
     ) -> stim.Circuit:
@@ -493,14 +492,15 @@ class Circuit(object):
                     key = (instruction.name, instruction.params)
                     if key not in targets_by_instruction:
                         targets_by_instruction[key] = []
-                    
+
                     if instruction.name == "MPP":
-                        # Stim's strange syntax for these means we need to 
-                        # retrieve the check associated to this instruction, 
+                        # Stim's strange syntax for these means we need to
+                        # retrieve the check associated to this instruction,
                         # in order to set the targets correctly.
                         check, _ = self.measurer.measurement_checks[instruction]
-                        instruction.targets = self.product_measurement_targets(check)
-                        
+                        instruction.targets = self.product_measurement_targets(
+                            check)
+
                     if instruction.targets is not None:
                         targets_by_instruction[key].extend(
                             instruction.targets)
