@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from typing import List
+from typing import List, Tuple
 
 from main.building_blocks.detectors.Drum import Drum
 from main.codes.ToricHexagonalCode import ToricHexagonalCode
@@ -88,4 +88,8 @@ class GaugeTicTacToeCode(ABC, ToricHexagonalCode):
 
     @abstractmethod
     def get_plaquette_detector_schedule(self) -> List[List[Drum]]:
+        pass
+
+    @abstractmethod
+    def get_number_of_rounds_for_timelike_distance(self, desired_distance: int, graphlike=False) -> Tuple[int, int, int]:
         pass
