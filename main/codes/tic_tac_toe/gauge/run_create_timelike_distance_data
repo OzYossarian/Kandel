@@ -2,8 +2,9 @@
 
 set -e 
 parallel -q --ungroup ./create_timelike_distance_data.py \
-    --code "GaugeHoneycombCode" \
-    --noise_model {1} \
-    --graphlike {2} \
+    --code {1} \
+    --noise_model {2} \
+    --graphlike {3} \
+    ::: "GaugeHoneycombCode" "GaugeFloquetColourCode" \
     ::: "phenomenological" "circuit_level_depolarizing"\
     ::: 0 1 \

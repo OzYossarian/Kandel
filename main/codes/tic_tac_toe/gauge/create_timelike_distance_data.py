@@ -9,11 +9,9 @@ from main.compiling.compilers.AncillaPerCheckCompiler import AncillaPerCheckComp
 from main.compiling.noise.models import PhenomenologicalNoise
 from main.compiling.noise.models.standard_depolarizing_noise import StandardDepolarizingNoise
 from main.compiling.syndrome_extraction.extractors.ancilla_per_check.mixed.CxCyCzExtractor import CxCyCzExtractor
-from matplotlib import pyplot as plt
 from typing import List, Literal
 import stim
 import json
-import pathlib
 
 
 def generate_circuit(gauge_factors: List[int],
@@ -82,8 +80,7 @@ def get_graphlike_distance(circuit: stim.Circuit) -> int:
     return len(circuit.detector_error_model(decompose_errors=True, approximate_disjoint_errors=True).shortest_graphlike_error())
 
 
-def get_td_bulk_and_boundary_fcc(noise_model, gauge_factors, letter: Literal['X', 'Z'], graphlike) -> int:
-    bulk_length = 6*sum(gauge_factors)
+def get_td_bulk_and_boundary(noise_model, gauge_factors, bulk_length, letter: Literal['X', 'Z'], graphlike) -> int:
     td_boundary = dict()
 
     for i in range(bulk_length):
@@ -109,35 +106,10 @@ def get_td_bulk_and_boundary_fcc(noise_model, gauge_factors, letter: Literal['X'
     return (td_bulk, td_boundary)
 
 
-def get_td_bulk_and_boundary_hcc(noise_model, gauge_factors, letter: Literal['X', 'Z'], graphlike) -> int:
-    bulk_length = 2*sum(gauge_factors)
-    td_boundary = dict()
-    for i in range(bulk_length):
-
-        circ_1 = generate_circuit(
-            gauge_factors, 2*bulk_length+i, 4, letter, noise_model, "GaugeHoneycombCode")
-
-        circ_2 = generate_circuit(
-            gauge_factors, 3*bulk_length+i, 4, letter, noise_model, "GaugeHoneycombCode")
-
-        if graphlike == True:
-            d_1 = get_graphlike_distance(circ_1)
-            d_2 = get_graphlike_distance(circ_2)
-        else:
-            d_1 = get_hyper_edge_distance(circ_1)
-            d_2 = get_hyper_edge_distance(circ_2)
-
-        if i == 0:
-            td_bulk = d_2 - d_1
-        td_boundary[i] = d_1
-
-    return (td_bulk, td_boundary)
-
-
 def get_hyper_edge_distance(circuit: stim.Circuit) -> int:
     logical_errors = circuit.search_for_undetectable_logical_errors(
-        dont_explore_detection_event_sets_with_size_above=4,
-        dont_explore_edges_with_degree_above=4,
+        dont_explore_detection_event_sets_with_size_above=8,
+        dont_explore_edges_with_degree_above=8,
         dont_explore_edges_increasing_symptom_degree=False,
         canonicalize_circuit_errors=True
     )
@@ -156,15 +128,16 @@ def generate_data(noise_model, code, graphlike=True):
     for gauge_factors in gauge_factor_combinations:
         for letter in ["X", "Z"]:
             if code == "GaugeFloquetColourCode":
-                td_bulk, td_boundary = get_td_bulk_and_boundary_fcc(noise_model,
-                                                                    gauge_factors,
-                                                                     letter,
-                                                                    graphlike)
+
+                bulk_length = 6*(gauge_factors[0] + gauge_factors[1])
             elif code == "GaugeHoneycombCode":
-                td_bulk, td_boundary = get_td_bulk_and_boundary_hcc(noise_model,
-                                                                    gauge_factors,
-                                                                    letter,
-                                                                    graphlike)
+                bulk_length = 4 * \
+                    (gauge_factors[0] + gauge_factors[1] + gauge_factors[2])
+            td_bulk, td_boundary = get_td_bulk_and_boundary(noise_model,
+                                                            gauge_factors,
+                                                            bulk_length,
+                                                            letter,
+                                                            graphlike)
 
             timelike_distance_dict[letter][str(gauge_factors)] = dict()
             timelike_distance_dict[letter][str(
@@ -189,7 +162,6 @@ if __name__ == "__main__":
     parser.add_argument('--noise_model', type=str, required=True)
     parser.add_argument('--graphlike', type=int, required=True)
     args = parser.parse_args()
-
     main(
         args.code,
         args.noise_model,

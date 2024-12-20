@@ -271,10 +271,6 @@ class GaugeFloquetColourCode(GaugeTicTacToeCode):
         return n_rounds, distance_x, distance_z
 
     def get_boundary_and_bulk_layers(self, n_rounds):
-
-        #        boundary_layers = n_rounds % (2*sum(self.gauge_factors))
-     #       bulk_layers = n_rounds//(2*sum(self.gauge_factors)) - 2
-
         bulk_length = 6 * (self.gauge_factors[0] + self.gauge_factors[1])
         bulk_layers = n_rounds//bulk_length
         boundary_layers = n_rounds % bulk_length
@@ -361,28 +357,3 @@ class GaugeFloquetColourCode(GaugeTicTacToeCode):
         with p.open('r') as openfile:
             timelike_distance_dict = json.load(openfile)
         return (self.distance_from_timelike_distance_dict(n_rounds, pauli_letter, timelike_distance_dict))
-
-
-#     def get_distance_stability_experiment(self, rounds: int, letter: Literal['X', 'Z'], noise_model: str = "phenomenological") -> int:
-#         """Get the distance of a stability experiment assuming phenomenological noise
-
-#         The distance of a stability experiment is the minimum weight of a timelike logical operator
-#         that can be created by applying errors to the data qubits or measurement errors.
-
-#         Args:
-#             rounds (int): The number of rounds in the experiment
-#             letter (str): The letter of the stability experiment to get the distance of
-
-#         Returns:
-#             int: The distance of the stability experiment
-#         """
-#         if noise_model == "phenomenological":
-
-# #            return (min(self.get_pauli_error_distance(rounds, letter),
-#  #                       self.get_measurement_error_distance(rounds, letter)))
-#         elif noise_model == "circuit_level_noise":
-#             p = Path(__file__).with_name('fcc_graphlike_td_data_cln.json')
-
-#         with p.open('r') as openfile:
-#             timelike_distance_dict = json.load(openfile)
-#         return (self.distance_from_timelike_distance_dict(rounds, letter, timelike_distance_dict))

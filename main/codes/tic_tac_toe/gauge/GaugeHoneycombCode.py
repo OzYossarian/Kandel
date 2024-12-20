@@ -126,6 +126,14 @@ class GaugeHoneycombCode(GaugeTicTacToeCode):
                              for qubit in self.data_qubits.values()]
         return (final_measurement)
 
+    def get_boundary_and_bulk_layers(self, n_rounds):
+        bulk_length = 4 * sum(self.gauge_factors)
+        print(bulk_length, 'bulk_length')
+        bulk_layers = n_rounds//bulk_length
+        boundary_layers = n_rounds % bulk_length
+        print(boundary_layers, 'boundary_layers')
+        return boundary_layers, bulk_layers - 1
+
     def distance_from_timelike_distance_dict(self, n_rounds: int, pauli_letter: Literal['X', 'Z'], timelike_distance_dict: dict) -> int:
         """ Returns the timelike distance of the code using precalculated data.
 
@@ -140,16 +148,14 @@ class GaugeHoneycombCode(GaugeTicTacToeCode):
         # the distance is calculated in two steps, the distance of the boundary layers
         # and the distance of the bulk layers. This is done so that the distance for
         # any number of rounds can be calculated, because the bulk layers are repeated.
-        boundary_layers = n_rounds % (2*sum(self.gauge_factors))
-        bulk_layers = n_rounds//(2*sum(self.gauge_factors)) - 2
-
-        td_boundary = timelike_distance_dict[pauli_letter][str(
-            tuple(self.gauge_factors))]['td_boundary'][str(boundary_layers)]
-
-        td_bulk = timelike_distance_dict[pauli_letter][str(tuple(self.gauge_factors))
+        boundary_layers, bulk_layers = self.get_boundary_and_bulk_layers(
+            n_rounds)
+        td_boundary = timelike_distance_dict[pauli_letter][
+            f"({self.gauge_factors[0]}, {self.gauge_factors[1]}, {self.gauge_factors[2]})"]['td_boundary'][str(boundary_layers)]
+        td_bulk = timelike_distance_dict[pauli_letter][f"({self.gauge_factors[0]}, {self.gauge_factors[1]}, {self.gauge_factors[2]})"
                                                        ]['td_bulk'] * bulk_layers
-
         return td_boundary + td_bulk
+
 
     def get_non_graphlike_timelike_distance(self, n_rounds: int, pauli_letter: Literal['X', 'Z'], noise_model) -> int:
         """ Returns the distance of the code if one uses a correlated decoder using precalculated data.
