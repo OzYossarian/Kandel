@@ -1,1 +1,2 @@
 from .SyndromeExtractor import SyndromeExtractor
+from .NativePauliProductMeasurementsExtractor import NativePauliProductMeasurementsExtractor

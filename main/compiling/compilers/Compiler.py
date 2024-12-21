@@ -219,7 +219,7 @@ class Compiler(ABC):
                 0].letter.letter
 
             final_measurements = [Pauli(qubit, PauliLetter(pauli_letter_observable))
-                                    for qubit in code.data_qubits.values()]
+                                  for qubit in code.data_qubits.values()]
 
         # Finish with data qubit measurements, and use these to reconstruct
         # some detectors.
@@ -759,13 +759,15 @@ class Compiler(ABC):
                 final_checks[pauli.qubit] = check
             # A hack!
             if isinstance(code, TicTacToeCode) or isinstance(code, GaugeTicTacToeCode):
-                final_pauli_letters = {pauli.letter for pauli in final_measurements}
+                final_pauli_letters = {
+                    pauli.letter for pauli in final_measurements}
                 if len(final_pauli_letters) > 1:
                     raise ValueError(
                         f"All final measurements must have the same letter. "
                         f"Instead, got: "f"{final_measurements}.")
                 pauli_letter = final_pauli_letters.pop()
-                route_final_letter = code.tic_tac_toe_route[(round-1) % code.schedule_length][1] 
+                route_final_letter = code.tic_tac_toe_route[(
+                    round-1) % code.schedule_length][1]
                 if (pauli_letter == route_final_letter):
                     add_small_detectors = True
                 else:
@@ -1030,7 +1032,9 @@ class Compiler(ABC):
 
         Returns: next usable even tick after these gates have been compiled.
         """
+
         for i, gate in enumerate(gates):
+            print(gate, 'gate')
             gate_tick = tick + 2 * i
             circuit.add_instruction(gate_tick, gate)
             gate_size = len(gate.qubits)
@@ -1041,10 +1045,12 @@ class Compiler(ABC):
             noise = self.noise_model.one_qubit_gate \
                 if gate_size == 1 \
                 else self.noise_model.two_qubit_gate
+
             if noise is not None:
                 noise_instruction = noise.instruction(gate.qubits)
                 circuit.add_instruction(gate_tick + 1, noise_instruction)
         # Return the next usable even tick
+
         return tick + 2 * len(gates)
 
     def _assert_final_stabilizers_valid(

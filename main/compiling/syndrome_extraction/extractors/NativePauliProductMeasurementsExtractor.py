@@ -32,7 +32,8 @@ class NativePauliProductMeasurementsExtractor(SyndromeExtractor):
             compiler: Compiler) -> Tick:
         if self.parallelize:
             # Check no qubit is involved in more than one check.
-            qubits = [pauli.qubit for check in checks for pauli in check.paulis.values()]
+            qubits = [
+                pauli.qubit for check in checks for pauli in check.paulis.values()]
             if len(qubits) != len(set(qubits)):
                 raise ValueError(
                     f"At least one qubit is involved in more than one check at round {round}: {checks}.")
@@ -60,10 +61,11 @@ class NativePauliProductMeasurementsExtractor(SyndromeExtractor):
             circuit: Circuit,
             compiler: Compiler) -> Tick:
         for check in checks:
+
             self._extract_check(check, round, tick, circuit, compiler)
             tick += 2
         return tick
-    
+
     def _extract_check(
             self,
             check: Check,
@@ -71,10 +73,15 @@ class NativePauliProductMeasurementsExtractor(SyndromeExtractor):
             tick: int,
             circuit: Circuit,
             compiler: Compiler):
-        noise_param = compiler.noise_model.measurement
+
+        qubits = [pauli.qubit for pauli in check.paulis.values()]
+
+        noise_instruction = compiler.noise_model.before_mpp_noise.instruction(
+            qubits)
+        circuit.add_instruction(tick-1, noise_instruction)
+        noise_param = compiler.noise_model.measurement.params
         if noise_param is None:
             noise_param = ()
-        qubits = [pauli.qubit for pauli in check.paulis.values()]
         instruction = Instruction(
             qubits, "MPP", noise_param, is_measurement=True)
         circuit.measure(instruction, check, round, tick)

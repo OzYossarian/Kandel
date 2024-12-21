@@ -1,8 +1,4 @@
-from typing import Union
 from main.compiling.noise.models.NoiseModel import NoiseModel
-from main.compiling.noise.noises.OneBitNoise import OneBitNoise
-from main.compiling.noise.noises.OneQubitNoise import OneQubitNoise
-from main.compiling.noise.noises.TwoQubitNoise import TwoQubitNoise
 
 
 class SI1000(NoiseModel):
