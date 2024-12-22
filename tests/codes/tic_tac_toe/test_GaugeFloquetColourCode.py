@@ -1,11 +1,12 @@
-from typing import List, Union
+from typing import List, Literal
 from main.building_blocks.detectors.Stabilizer import Stabilizer
-from main.building_blocks.pauli.Pauli import Pauli
-from main.building_blocks.pauli.PauliLetter import PauliLetter
 from main.codes.tic_tac_toe.gauge.GaugeFloquetColourCode import GaugeFloquetColourCode
 from main.compiling.compilers.AncillaPerCheckCompiler import AncillaPerCheckCompiler
+from main.compiling.compilers.NativePauliProductMeasurementsCompiler import NativePauliProductMeasurementsCompiler
+from main.compiling.noise.models import EM3
 from main.compiling.noise.models.PhenomenologicalNoise import PhenomenologicalNoise
 from main.compiling.noise.models.standard_depolarizing_noise import StandardDepolarizingNoise
+from main.compiling.syndrome_extraction.extractors import NativePauliProductMeasurementsExtractor
 from main.compiling.syndrome_extraction.extractors.ancilla_per_check.mixed.CxCyCzExtractor import CxCyCzExtractor
 import stim
 import itertools
@@ -16,8 +17,8 @@ def generate_circuit(gauge_factors: List[int],
                      rounds: int,
                      distance: int,
                      observable_type: str = 'X',
-                     noise_model: Union[PhenomenologicalNoise,
-                                        StandardDepolarizingNoise] = PhenomenologicalNoise(0.1, 0.1),
+                     noise_model: Literal['phenomenological_noise',
+                                          'circuit_level_noise', 'EM3'] = 'phenomenological_noise',
                      ) -> stim.Circuit:
     """Generates a quantum error correction circuit for the GaugeFloquetColourCode.
 
@@ -34,7 +35,7 @@ def generate_circuit(gauge_factors: List[int],
     code = GaugeFloquetColourCode(distance, gauge_factors)
     if observable_type == 'memory_z':
         logical_observables = [code.logical_qubits[0].z]
-        check_schedule_index = gauge_factors[0]  # TODO check
+        check_schedule_index = gauge_factors[0]
         final_measurements = None
 
     elif observable_type == 'memory_x':
@@ -57,10 +58,23 @@ def generate_circuit(gauge_factors: List[int],
     initial_stabilizers = [Stabilizer(
         [(0, check)], 0) for check in code.check_schedule[check_schedule_index]]
 
-    compiler = AncillaPerCheckCompiler(
-        noise_model=noise_model,
-        syndrome_extractor=CxCyCzExtractor()
-    )
+    if noise_model == 'phenomenological_noise':
+        noise = PhenomenologicalNoise(
+            0.1)
+    elif noise_model == 'circuit_level_noise':
+        noise = StandardDepolarizingNoise(
+            0.1)
+
+    if noise_model == 'EM3':
+        noise = EM3(0.1)
+        compiler = NativePauliProductMeasurementsCompiler(
+            noise_model=noise,
+            syndrome_extractor=NativePauliProductMeasurementsExtractor())
+    else:
+        compiler = AncillaPerCheckCompiler(
+            noise_model=noise,
+            syndrome_extractor=CxCyCzExtractor())
+
     stim_circuit = compiler.compile_to_stim(
         code=code,
         total_rounds=rounds,
@@ -68,6 +82,7 @@ def generate_circuit(gauge_factors: List[int],
         observables=logical_observables,
         final_measurements=final_measurements
     )
+
     return stim_circuit, code
 
 
@@ -115,13 +130,18 @@ def test_rectangular_distances():
     check_distance(circuit, 4)
 
 
-def test_properties_of_d4_codes_g123():
+@ pytest.mark.parametrize("noise_model, distance", [
+    ("phenomenological_noise", 4),
+    ("circuit_level_noise", 4),
+    ("EM3", 2)
+])
+def test_properties_of_d4_codes_g123(noise_model, distance):
     for gauge_factors in itertools.product([1, 2, 3], repeat=2):
-        for n_rounds in range(sum(gauge_factors)*4, sum(gauge_factors)*6):
+        for n_rounds in range(sum(gauge_factors)*3, sum(gauge_factors)*4):
             circuit, _ = generate_circuit(
-                gauge_factors, n_rounds, 4, 'memory_z')
+                gauge_factors, n_rounds, 4, 'memory_z', noise_model)
             check_parity_of_number_of_violated_detectors_d4(circuit)
-            check_distance(circuit, 4)
+            check_distance(circuit, distance)
 
 
 @ pytest.mark.parametrize("rounds, distance, gauge_factors, observable_type", [

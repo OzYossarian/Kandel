@@ -1,12 +1,10 @@
-import math
 from typing import Any, List, Tuple
-from main.building_blocks.Check import Check
 from main.building_blocks.detectors.Stabilizer import Stabilizer
-from main.building_blocks.pauli.Pauli import Pauli
-from main.building_blocks.pauli.PauliLetter import PauliLetter
 from main.codes.tic_tac_toe.gauge.GaugeHoneycombCode import GaugeHoneycombCode
 from main.compiling.compilers.AncillaPerCheckCompiler import AncillaPerCheckCompiler
-from main.compiling.noise.models import PhenomenologicalNoise, StandardDepolarizingNoise
+from main.compiling.compilers.NativePauliProductMeasurementsCompiler import NativePauliProductMeasurementsCompiler
+from main.compiling.noise.models import EM3, PhenomenologicalNoise, StandardDepolarizingNoise
+from main.compiling.syndrome_extraction.extractors import NativePauliProductMeasurementsExtractor
 from main.compiling.syndrome_extraction.extractors.ancilla_per_check.mixed.CxCyCzExtractor import CxCyCzExtractor
 import stim
 import itertools
@@ -14,7 +12,7 @@ import pytest
 from typing import Literal
 
 
-def generate_circuit(rounds, distance, gauge_factors, observable_type, noise_model=Literal['phenomenological_noise', 'circuit_level_noise']):
+def generate_circuit(rounds, distance, gauge_factors, observable_type, noise_model=Literal['phenomenological_noise', 'circuit_level_noise', 'EM3']) -> Tuple[stim.Circuit, GaugeHoneycombCode]:
     code = GaugeHoneycombCode(distance, gauge_factors)
     if observable_type == 'memory_z':
         logical_observables = [code.logical_qubits[0].z]
@@ -47,9 +45,16 @@ def generate_circuit(rounds, distance, gauge_factors, observable_type, noise_mod
         noise = StandardDepolarizingNoise(
             0.1)
 
-    compiler = AncillaPerCheckCompiler(
-        noise_model=noise,
-        syndrome_extractor=CxCyCzExtractor())
+    if noise_model == 'EM3':
+        noise = EM3(0.1)
+        compiler = NativePauliProductMeasurementsCompiler(
+            noise_model=noise,
+            syndrome_extractor=NativePauliProductMeasurementsExtractor())
+    else:
+        compiler = AncillaPerCheckCompiler(
+            noise_model=noise,
+            syndrome_extractor=CxCyCzExtractor())
+
     stim_circuit = compiler.compile_to_stim(
         code=code,
         total_rounds=rounds,
@@ -84,7 +89,6 @@ def get_graphlike_distance(circuit: stim.Circuit) -> int:
 
 
 def check_graphlike_distance(circuit: stim.Circuit, distance):
-    print(get_graphlike_distance(circuit))
     assert len(circuit.detector_error_model(decompose_errors=True,
                                             approximate_disjoint_errors=True).shortest_graphlike_error()) == distance
 
@@ -109,17 +113,18 @@ def check_hyper_edge_distance(circuit: stim.Circuit, distance):
     assert len(logical_errors) == distance
 
 
-def test_memory_graphlike_distance_of_d4_codes():
+@ pytest.mark.parametrize("noise_model, distance", [('phenomenological_noise', 4), ('circuit_level_noise', 4), ('EM3', 2)])
+def test_memory_graphlike_distance_of_d4_codes(noise_model, distance):
     for gauge_factors in itertools.product([1, 2], repeat=3):
         for n_rounds in range(sum(gauge_factors)*2, sum(gauge_factors)*3):
             circuit: stim.Circuit
             circuit, _ = generate_circuit(
-                n_rounds, 4, gauge_factors, 'memory_x', noise_model='phenomenological_noise')
+                n_rounds, 4, gauge_factors, 'memory_x', noise_model=noise_model)
             check_parity_of_number_of_violated_detectors(circuit)
-            check_graphlike_distance(circuit, 4)
+            check_graphlike_distance(circuit, distance)
 
 
-@pytest.mark.parametrize("distance, gauge_factors, observable_type", [([8, 4], [1, 1, 1], 'memory_x'), ([4, 8], [1, 1, 1],  'memory_z')])
+@ pytest.mark.parametrize("distance, gauge_factors, observable_type", [([8, 4], [1, 1, 1], 'memory_x'), ([4, 8], [1, 1, 1],  'memory_z')])
 def test_rectangular_distances(distance, gauge_factors, observable_type):
     circuit, _ = generate_circuit(
         12, distance, gauge_factors, observable_type, noise_model='phenomenological_noise')
@@ -128,7 +133,7 @@ def test_rectangular_distances(distance, gauge_factors, observable_type):
         circuit, distance[1] if observable_type == 'memory_z' else distance[1])
 
 
-@pytest.mark.parametrize("gauge_factors,n_rounds", [([4, 1, 1], 16), ([3, 2, 4], 25)])
+@ pytest.mark.parametrize("gauge_factors,n_rounds", [([4, 1, 1], 16), ([3, 2, 4], 25)])
 def test_memory_graphlike_distance_high_gauge_d4_codes(gauge_factors, n_rounds):
     circuit: stim.Circuit
     circuit, _ = generate_circuit(
@@ -143,7 +148,7 @@ def test_memory_graphlike_distance_high_gauge_d4_codes(gauge_factors, n_rounds):
     check_graphlike_distance(circuit, 4)
 
 
-@pytest.mark.parametrize("gauge_factors,n_rounds", [([1, 1, 1], 19), ([1, 2, 1], 16), ([2, 2, 2], 20), ([2, 1, 2], 24)])
+@ pytest.mark.parametrize("gauge_factors,n_rounds", [([1, 1, 1], 19), ([1, 2, 1], 16), ([2, 2, 2], 20), ([2, 1, 2], 24)])
 def test_get_timelike_distance(gauge_factors, n_rounds):
     code = GaugeHoneycombCode(4, gauge_factors)
     distance = code.get_graphlike_timelike_distance(
@@ -188,10 +193,10 @@ def test_get_number_of_rounds_for_stability_experiment(timelike_distance):
         circ_x_short) < timelike_distance or get_hyper_edge_distsance(circ_z_short) < timelike_distance
 
 
-@pytest.mark.parametrize("gauge_factors,timelike_distance,distance", [([1, 1, 1], 4, 4), ([1, 2, 1], 7, 4),
-                                                                      ([2, 2, 2], 8, 4), ([
-                                                                          2, 1, 2], 9, 4),
-                                                                      ([1, 1, 1], 7, 8), ([3, 3, 3], 5, 4)])
+@ pytest.mark.parametrize("gauge_factors,timelike_distance,distance", [([1, 1, 1], 4, 4), ([1, 2, 1], 7, 4),
+                                                                       ([2, 2, 2], 8, 4), ([
+                                                                           2, 1, 2], 9, 4),
+                                                                       ([1, 1, 1], 7, 8), ([3, 3, 3], 5, 4)])
 def test_get_number_of_rounds_for_stability_experiment_graphlike(gauge_factors, timelike_distance, distance):
     code = GaugeHoneycombCode(distance, gauge_factors)
     rounds, distance_x, distance_z = code.get_number_of_rounds_for_timelike_distance(
