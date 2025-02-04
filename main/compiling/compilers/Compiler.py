@@ -7,10 +7,6 @@ from main.building_blocks.detectors.Stabilizer import Stabilizer
 from main.building_blocks.logical.LogicalOperator import LogicalOperator
 from main.building_blocks.pauli.PauliProduct import PauliProduct
 from main.building_blocks.pauli.utils import plus_one_eigenstates
-from main.codes.tic_tac_toe.FloquetColourCode import FloquetColourCode
-from main.codes.tic_tac_toe.TicTacToeCode import TicTacToeCode
-from main.codes.tic_tac_toe.gauge.GaugeHoneycombCode import GaugeHoneycombCode
-from main.codes.tic_tac_toe.gauge.GaugeTicTacToeCode import GaugeTicTacToeCode
 from main.compiling.Instruction import Instruction
 from main.codes.Code import Code
 from main.building_blocks.pauli.PauliLetter import PauliLetter
@@ -133,14 +129,11 @@ class Compiler(ABC):
             final_measurements is not None or final_stabilizers is not None
 
         if observables is not None and not compile_final_round:
-            if isinstance(code, TicTacToeCode) or isinstance(code, GaugeTicTacToeCode):
-                pass
-            else:
-                raise ValueError(
-                    "Can't measure any observables if no method is given "
-                    "for performing final measurements! Please provide one of "
-                    "final_measurements or final_stabilizers, "
-                    "or set observables to None.")
+            raise ValueError(
+                "Can't measure any observables if no method is given "
+                "for performing final measurements! Please provide one of "
+                "final_measurements or final_stabilizers, "
+                "or set observables to None.")
 
     def compile_to_circuit(
         self,
