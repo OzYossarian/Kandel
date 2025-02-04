@@ -4,8 +4,6 @@ import math
 from collections import defaultdict
 from typing import List, Dict, TYPE_CHECKING, Tuple, Union
 
-import stim
-
 from main.building_blocks.Check import Check
 from main.building_blocks.Qubit import Qubit
 from main.building_blocks.detectors.Detector import Detector, TimedCheck
@@ -20,6 +18,8 @@ from main.codes.tic_tac_toe.gauge.GaugeFloquetColourCode import GaugeFloquetColo
 if TYPE_CHECKING:
     from main.compiling.compilers.Compiler import Compiler
 from main.utils.enums import State
+
+import stim
 
 
 class DetectorInitialiser:
@@ -266,46 +266,11 @@ class DetectorInitialiser:
         """
         relative_round = round % self.code.schedule_length
         for check in self.code.check_schedule[relative_round]:
-            targets = self.product_measurement_targets(check, circuit)
+            targets = circuit.product_measurement_targets(check)
             qubits = [pauli.qubit for pauli in check.paulis.values()]
             measurement = Instruction(
                 qubits, 'MPP', targets=targets, is_measurement=True)
             circuit.measure(measurement, check, round, tick)
-
-    def product_measurement_targets(
-            self, check: Check, circuit: Circuit) -> List[stim.GateTarget]:
-        """
-        Get the Stim measurement targets for the given check, using native
-        Pauli product measurement. e.g. An XYZ check on qubits 0, 1 and 2
-        has targets X0 * Y1 * Z2
-
-        Args:
-            check: check to measure
-            circuit: circuit implementing the code so far
-
-        Returns:
-            the Stim targets for the check
-        """
-        # Do first pauli separately, then do the rest in a for loop.
-        # We only care about the non-identity ones.
-        paulis = [
-            pauli for pauli in check.paulis.values()
-            if pauli.letter.letter != 'I']
-        # We're guaranteed that there's at least one non-identity Pauli,
-        # because we enforce this on the Check class
-        pauli = paulis[0]
-        targeter = self.stim_pauli_targeters[pauli.letter.letter]
-        # We're guaranteed the check's product has sign in [1, -1], because
-        # we force all checks to have a Hermitian product.
-        invert = check.product.word.sign == -1
-        # If inverting, it applies to the whole product, but equivalently can
-        # just invert one qubit - may as well pick the first one.
-        targets = [targeter(circuit.qubit_index(pauli.qubit), invert)]
-        for pauli in paulis[1:]:
-            targets.append(stim.target_combiner())
-            targeter = self.stim_pauli_targeters[pauli.letter.letter]
-            targets.append(targeter(circuit.qubit_index(pauli.qubit)))
-        return targets
 
     def initialise_circuit(
             self, initial_states: Dict[Qubit, State]) -> Tuple[Tick, Circuit]:

@@ -137,7 +137,7 @@ class AncillaPerCheckExtractor(SyndromeExtractor):
         paulis = [
             Pauli(check.ancilla, basis)
             for check, basis in zip(checks, ancilla_bases)]
-        tick = compiler.measure_qubits(
+        tick = compiler.measure_individual_qubits(
             paulis, checks, round, tick, circuit, measurement_instructions)
 
         return tick

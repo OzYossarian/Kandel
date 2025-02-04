@@ -53,6 +53,13 @@ class Circuit:
         self.repeat_blocks: Dict[int, RepeatBlock] = defaultdict(lambda: None)
         # Track which measurements tell us the value of which checks
         self.measurer = Measurer()
+        # Annoying extra hoops to jump through to get the targets for
+        # Pauli product measurements.
+        self.pauli_targeters = {
+            'X': stim.target_x,
+            'Y': stim.target_y,
+            'Z': stim.target_z}
+
 
     def to_cirq_string(self, idling_noise: OneQubitNoise = None) -> str:
         """Represents an instance of this class as cirq ascii circuit, useful for debugging
@@ -101,7 +108,7 @@ class Circuit:
         return index
 
     def is_initialised(self, tick: Tick, qubit: Qubit) -> bool:
-        """At this tick, return whether this qubit has been initialised but not yet measured
+        """At this tick, return whether this qubit has been initialised but not yet measured out
 
         Args:
             tick: Tick at which to check if a qubit is initialised
@@ -161,9 +168,12 @@ class Circuit:
         # TODO - raise error if measurement.is_measurement is False?
         # Measure a qubit (perhaps multiple)
         self.add_instruction(tick, measurement)
+        # If the measurement is not a Pauli product measurement,
+        # then this is a single qubit measurement which measures out the qubit.
         # Record that these qubits have been measured.
-        for qubit in measurement.qubits:
-            self.measure_ticks[qubit].append(tick)
+        if measurement.name != "MPP":
+            for qubit in measurement.qubits:
+                self.measure_ticks[qubit].append(tick)
         # Note down that this instruction corresponds to the measurement of a
         # particular check in a particular round. This info is used when
         # compiling detectors later.
@@ -382,8 +392,7 @@ class Circuit:
             if self.entered_repeat_block(tick, most_recent_tick):
                 circuit = stim.Circuit()
 
-            qubits_by_instruction, measurements = self.split_instructions_according_to_gate(
-                qubit_instructions)
+            qubits_by_instruction, measurements = self.split_instructions_according_to_gate(qubit_instructions)
 
             for instruction in qubits_by_instruction:
                 circuit.append(instruction[0],
@@ -434,7 +443,7 @@ class Circuit:
 
         Returns:
             A tuple of two dictionaries. The first dictionary has keys of Instructions and values of lists of qubits.
-            The second dictionary has keys of Instructions which are measurements and values of lists of qubits.        
+            The second dictionary has keys of Instructions which are measurements and values of lists of qubits.
         """
         measurements = []
         qubits_by_instruction = {}
@@ -456,14 +465,54 @@ class Circuit:
                         qubits_by_instruction[key] = []
 
                     if instruction.targets is not None:
-                        qubits_by_instruction[key].extend(
-                            instruction.targets)
+                        targets = instruction.targets
+                    elif instruction.name == "MPP":
+                        # Stim's strange syntax for these means we need to
+                        # retrieve the check associated to this instruction,
+                        # in order to set the targets correctly.
+                        check, _ = self.measurer.measurement_checks[instruction]
+                        targets = self.product_measurement_targets(check)
                     else:
-                        qubits_by_instruction[key].extend(
-                            [self.qubit_index(qubit) for qubit in instruction.qubits])
-                    compiled_instruction[instruction] = True
+                        targets = [self.qubit_index(qubit) for qubit in instruction.qubits]
 
+                    qubits_by_instruction[key].extend(targets)
+                    compiled_instruction[instruction] = True
         return qubits_by_instruction, measurements
+
+    def product_measurement_targets(self, check: Check) -> List[stim.GateTarget]:
+        """
+        Get the Stim measurement targets for the given check, using native
+        Pauli product measurement. e.g. An XYZ check on qubits 0, 1 and 2
+        has targets X0 * Y1 * Z2
+
+        Args:
+            check: check to measure
+            circuit: circuit implementing the code so far
+
+        Returns:
+            the Stim targets for the check
+        """
+        # Do first pauli separately, then do the rest in a for loop.
+        # We only care about the non-identity ones.
+        paulis = [
+            pauli for pauli in check.paulis.values()
+            if pauli.letter.letter != 'I']
+        # We're guaranteed that there's at least one non-identity Pauli,
+        # because we enforce this on the Check class
+        pauli = paulis[0]
+        targeter = self.pauli_targeters[pauli.letter.letter]
+        # We're guaranteed the check's product has sign in [1, -1], because
+        # we force all checks to have a Hermitian product.
+        invert = check.product.word.sign == -1
+        # If inverting, it applies to the whole product, but equivalently can
+        # just invert one qubit - may as well pick the first one.
+        targets = [targeter(self.qubit_index(pauli.qubit), invert)]
+        for pauli in paulis[1:]:
+            targets.append(stim.target_combiner())
+            targeter = self.pauli_targeters[pauli.letter.letter]
+            targets.append(targeter(self.qubit_index(pauli.qubit)))
+        return targets
+
 
     def entered_repeat_block(self, tick: int, last_tick: int):
         """Checks if a repeat block started between last_tick and tick.

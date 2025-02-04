@@ -117,12 +117,7 @@ def test_detector_initialiser_product_measurement_targets(mocker: MockerFixture)
     circuit.qubits = set(qubits)
     circuit._qubit_indexes = {qubit: qubit.coords for qubit in qubits}
 
-    # Create initialiser
-    code = mocker.Mock(spec=Code)
-    compiler = mocker.Mock(spec=Compiler)
-    initialiser = DetectorInitialiser(code, compiler)
-
-    targets = initialiser.product_measurement_targets(check, circuit)
+    targets = circuit.product_measurement_targets(check)
     expected = [
         stim.target_x(0),
         stim.target_combiner(),
@@ -152,7 +147,7 @@ def test_detector_initialiser_product_measurement_targets(mocker: MockerFixture)
         circuit.qubits = set(qubits)
         circuit._qubit_indexes = {qubit: i for i, qubit in enumerate(qubits)}
 
-        targets = initialiser.product_measurement_targets(check, circuit)
+        targets = circuit.product_measurement_targets(check)
 
         expected = [stim.target_combiner() for _ in range(2 * len(paulis) - 1)]
         invert = check.product.word.sign == -1
@@ -179,10 +174,9 @@ def test_detector_initialiser_measure_checks(mocker: MockerFixture):
     code.schedule_length = 2
     code.check_schedule = [[check_0], [check_1]]
 
-    detector_initialiser.product_measurement_targets = \
-        mocker.Mock(return_value=None)
-
     circuit = Circuit()
+    circuit.product_measurement_targets = \
+        mocker.Mock(return_value=None)
     circuit.measure = mocker.Mock()
 
     # Measure round 0 check

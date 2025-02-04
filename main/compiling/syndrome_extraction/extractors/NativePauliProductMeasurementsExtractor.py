@@ -6,6 +6,7 @@ from main.building_blocks.Check import Check
 from main.compiling.Circuit import Circuit
 if TYPE_CHECKING:
     from main.compiling.compilers.Compiler import Compiler
+from main.compiling.Instruction import Instruction
 from main.compiling.syndrome_extraction.extractors import SyndromeExtractor
 from main.utils.types import Tick
 
@@ -29,4 +30,51 @@ class NativePauliProductMeasurementsExtractor(SyndromeExtractor):
             tick: int,
             circuit: Circuit,
             compiler: Compiler) -> Tick:
-        raise NotImplementedError()
+        if self.parallelize:
+            # Check no qubit is involved in more than one check.
+            qubits = [pauli.qubit for check in checks for pauli in check.paulis.values()]
+            if len(qubits) != len(set(qubits)):
+                raise ValueError(
+                    f"At least one qubit is involved in more than one check at round {round}: {checks}.")
+            return self._extract_checks_in_parallel(checks, round, tick, circuit, compiler)
+        else:
+            return self._extract_checks_in_sequence(checks, round, tick, circuit, compiler)
+
+    def _extract_checks_in_parallel(
+            self,
+            checks: Iterable[Check],
+            round: int,
+            tick: int,
+            circuit: Circuit,
+            compiler: Compiler) -> Tick:
+        for check in checks:
+            self._extract_check(check, round, tick, circuit, compiler)
+        # Return next available non-noise tick.
+        return tick + 2
+
+    def _extract_checks_in_sequence(
+            self,
+            checks: Iterable[Check],
+            round: int,
+            tick: int,
+            circuit: Circuit,
+            compiler: Compiler) -> Tick:
+        for check in checks:
+            self._extract_check(check, round, tick, circuit, compiler)
+            tick += 2
+        return tick
+    
+    def _extract_check(
+            self,
+            check: Check,
+            round: int,
+            tick: int,
+            circuit: Circuit,
+            compiler: Compiler):
+        noise_param = compiler.noise_model.measurement
+        if noise_param is None:
+            noise_param = ()
+        qubits = [pauli.qubit for pauli in check.paulis.values()]
+        instruction = Instruction(
+            qubits, "MPP", noise_param, is_measurement=True)
+        circuit.measure(instruction, check, round, tick)
