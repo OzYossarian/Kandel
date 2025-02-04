@@ -609,7 +609,7 @@ class Compiler(ABC):
                 check = Check([pauli], pauli.qubit.coords)
                 final_checks[pauli.qubit] = check
             # First, compile instructions for actually measuring the qubits.
-            self.measure_qubits(
+            self.measure_individual_qubits(
                 final_measurements, final_checks.values(), round, tick, circuit)
             # Now try to use these as lids for any detectors that at this point
             # have a floor but no lid.
@@ -756,7 +756,7 @@ class Compiler(ABC):
                 )
     # TODO - generalise for native multi-qubit measurements.
 
-    def measure_qubits(
+    def measure_individual_qubits(
             self,
             paulis: Iterable[Pauli],
             checks: Iterable[Check],
