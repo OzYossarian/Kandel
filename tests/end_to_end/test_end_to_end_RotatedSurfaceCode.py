@@ -708,9 +708,6 @@ OBSERVABLE_INCLUDE(0) rec[-9] rec[-7] rec[-4]"""
     assert str(stim_circuit) == expected
 
 
-test_rotated_surface_code_compilation_end_to_end_5()
-
-
 def test_rotated_surface_code_compilation_end_to_end_6():
     """
     Distance: 3
@@ -870,6 +867,3 @@ DETECTOR(3, 2, 0) rec[-12] rec[-5] rec[-3] rec[-2] rec[-1]
 OBSERVABLE_INCLUDE(0) rec[-9] rec[-7] rec[-4]"""
 
     assert str(stim_circuit) == expected
-
-
-test_rotated_surface_code_compilation_end_to_end_6()

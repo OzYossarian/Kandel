@@ -394,9 +394,7 @@ class Circuit:
             # into observables, etc.
             further_instructions = (
                 self.measurer.measurement_triggers_to_stim(
-                    measurements, shift_coords
-                )
-            )
+                    measurements, shift_coords))
 
             for instruction in further_instructions:
                 circuit.append(instruction)
@@ -407,8 +405,7 @@ class Circuit:
 
             if most_recent_tick in self.shift_ticks:
                 circuit.append(
-                    stim.CircuitInstruction("SHIFT_COORDS", (), shift_coords)
-                )
+                    stim.CircuitInstruction("SHIFT_COORDS", (), shift_coords))
 
             if tick != final_tick:
                 circuit.append("TICK")

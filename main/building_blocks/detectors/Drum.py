@@ -117,21 +117,6 @@ class Drum(Detector):
             timed_checks = None
         return open_lid, timed_checks
 
-    def checks_at_or_before(
-            self, round: int):
-        """
-        Returns the checks in the drum that would be measured either at or
-        before the given round.
-
-        Args:
-            round:
-                The round that has just happened. Should not be relative.
-
-        """
-        checks = [(t, check) for t, check in self.timed_checks if
-                  t + round >= 0]
-        return checks
-
 
     @staticmethod
     def _assert_lid_valid(lid: List[TimedCheck]):

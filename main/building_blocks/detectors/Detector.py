@@ -57,6 +57,34 @@ class Detector(NiceRepr):
 
         super().__init__(['product.word', 'end', 'timed_checks'])
 
+    def checks_at_or_before_(self, semi_relative_round: int, absolute_round: int):
+        zero = semi_relative_round - absolute_round
+        checks = [
+            (t, check) for t, check in self.timed_checks
+            if zero <= t <= semi_relative_round]
+        return checks
+
+    def is_open(self, semi_relative_round: int) -> bool:
+        """
+        Whether this detector is 'open' immediately after the given semi-relative round.
+        An open detector is one where not all of the checks in the detector have actually been measured yet.
+        e.g. measuring ZZ in consecutive rounds is a detector,
+        and immediately after the first check the detector is 'open',
+        since the second check hasn't been performed yet.
+
+        We say 'semi-relative' round, because the round may be the actual relative round,
+        (i.e. the round number modulo schedule length, so it's in [0, schedule_length)),
+        or the relative round minus k*schedule_length for some integer k.
+        This is to account for detectors that are so tall they span multiple schedule layers.
+
+        Args:
+            semi_relative_round:
+                The round that has just been measured, modulo schedule length,
+                and perhaps with an integer multiple of schedule length subtracted (see above).
+        """
+        return self.start <= semi_relative_round < self.end
+
+
     @staticmethod
     def timed_checks_product(timed_checks: List[TimedCheck]):
         # Pauli multiplication is not commutative so order matters.

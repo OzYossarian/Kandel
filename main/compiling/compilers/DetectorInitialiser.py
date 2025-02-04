@@ -93,23 +93,23 @@ class DetectorInitialiser:
             initial_detector_schedule = {}
             round = 0
 
-        min_floor_start = round + min(
-            detector.floor_start for detector in self.code.detectors)
-        done = min_floor_start >= 0
-
-        # for gauge floquet codes we need to check this condition such that we don't miss small detectors at the start consisting of a single check
-        if isinstance(self.code, GaugeFloquetColourCode):
-            min_floor_start -= max(self.code.gauge_factors)
+        layer = round // self.code.schedule_length
+        shift = layer * self.code.schedule_length
+        min_start = min(shift + detector.start for detector in self.code.detectors)
+        done = min_start >= 0
 
         while not done:
             round_detectors = self.simulate_round(round, tick, circuit)
             initial_detector_schedule[round] = round_detectors
-            # If all floors start at a non-negative round, then we're done
-            # with this special initialisation logic.
-            min_floor_start += 1
-            done = min_floor_start >= 0
-            round += 1
             tick += 2
+            round += 1
+            # If all detectors now start at a non-negative round, then we're done
+            # with this special initialisation logic.
+            new_layer = round // self.code.schedule_length
+            if new_layer == layer + 1:
+                layer = new_layer
+                min_start += self.code.schedule_length
+                done = min_start >= 0
 
         # Now split the schedule into chunks of the right size.
         initial_detector_schedules = self.split_schedule(
@@ -233,28 +233,23 @@ class DetectorInitialiser:
         layer, relative_round = divmod(round, self.code.schedule_length)
         shift = layer * self.code.schedule_length
         round_detectors = []
-        for drum in self.code.detector_schedule[relative_round]:
-
-            assert drum.end == relative_round
-            if drum.floor_start + shift >= 0:
-                # This detector is always going to be comparing a floor
-                # with a lid, so should always be deterministic.
-                round_detectors.append(drum)
-
+        for detector in self.code.detector_schedule[relative_round]:
+            assert detector.end == relative_round
+            if detector.start + shift >= 0:
+                # All checks in this detector will be measured,
+                # so it will definitely be deterministic.
+                round_detectors.append(detector)
             else:
-
-                # Not all checks of the drum may have been performed just after initialisation.
+                # Not all checks of the detector may have been performed just after initialisation.
                 # This returns the checks that have been measured so far.
-                timed_checks = drum.checks_at_or_before(
-                    round)
-
+                semi_relative_round = round - shift
+                timed_checks = detector.checks_at_or_before_(semi_relative_round, round)
                 if self.is_deterministic(timed_checks, circuit, simulator):
-
-                    # This detector should become a 'lid-only' detector
-                    # in this layer.
-                    lid_only = Stabilizer(
-                        timed_checks, relative_round, drum.anchor)
-                    round_detectors.append(lid_only)
+                    # The product of outcomes of the checks of this detector that have been measured
+                    # is deterministic. So these checks alone constitute a 'partial' detector.
+                    partial_detector = Stabilizer(
+                        timed_checks, relative_round, detector.anchor)
+                    round_detectors.append(partial_detector)
 
         return round_detectors
 
