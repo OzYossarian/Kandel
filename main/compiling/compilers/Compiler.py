@@ -12,7 +12,7 @@ from main.codes.Code import Code
 from main.building_blocks.pauli.PauliLetter import PauliLetter
 from main.building_blocks.Qubit import Qubit
 from main.building_blocks.pauli.Pauli import Pauli
-from main.compiling.Circuit import Circuit, RepeatBlock
+from main.compiling.Circuit import Circuit
 from main.compiling.compilers.DetectorInitialiser import DetectorInitialiser
 from main.compiling.noise.models.NoNoise import NoNoise
 from main.compiling.noise.models.NoiseModel import NoiseModel
@@ -25,7 +25,6 @@ from main.compiling.syndrome_extraction.extractors.ancilla_per_check.mixed.CnotE
 from main.utils.enums import State
 from main.utils.types import Tick
 from main.utils.utils import xor
-from main.codes.tic_tac_toe.gauge.GaugeFloquetColourCode import GaugeFloquetColourCode
 import stim
 
 
