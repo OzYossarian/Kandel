@@ -4,7 +4,6 @@ import math
 from collections import defaultdict
 from typing import List, Dict, TYPE_CHECKING, Tuple, Union
 
-from main.building_blocks.Check import Check
 from main.building_blocks.Qubit import Qubit
 from main.building_blocks.detectors.Detector import Detector, TimedCheck
 from main.building_blocks.detectors.Stabilizer import Stabilizer
@@ -13,7 +12,6 @@ from main.codes.Code import Code
 from main.compiling.Circuit import Circuit
 from main.compiling.Instruction import Instruction
 from main.utils.types import Tick
-from main.codes.tic_tac_toe.gauge.GaugeFloquetColourCode import GaugeFloquetColourCode
 
 if TYPE_CHECKING:
     from main.compiling.compilers.Compiler import Compiler
