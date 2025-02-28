@@ -128,10 +128,8 @@ class GaugeHoneycombCode(GaugeTicTacToeCode):
 
     def get_boundary_and_bulk_layers(self, n_rounds):
         bulk_length = 4 * sum(self.gauge_factors)
-        print(bulk_length, 'bulk_length')
         bulk_layers = n_rounds//bulk_length
         boundary_layers = n_rounds % bulk_length
-        print(boundary_layers, 'boundary_layers')
         return boundary_layers, bulk_layers - 1
 
     def distance_from_timelike_distance_dict(self, n_rounds: int, pauli_letter: Literal['X', 'Z'], timelike_distance_dict: dict) -> int:
@@ -156,7 +154,6 @@ class GaugeHoneycombCode(GaugeTicTacToeCode):
                                                        ]['td_bulk'] * bulk_layers
         return td_boundary + td_bulk
 
-
     def get_non_graphlike_timelike_distance(self, n_rounds: int, pauli_letter: Literal['X', 'Z'], noise_model) -> int:
         """ Returns the distance of the code if one uses a correlated decoder using precalculated data.
 
@@ -170,10 +167,10 @@ class GaugeHoneycombCode(GaugeTicTacToeCode):
             int: The timelike distance of the code.
         """
         if noise_model == "phenomenological_noise":
-            p = Path(__file__).parent / 'timelike_distance_data' / \
+            p = Path(__file__).parent / 'new_timelike_distance_data' / \
                 'hcc_non_graphlike_td_data_phenomenological.json'
         elif noise_model == "circuit_level_noise":
-            p = Path(__file__).parent / 'timelike_distance_data' / \
+            p = Path(__file__).parent / 'new_timelike_distance_data' / \
                 'hcc_non_graphlike_td_data_circuit_level_depolarizing.json'
         with p.open('r') as openfile:
             timelike_distance_dict = json.load(openfile)
@@ -191,12 +188,14 @@ class GaugeHoneycombCode(GaugeTicTacToeCode):
         """
 
         if noise_model == "phenomenological_noise":
-            p = Path(__file__).parent / 'timelike_distance_data' / \
+            p = Path(__file__).parent / 'new_timelike_distance_data' / \
                 'hcc_graphlike_td_data_phenomenological.json'
         elif noise_model == "circuit_level_noise":
-            p = Path(__file__).parent / 'timelike_distance_data' / \
+            p = Path(__file__).parent / 'new_timelike_distance_data' / \
                 'hcc_graphlike_td_data_circuit_level_depolarizing.json'
-
+        elif noise_model == "EM3":
+            p = Path(__file__).parent / 'new_timelike_distance_data' / \
+                'hcc_graphlike_td_data_EM3.json'
         with p.open('r') as openfile:
             timelike_distance_dict = json.load(openfile)
         return (self.distance_from_timelike_distance_dict(n_rounds, pauli_letter, timelike_distance_dict))

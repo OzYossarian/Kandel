@@ -19,6 +19,8 @@ class GaugeFloquetColourCode(GaugeTicTacToeCode):
     def __init__(self, distance: Union[int, List[int]], gauge_factors: List[int]):
         self.x_gf, self.z_gf = gauge_factors
         self.tic_tac_toe_route = self.create_tic_tac_toe_route()
+        gauge_factors = [self.x_gf, self.z_gf, self.x_gf, self.z_gf,
+                         self.x_gf, self.z_gf]
         self.get_stability_observables()
         super().__init__(distance, gauge_factors)
         self.get_plaquette_detector_schedule()
@@ -26,12 +28,15 @@ class GaugeFloquetColourCode(GaugeTicTacToeCode):
     def create_tic_tac_toe_route(self):
         route = []
         for color, letter in [(Red, 'X'), (Green, 'Z'), (Blue, 'X'), (Red, 'Z'), (Green, 'X'), (Blue, 'Z')]:
-            route.extend([(color, PauliLetter(letter)) for _ in range(self.x_gf if letter == 'X' else self.z_gf)])
+            route.extend([(color, PauliLetter(letter))
+                         for _ in range(self.x_gf if letter == 'X' else self.z_gf)])
         return route
 
     def get_stability_observables(self):
-        self.x_stability_operator = StabilityOperator([self.x_gf + self.z_gf, 2 * self.x_gf + 2 * self.z_gf], self)
-        self.z_stability_operator = StabilityOperator([2 * self.x_gf + self.z_gf, 3 * self.x_gf + 2 * self.z_gf], self)
+        self.x_stability_operator = StabilityOperator(
+            [self.x_gf + self.z_gf, 2 * self.x_gf + 2 * self.z_gf], self)
+        self.z_stability_operator = StabilityOperator(
+            [2 * self.x_gf + self.z_gf, 3 * self.x_gf + 2 * self.z_gf], self)
 
     def get_ungauged_code(self, distance: int) -> TicTacToeCode:
         return FloquetColourCode(distance)
@@ -42,16 +47,22 @@ class GaugeFloquetColourCode(GaugeTicTacToeCode):
 
         blueprints = {
             Blue: [
-                create_blueprint([(1 * self.x_gf - 1, Red, PauliLetter('X'))], [(2 * self.x_gf + 2 * self.z_gf, Green, PauliLetter('X'))], 2 * self.x_gf + 2 * self.z_gf),
-                create_blueprint([(2 * self.x_gf + 2 * self.z_gf - 1, Red, PauliLetter('Z'))], [(4 * self.x_gf + 3 * self.z_gf, Green, PauliLetter('Z'))], 4 * self.x_gf + 3 * self.z_gf)
+                create_blueprint([(1 * self.x_gf - 1, Red, PauliLetter('X'))], [
+                                 (2 * self.x_gf + 2 * self.z_gf, Green, PauliLetter('X'))], 2 * self.x_gf + 2 * self.z_gf),
+                create_blueprint([(2 * self.x_gf + 2 * self.z_gf - 1, Red, PauliLetter('Z'))], [
+                                 (4 * self.x_gf + 3 * self.z_gf, Green, PauliLetter('Z'))], 4 * self.x_gf + 3 * self.z_gf)
             ],
             Green: [
-                create_blueprint([(2 * self.x_gf + self.z_gf - 1, Blue, PauliLetter('X'))], [(3 * self.x_gf + 3 * self.z_gf, Red, PauliLetter('X'))], 3 * self.x_gf + 3 * self.z_gf),
-                create_blueprint([(3 * self.x_gf + 3 * self.z_gf - 1, Blue, PauliLetter('Z'))], [(5 * self.x_gf + 4 * self.z_gf, Red, PauliLetter('Z'))], 5 * self.x_gf + 4 * self.z_gf)
+                create_blueprint([(2 * self.x_gf + self.z_gf - 1, Blue, PauliLetter('X'))], [
+                                 (3 * self.x_gf + 3 * self.z_gf, Red, PauliLetter('X'))], 3 * self.x_gf + 3 * self.z_gf),
+                create_blueprint([(3 * self.x_gf + 3 * self.z_gf - 1, Blue, PauliLetter('Z'))], [
+                                 (5 * self.x_gf + 4 * self.z_gf, Red, PauliLetter('Z'))], 5 * self.x_gf + 4 * self.z_gf)
             ],
             Red: [
-                create_blueprint([(3 * self.x_gf + 2 * self.z_gf - 1, Green, PauliLetter('X'))], [(4 * self.x_gf + 4 * self.z_gf, Blue, PauliLetter('X'))], 4 * self.x_gf + 4 * self.z_gf),
-                create_blueprint([(self.x_gf + self.z_gf - 1, Green, PauliLetter('Z'))], [(3 * self.x_gf + 2 * self.z_gf, Blue, PauliLetter('Z'))], 3 * self.x_gf + 2 * self.z_gf)
+                create_blueprint([(3 * self.x_gf + 2 * self.z_gf - 1, Green, PauliLetter('X'))], [
+                                 (4 * self.x_gf + 4 * self.z_gf, Blue, PauliLetter('X'))], 4 * self.x_gf + 4 * self.z_gf),
+                create_blueprint([(self.x_gf + self.z_gf - 1, Green, PauliLetter('Z'))], [
+                                 (3 * self.x_gf + 2 * self.z_gf, Blue, PauliLetter('Z'))], 3 * self.x_gf + 2 * self.z_gf)
             ]
         }
         return self.ungauged_code.create_detectors(blueprints, self.schedule_length)
@@ -259,15 +270,18 @@ class GaugeFloquetColourCode(GaugeTicTacToeCode):
             int: The timelike distance of the code.
         """
         if noise_model == "phenomenological_noise":
-            p = Path(__file__).parent / 'timelike_distance_data' / \
+            p = Path(__file__).parent / 'new_timelike_distance_data' / \
                 'fcc_non_graphlike_td_data_phenomenological.json'
         elif noise_model == "circuit_level_noise":
-            p = Path(__file__).parent / 'timelike_distance_data' / \
+            p = Path(__file__).parent / 'new_timelike_distance_data' / \
                 'fcc_non_graphlike_td_data_circuit_level_depolarizing.json'
+        elif noise_model == "EM3":
+            p = Path(__file__).parent / 'new_timelike_distance_data' / \
+                'fcc_non_graphlike_td_data_EM3.json'
         with p.open('r') as openfile:
             timelike_distance_dict = json.load(openfile)
         return (self.distance_from_timelike_distance_dict(n_rounds, pauli_letter, timelike_distance_dict))
-
+    
     def get_graphlike_timelike_distance(self, n_rounds: int, pauli_letter: Literal['X', 'Z'], noise_model) -> int:
         """ Returns the distance of the code if one decodes using a matching decoder.
 
@@ -280,13 +294,16 @@ class GaugeFloquetColourCode(GaugeTicTacToeCode):
         """
 
         if noise_model == "phenomenological_noise":
-            p = Path(__file__).parent / 'timelike_distance_data' / \
+            p = Path(__file__).parent / 'new_timelike_distance_data' / \
                 'fcc_graphlike_td_data_phenomenological.json'
 
         elif noise_model == "circuit_level_noise":
-            p = Path(__file__).parent / 'timelike_distance_data' / \
+            p = Path(__file__).parent / 'new_timelike_distance_data' / \
                 'fcc_graphlike_td_data_circuit_level_depolarizing.json'
 
+        elif noise_model == "EM3":
+            p = Path(__file__).parent / 'new_timelike_distance_data' / \
+                'fcc_graphlike_td_data_EM3.json'
         with p.open('r') as openfile:
             timelike_distance_dict = json.load(openfile)
         return (self.distance_from_timelike_distance_dict(n_rounds, pauli_letter, timelike_distance_dict))

@@ -1034,7 +1034,6 @@ class Compiler(ABC):
         """
 
         for i, gate in enumerate(gates):
-            print(gate, 'gate')
             gate_tick = tick + 2 * i
             circuit.add_instruction(gate_tick, gate)
             gate_size = len(gate.qubits)
