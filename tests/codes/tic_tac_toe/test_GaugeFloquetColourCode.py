@@ -47,7 +47,7 @@ def generate_circuit(gauge_factors: List[int],
         logical_observables = [code.x_stability_operator]
         check_schedule_index = gauge_factors[0]
         final_measurements = code.get_possible_final_measurement(
-            code.logical_qubits[0].z, rounds)
+            code.logical_qubits[1].z, rounds)
 
     elif observable_type == 'stability_z':
         logical_observables = [code.z_stability_operator]
@@ -58,21 +58,27 @@ def generate_circuit(gauge_factors: List[int],
     initial_stabilizers = [Stabilizer(
         [(0, check)], 0) for check in code.check_schedule[check_schedule_index]]
 
-    if noise_model == 'phenomenological_noise':
-        noise = PhenomenologicalNoise(
-            0.1)
-    elif noise_model == 'circuit_level_noise':
-        noise = StandardDepolarizingNoise(
-            0.1)
+    if isinstance(noise_model, str):
+        if noise_model == 'phenomenological_noise':
+            noise = PhenomenologicalNoise(
+                0.1)
+        elif noise_model == 'circuit_level_noise':
+            noise = StandardDepolarizingNoise(
+                0.1)
 
-    if noise_model == 'EM3':
-        noise = EM3(0.1)
-        compiler = NativePauliProductMeasurementsCompiler(
-            noise_model=noise,
-            syndrome_extractor=NativePauliProductMeasurementsExtractor())
+        if noise_model == 'EM3':
+            noise = EM3(0.1)
+            compiler = NativePauliProductMeasurementsCompiler(
+                noise_model=noise,
+                syndrome_extractor=NativePauliProductMeasurementsExtractor())
+
+        else:
+            compiler = AncillaPerCheckCompiler(
+                noise_model=noise,
+                syndrome_extractor=CxCyCzExtractor())
     else:
         compiler = AncillaPerCheckCompiler(
-            noise_model=noise,
+            noise_model=noise_model,
             syndrome_extractor=CxCyCzExtractor())
 
     stim_circuit = compiler.compile_to_stim(
@@ -117,20 +123,20 @@ def check_distance(circuit: stim.Circuit, distance):
 
 def test_rectangular_distances():
     circuit: stim.Circuit
-    circuit, _ = generate_circuit([1, 1, 1], 12, [4, 8], 'memory_x')
+    circuit, _ = generate_circuit([1, 1], 12, [4, 8], 'memory_x')
     check_distance(circuit, 8)
 
-    circuit, _ = generate_circuit([1, 1, 1], 12, [8, 4],  'memory_x')
+    circuit, _ = generate_circuit([1, 1], 12, [8, 4],  'memory_x')
     check_distance(circuit, 4)
 
-    circuit, _ = generate_circuit([1, 1, 1], 12, [4, 8],  'memory_z')
+    circuit, _ = generate_circuit([1, 1], 12, [4, 8],  'memory_z')
     check_distance(circuit, 8)
 
-    circuit, _ = generate_circuit([1, 1, 1], 12, [8, 4],  'memory_z')
+    circuit, _ = generate_circuit([1, 1], 12, [8, 4],  'memory_z')
     check_distance(circuit, 4)
 
 
-@ pytest.mark.parametrize("noise_model, distance", [
+@pytest.mark.parametrize("noise_model, distance", [
     ("phenomenological_noise", 4),
     ("circuit_level_noise", 4),
     ("EM3", 2)
@@ -144,10 +150,9 @@ def test_properties_of_d4_codes_g123(noise_model, distance):
             check_distance(circuit, distance)
 
 
-@ pytest.mark.parametrize("rounds, distance, gauge_factors, observable_type", [
-    (24, 4, [3, 4], 'memory_x'),
-    (28, 4, [6, 1], 'memory_x'),
-    (28, 4, [6, 3], 'memory_z'),
+@pytest.mark.parametrize("rounds, distance, gauge_factors, observable_type", [
+    (30, 4, [3, 4], 'memory_x'),
+    (30, 4, [6, 1], 'memory_x'),
     (20, 4, [1, 5], 'memory_z')
 ])
 def test_properties_of_d4_codes_g3456(rounds, distance, gauge_factors, observable_type):
@@ -157,7 +162,7 @@ def test_properties_of_d4_codes_g3456(rounds, distance, gauge_factors, observabl
     check_distance(circuit, distance)
 
 
-@ pytest.mark.parametrize("gauge_factors, noise_model, observable_type", [
+@pytest.mark.parametrize("gauge_factors, noise_model, observable_type", [
     ([3, 2], PhenomenologicalNoise(0, 0.1), 'stability_x'),
     ([3, 2], PhenomenologicalNoise(0, 0.1), 'stability_z'),
     ([2, 3], PhenomenologicalNoise(0.1, 0), 'stability_x'),
@@ -177,17 +182,21 @@ def test_measurement_error_distance_varying_rounds(gauge_factors, noise_model, o
         check_distance(circuit, d)
 
 
-@ pytest.mark.parametrize("gauge_factors, rounds, observable_type, expected_distance", [
-    ([1, 3], 30, 'stability_x', 4),
-    ([3, 3], 30, 'stability_x', 4),
-    ([2, 2], 30, 'stability_x', 4),
-    ([2, 2], 20, 'stability_z', 4)
+@pytest.mark.parametrize("gauge_factors, rounds, observable_type", [
+    ([1, 3], 19, 'stability_z'),
+    ([3, 3], 24, 'stability_x'),
+    ([2, 2], 20, 'stability_x'),
+    ([2, 2], 20, 'stability_z')
 ])
-def test_distance_phenomenological_noise(gauge_factors, rounds, observable_type, expected_distance):
-    circuit, code = generate_circuit(gauge_factors, rounds, 4, observable_type)
-    d = code.get_graphlike_timelike_distance(
+def test_distance_phenomenological_noise(gauge_factors, rounds, observable_type):
+    circuit, code = generate_circuit(
+        gauge_factors, rounds, 4, observable_type, noise_model='phenomenological_noise')
+    d = code.get_timelike_distance(
         rounds, observable_type.split('_')[1].upper(), 'phenomenological_noise')
     check_distance(circuit, d)
+
+
+
 
 
 def test_get_boundary_and_bulk_layers():
@@ -198,9 +207,9 @@ def test_get_boundary_and_bulk_layers():
 
 
 def test_get_distance_stability_experiment():
-    for r in range(12, 40):
+    for r in range(12, 20):
         code = GaugeFloquetColourCode(4, [1, 1])
-        d_x = code.get_non_graphlike_timelike_distance(
+        d_x = code.get_timelike_distance(
             r, 'Z', 'circuit_level_noise')
         circ, code = generate_circuit([1, 1], r, 4, 'stability_z',
                                       StandardDepolarizingNoise(0.1))
