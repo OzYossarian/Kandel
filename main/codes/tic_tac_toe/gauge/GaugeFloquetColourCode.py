@@ -270,18 +270,18 @@ class GaugeFloquetColourCode(GaugeTicTacToeCode):
             int: The timelike distance of the code.
         """
         if noise_model == "phenomenological_noise":
-            p = Path(__file__).parent / 'new_timelike_distance_data' / \
+            p = Path(__file__).parent / 'timelike_distance_data' / \
                 'fcc_non_graphlike_td_data_phenomenological.json'
         elif noise_model == "circuit_level_noise":
-            p = Path(__file__).parent / 'new_timelike_distance_data' / \
+            p = Path(__file__).parent / 'timelike_distance_data' / \
                 'fcc_non_graphlike_td_data_circuit_level_depolarizing.json'
         elif noise_model == "EM3":
-            p = Path(__file__).parent / 'new_timelike_distance_data' / \
+            p = Path(__file__).parent / 'timelike_distance_data' / \
                 'fcc_non_graphlike_td_data_EM3.json'
         with p.open('r') as openfile:
             timelike_distance_dict = json.load(openfile)
         return (self.distance_from_timelike_distance_dict(n_rounds, pauli_letter, timelike_distance_dict))
-    
+
     def get_graphlike_timelike_distance(self, n_rounds: int, pauli_letter: Literal['X', 'Z'], noise_model) -> int:
         """ Returns the distance of the code if one decodes using a matching decoder.
 
@@ -294,15 +294,15 @@ class GaugeFloquetColourCode(GaugeTicTacToeCode):
         """
 
         if noise_model == "phenomenological_noise":
-            p = Path(__file__).parent / 'new_timelike_distance_data' / \
+            p = Path(__file__).parent / 'timelike_distance_data' / \
                 'fcc_graphlike_td_data_phenomenological.json'
 
         elif noise_model == "circuit_level_noise":
-            p = Path(__file__).parent / 'new_timelike_distance_data' / \
+            p = Path(__file__).parent / 'timelike_distance_data' / \
                 'fcc_graphlike_td_data_circuit_level_depolarizing.json'
 
         elif noise_model == "EM3":
-            p = Path(__file__).parent / 'new_timelike_distance_data' / \
+            p = Path(__file__).parent / 'timelike_distance_data' / \
                 'fcc_graphlike_td_data_EM3.json'
         with p.open('r') as openfile:
             timelike_distance_dict = json.load(openfile)

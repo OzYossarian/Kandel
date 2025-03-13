@@ -167,10 +167,10 @@ class GaugeHoneycombCode(GaugeTicTacToeCode):
             int: The timelike distance of the code.
         """
         if noise_model == "phenomenological_noise":
-            p = Path(__file__).parent / 'new_timelike_distance_data' / \
+            p = Path(__file__).parent / 'timelike_distance_data' / \
                 'hcc_non_graphlike_td_data_phenomenological.json'
         elif noise_model == "circuit_level_noise":
-            p = Path(__file__).parent / 'new_timelike_distance_data' / \
+            p = Path(__file__).parent / 'timelike_distance_data' / \
                 'hcc_non_graphlike_td_data_circuit_level_depolarizing.json'
         with p.open('r') as openfile:
             timelike_distance_dict = json.load(openfile)
@@ -188,13 +188,13 @@ class GaugeHoneycombCode(GaugeTicTacToeCode):
         """
 
         if noise_model == "phenomenological_noise":
-            p = Path(__file__).parent / 'new_timelike_distance_data' / \
+            p = Path(__file__).parent / 'timelike_distance_data' / \
                 'hcc_graphlike_td_data_phenomenological.json'
         elif noise_model == "circuit_level_noise":
-            p = Path(__file__).parent / 'new_timelike_distance_data' / \
+            p = Path(__file__).parent / 'timelike_distance_data' / \
                 'hcc_graphlike_td_data_circuit_level_depolarizing.json'
         elif noise_model == "EM3":
-            p = Path(__file__).parent / 'new_timelike_distance_data' / \
+            p = Path(__file__).parent / 'timelike_distance_data' / \
                 'hcc_graphlike_td_data_EM3.json'
         with p.open('r') as openfile:
             timelike_distance_dict = json.load(openfile)
