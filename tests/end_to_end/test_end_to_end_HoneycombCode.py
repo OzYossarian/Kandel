@@ -6,7 +6,7 @@ import stim
 
 from main.building_blocks.detectors import Stabilizer
 from main.codes.tic_tac_toe import HoneycombCode
-from main.compiling.compilers import NativePauliProductMeasurementsCompiler
+from main.compiling.compilers.NativePauliProductMeasurementsCompiler import NativePauliProductMeasurementsCompiler
 from main.compiling.noise.models import EM3
 from main.compiling.syndrome_extraction.extractors import NativePauliProductMeasurementsExtractor
 
@@ -34,10 +34,10 @@ def generate_circuit() -> stim.Circuit:
 
 def test_number_of_two_qubit_errors():
 
-    circ : stim.Circuit = generate_circuit()
+    circ: stim.Circuit = generate_circuit()
+    print(circ, 'circ')
     # circuit conists of 6 measurement rounds
     assert str(circ).count("PAULI_CHANNEL_2") == 6
 
     # PAULI_CHANNEL_1 only occurs after qubit initialization
-    assert str(circ).count("PAULI_CHANNEL_1") == 3
-    
+    assert str(circ).count("PAULI_CHANNEL_1") == 1

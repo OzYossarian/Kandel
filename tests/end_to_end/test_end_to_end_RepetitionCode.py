@@ -2,9 +2,9 @@ from main.building_blocks.pauli import Pauli
 from main.building_blocks.pauli.PauliLetter import PauliLetter
 from main.codes.RepetitionCode import RepetitionCode
 from main.compiling.compilers.AncillaPerCheckCompiler import AncillaPerCheckCompiler
-from main.compiling.compilers import NativePauliProductMeasurementsCompiler
+from main.compiling.compilers.NativePauliProductMeasurementsCompiler import NativePauliProductMeasurementsCompiler
 from main.compiling.noise.models import PhenomenologicalNoise, CircuitLevelNoise, EM3
-from main.compiling.syndrome_extraction.extractors import NativePauliProductMeasurementsExtractor
+from main.compiling.syndrome_extraction.extractors.NativePauliProductMeasurementsExtractor import NativePauliProductMeasurementsExtractor
 from main.compiling.syndrome_extraction.extractors.ancilla_per_check.mixed.CnotExtractor import CnotExtractor
 from main.utils.enums import State
 

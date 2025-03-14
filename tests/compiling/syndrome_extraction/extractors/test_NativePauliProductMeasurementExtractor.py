@@ -4,14 +4,14 @@ from main.building_blocks.Qubit import Qubit
 from main.building_blocks.pauli import Pauli
 from main.building_blocks.pauli.PauliLetter import PauliLetter
 from main.compiling.Circuit import Circuit
-from main.compiling.noise.models import EM3, NoNoise, NoiseModel
-from main.compiling.noise.noises import OneBitNoise, TwoQubitNoise
+from main.compiling.noise.models.NoNoise import NoNoise
+from main.compiling.noise.models.EM3 import EM3
+from main.compiling.noise.models.NoiseModel import NoiseModel
 from main.compiling.syndrome_extraction.extractors.NativePauliProductMeasurementsExtractor import NativePauliProductMeasurementsExtractor
-
-# write a function that generates the circuit
 
 
 def gen_rep_code_circ(noise_model: NoiseModel):
+
     extractor = NativePauliProductMeasurementsExtractor(parallelize=True)
     circuit = Circuit()
     compiler = Mock()
@@ -40,7 +40,7 @@ def gen_rep_code_circ(noise_model: NoiseModel):
 
 def test_native_mpp_extractor_end_to_end_noiseless():
     expected = "MPP X0*X1 Z2*Z3\nTICK\nMPP !X0*Y1*Z2"
-    assert gen_rep_code_circ(NoNoise) == expected
+    assert gen_rep_code_circ(NoNoise()) == expected
 
 
 def test_native_mpp_extractor_end_to_end_EM3():
@@ -54,5 +54,3 @@ TICK
 MPP(0.1) !X0*Y1*Z2"""
 
     assert gen_rep_code_circ(EM3(0.1)) == expected
-
-
