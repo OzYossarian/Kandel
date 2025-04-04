@@ -2,7 +2,9 @@ from main.building_blocks.pauli import Pauli
 from main.building_blocks.pauli.PauliLetter import PauliLetter
 from main.codes.RepetitionCode import RepetitionCode
 from main.compiling.compilers.AncillaPerCheckCompiler import AncillaPerCheckCompiler
-from main.compiling.noise.models import PhenomenologicalNoise, CircuitLevelNoise
+from main.compiling.compilers.NativePauliProductMeasurementsCompiler import NativePauliProductMeasurementsCompiler
+from main.compiling.noise.models import PhenomenologicalNoise, CircuitLevelNoise, EM3
+from main.compiling.syndrome_extraction.extractors.NativePauliProductMeasurementsExtractor import NativePauliProductMeasurementsExtractor
 from main.compiling.syndrome_extraction.extractors.ancilla_per_check.mixed.CnotExtractor import CnotExtractor
 from main.utils.enums import State
 
@@ -78,6 +80,127 @@ DETECTOR(1, 0) rec[-5] rec[-3] rec[-2]
 DETECTOR(3, 0) rec[-4] rec[-2] rec[-1]
 OBSERVABLE_INCLUDE(0) rec[-3]"""
 
+    assert str(stim_circuit) == expected
+
+
+def test_repetition_code_end_to_end_ppm_noiseless():
+    """
+    Distance: 3
+    Noise model: None
+    Syndrome extractor: CnotExtractor
+    Compiler: AncillaPerCheckCompiler
+    total_rounds: 3
+    Initial States: all Zero
+    Final measurements: all Z
+    Observables: logical Z
+    """
+    code = RepetitionCode(distance=3)
+    extractor = NativePauliProductMeasurementsExtractor(parallelize=False)
+    compiler = NativePauliProductMeasurementsCompiler(
+        syndrome_extractor=extractor)
+
+    data_qubits = code.data_qubits.values()
+    initial_states = {qubit: State.Zero for qubit in data_qubits}
+    final_measurements = [
+        Pauli(qubit, PauliLetter('Z')) for qubit in data_qubits]
+    stim_circuit = compiler.compile_to_stim(
+        code=code,
+        total_rounds=2,
+        initial_states=initial_states,
+        final_measurements=final_measurements,
+        observables=[code.logical_qubits[0].z])
+
+    expected = """QUBIT_COORDS(0) 0
+QUBIT_COORDS(2) 1
+QUBIT_COORDS(4) 2
+R 0 1 2
+TICK
+MPP Z0*Z1
+DETECTOR(1, 0) rec[-1]
+TICK
+MPP Z1*Z2
+DETECTOR(3, 0) rec[-1]
+SHIFT_COORDS(0, 1)
+TICK
+MPP Z0*Z1
+DETECTOR(1, 0) rec[-3] rec[-1]
+TICK
+MPP Z1*Z2
+DETECTOR(3, 0) rec[-3] rec[-1]
+SHIFT_COORDS(0, 1)
+TICK
+M 0 1 2
+DETECTOR(1, 0) rec[-5] rec[-3] rec[-2]
+DETECTOR(3, 0) rec[-4] rec[-2] rec[-1]
+OBSERVABLE_INCLUDE(0) rec[-3]"""
+    assert str(stim_circuit) == expected
+
+
+def test_repetition_code_end_to_end_ppm_EM3_noise():
+    """
+    Distance: 3
+    Noise model: None
+    Syndrome extractor: CnotExtractor
+    Compiler: AncillaPerCheckCompiler
+    total_rounds: 3
+    Initial States: all Zero
+    Final measurements: all Z
+    Observables: logical Z
+    """
+    code = RepetitionCode(distance=3)
+    extractor = NativePauliProductMeasurementsExtractor(parallelize=False)
+    compiler = NativePauliProductMeasurementsCompiler(
+        noise_model=EM3(0.01),
+        syndrome_extractor=extractor)
+
+    data_qubits = code.data_qubits.values()
+    initial_states = {qubit: State.Zero for qubit in data_qubits}
+    final_measurements = [
+        Pauli(qubit, PauliLetter('Z')) for qubit in data_qubits]
+    stim_circuit = compiler.compile_to_stim(
+        code=code,
+        total_rounds=2,
+        initial_states=initial_states,
+        final_measurements=final_measurements,
+        observables=[code.logical_qubits[0].z])
+
+    expected = """QUBIT_COORDS(0) 0
+QUBIT_COORDS(2) 1
+QUBIT_COORDS(4) 2
+R 0 1 2
+TICK
+PAULI_CHANNEL_1(0.005, 0.005, 0.005) 0 1 2
+PAULI_CHANNEL_2(0.000666667, 0.000666667, 0.000666667, 0.000666667, 0.000666667, 0.000666667, 0.000666667, 0.000666667, 0.000666667, 0.000666667, 0.000666667, 0.000666667, 0.000666667, 0.000666667, 0.000666667) 0 1
+TICK
+MPP(0.01) Z0*Z1
+DETECTOR(1, 0) rec[-1]
+TICK
+PAULI_CHANNEL_2(0.000666667, 0.000666667, 0.000666667, 0.000666667, 0.000666667, 0.000666667, 0.000666667, 0.000666667, 0.000666667, 0.000666667, 0.000666667, 0.000666667, 0.000666667, 0.000666667, 0.000666667) 1 2
+PAULI_CHANNEL_1(0.00333333, 0.00333333, 0.00333333) 2
+TICK
+MPP(0.01) Z1*Z2
+DETECTOR(3, 0) rec[-1]
+SHIFT_COORDS(0, 1)
+TICK
+PAULI_CHANNEL_2(0.000666667, 0.000666667, 0.000666667, 0.000666667, 0.000666667, 0.000666667, 0.000666667, 0.000666667, 0.000666667, 0.000666667, 0.000666667, 0.000666667, 0.000666667, 0.000666667, 0.000666667) 0 1
+PAULI_CHANNEL_1(0.00333333, 0.00333333, 0.00333333) 0
+TICK
+MPP(0.01) Z0*Z1
+DETECTOR(1, 0) rec[-3] rec[-1]
+TICK
+PAULI_CHANNEL_2(0.000666667, 0.000666667, 0.000666667, 0.000666667, 0.000666667, 0.000666667, 0.000666667, 0.000666667, 0.000666667, 0.000666667, 0.000666667, 0.000666667, 0.000666667, 0.000666667, 0.000666667) 1 2
+PAULI_CHANNEL_1(0.00333333, 0.00333333, 0.00333333) 2
+TICK
+MPP(0.01) Z1*Z2
+DETECTOR(3, 0) rec[-3] rec[-1]
+SHIFT_COORDS(0, 1)
+TICK
+PAULI_CHANNEL_1(0.00333333, 0.00333333, 0.00333333) 0
+TICK
+M(0.01) 0 1 2
+DETECTOR(1, 0) rec[-5] rec[-3] rec[-2]
+DETECTOR(3, 0) rec[-4] rec[-2] rec[-1]
+OBSERVABLE_INCLUDE(0) rec[-3]"""
     assert str(stim_circuit) == expected
 
 

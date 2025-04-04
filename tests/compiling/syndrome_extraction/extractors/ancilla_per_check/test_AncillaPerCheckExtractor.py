@@ -56,7 +56,7 @@ def test_ancilla_per_check_extractor_overwrites_compiler_instructions(mocker: Mo
     extractor.get_ancilla_basis = mocker.Mock(return_value=PauliLetter('Z'))
     compiler.initialize_qubits = mocker.Mock(return_value=0)
     extractor.extract_step = mocker.Mock(return_value=0)
-    compiler.measure_qubits = mocker.Mock(return_value=0)
+    compiler.measure_individual_qubits = mocker.Mock(return_value=0)
 
     # Extract the checks
     extractor.extract_checks([check], 0, 0, circuit, compiler)
@@ -66,7 +66,7 @@ def test_ancilla_per_check_extractor_overwrites_compiler_instructions(mocker: Mo
     compiler.initialize_qubits.assert_called_with(
         initial_states, 0, circuit, extractor_initialisation_instructions)
     final_paulis = [Pauli(check.ancilla, PauliLetter('Z'))]
-    compiler.measure_qubits.assert_called_with(
+    compiler.measure_individual_qubits.assert_called_with(
         final_paulis, [check], 0, 0, circuit, extractor_measurement_instructions)
 
 
@@ -95,7 +95,7 @@ def test_ancilla_per_check_extractor_defaults_to_compiler_instructions(mocker: M
     extractor.get_ancilla_basis = mocker.Mock(return_value=PauliLetter('Z'))
     compiler.initialize_qubits = mocker.Mock(return_value=0)
     extractor.extract_step = mocker.Mock(return_value=0)
-    compiler.measure_qubits = mocker.Mock(return_value=0)
+    compiler.measure_individual_qubits = mocker.Mock(return_value=0)
 
     # Extract the checks
     extractor.extract_checks([check], 0, 0, circuit, compiler)
@@ -105,7 +105,7 @@ def test_ancilla_per_check_extractor_defaults_to_compiler_instructions(mocker: M
     compiler.initialize_qubits.assert_called_with(
         initial_states, 0, circuit, compiler_initialisation_instructions)
     final_paulis = [Pauli(check.ancilla, PauliLetter('Z'))]
-    compiler.measure_qubits.assert_called_with(
+    compiler.measure_individual_qubits.assert_called_with(
         final_paulis, [check], 0, 0, circuit, compiler_measurement_instructions)
 
 
@@ -503,7 +503,7 @@ def test_ancilla_per_check_extractor_extract_checks_in_parallel(mocker: MockerFi
         side_effect=lambda _, tick, __, ___: tick + 2)
     extractor.extract_step = mocker.Mock(
         side_effect=lambda _, __, ___, tick, ____, _____: tick + 10)
-    compiler.measure_qubits = mocker.Mock(
+    compiler.measure_individual_qubits = mocker.Mock(
         side_effect=lambda _, __, ___, tick, ____, _____: tick + 4)
 
     # Mock up two weight-2 checks
@@ -540,7 +540,7 @@ def test_ancilla_per_check_extractor_extract_checks_in_parallel(mocker: MockerFi
     paulis = [
         Pauli(checks[0].ancilla, PauliLetter('Z')),
         Pauli(checks[1].ancilla, PauliLetter('Z'))]
-    compiler.measure_qubits.assert_called_with(
+    compiler.measure_individual_qubits.assert_called_with(
         paulis, checks, round, 22, circuit, measurement_instructions)
 
     assert next_tick == 26
@@ -569,7 +569,7 @@ def test_ancilla_per_check_extractor_extract_checks_in_sequence(mocker: MockerFi
         side_effect=lambda _, tick, __, ___: tick + 2)
     extractor.extract_step = mocker.Mock(
         side_effect=lambda _, __, ___, tick, ____, _____: tick + 10)
-    compiler.measure_qubits = mocker.Mock(
+    compiler.measure_individual_qubits = mocker.Mock(
         side_effect=lambda _, __, ___, tick, ____, _____: tick + 4)
 
     # Mock up two weight-2 checks
@@ -611,7 +611,7 @@ def test_ancilla_per_check_extractor_extract_checks_in_sequence(mocker: MockerFi
     expected_measure_qubits_calls = [
         mocker.call(measurement_paulis[:1], checks[:1], round, 22, circuit, measurement_instructions),
         mocker.call(measurement_paulis[1:], checks[1:], round, 48, circuit, measurement_instructions)]
-    compiler.measure_qubits.assert_has_calls(
+    compiler.measure_individual_qubits.assert_has_calls(
         expected_measure_qubits_calls, any_order=True)
 
     assert next_tick == 52

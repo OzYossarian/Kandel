@@ -1,4 +1,4 @@
-from typing import List, Tuple, Any
+from typing import List, Tuple
 
 import stim
 
@@ -33,11 +33,10 @@ class Instruction(NiceRepr):
             targets:
                 The Stim targets for this instruction. Should only be given
                 if one wants the usual code for generating the targets to be
-                overwritten. e.g. For Pauli product measurement, the syntax
-                of the Stim instruction is different to the usual one. Will
-                likely revisit this when we implement a native Pauli product
-                measurement compiler.
-                Defaults to None.
+                overwritten. Defaults to None. Note: this ISN'T how Pauli 
+                product measurements are done - we need the qubit indices 
+                as part of their targets, which we don't have access to til 
+                compiling a Circuit to a stim.Circuit much later.
         """
         self._assert_qubits_valid(qubits)
 

@@ -1,0 +1,10 @@
+#!/bin/bash 
+
+set -e 
+parallel -q --ungroup ./create_timelike_distance_data.py \
+    --code {1} \
+    --noise_model {2} \
+    --graphlike {3} \
+    ::: "GaugeHoneycombCode" "GaugeFloquetColourCode"  \
+    ::: "circuit_level_depolarizing" "phenomenological" \
+    ::: 1 \

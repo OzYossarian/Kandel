@@ -219,7 +219,7 @@ class Compiler(ABC):
                 0].letter.letter
 
             final_measurements = [Pauli(qubit, PauliLetter(pauli_letter_observable))
-                                    for qubit in code.data_qubits.values()]
+                                  for qubit in code.data_qubits.values()]
 
         # Finish with data qubit measurements, and use these to reconstruct
         # some detectors.
@@ -418,7 +418,7 @@ class Compiler(ABC):
             final_measurements=final_measurements,
             final_stabilizers=final_stabilizers,
             observables=observables)
-        return (circuit.to_stim(self.noise_model.idling))
+        return (circuit.to_stim(self.noise_model.idling, self.noise_model.resonator_idle))
 
     def compile_initialisation(
             self,
@@ -684,7 +684,7 @@ class Compiler(ABC):
         # First, compile instructions for actually measuring the qubits.
         paulis = [list(check.paulis.values())[0]
                   for check in code.final_check_schedule[-1]]
-        self.measure_qubits(
+        self.measure_individual_qubits(
             paulis,
             code.final_check_schedule[-1], round+1, tick, circuit
         )
@@ -757,18 +757,25 @@ class Compiler(ABC):
             for pauli in final_measurements:
                 check = Check([pauli], pauli.qubit.coords)
                 final_checks[pauli.qubit] = check
+            # A hack!
             if isinstance(code, TicTacToeCode) or isinstance(code, GaugeTicTacToeCode):
-
-                if (pauli.letter == code.tic_tac_toe_route[(
-                        round-1) % code.schedule_length][1]):
+                final_pauli_letters = {
+                    pauli.letter for pauli in final_measurements}
+                if len(final_pauli_letters) > 1:
+                    raise ValueError(
+                        f"All final measurements must have the same letter. "
+                        f"Instead, got: "f"{final_measurements}.")
+                pauli_letter = final_pauli_letters.pop()
+                route_final_letter = code.tic_tac_toe_route[(
+                    round-1) % code.schedule_length][1]
+                if (pauli_letter == route_final_letter):
                     add_small_detectors = True
                 else:
                     add_small_detectors = False
-
             else:
                 add_small_detectors = False
             # First, compile instructions for actually measuring the qubits.
-            self.measure_qubits(
+            self.measure_individual_qubits(
                 final_measurements, final_checks.values(), round, tick, circuit
             )
             # Now try to use these as lids for any detectors that at this point
@@ -961,7 +968,7 @@ class Compiler(ABC):
                 )
     # TODO - generalise for native multi-qubit measurements.
 
-    def measure_qubits(
+    def measure_individual_qubits(
             self,
             paulis: Iterable[Pauli],
             checks: Iterable[Check],
@@ -1025,6 +1032,7 @@ class Compiler(ABC):
 
         Returns: next usable even tick after these gates have been compiled.
         """
+
         for i, gate in enumerate(gates):
             gate_tick = tick + 2 * i
             circuit.add_instruction(gate_tick, gate)
@@ -1036,10 +1044,12 @@ class Compiler(ABC):
             noise = self.noise_model.one_qubit_gate \
                 if gate_size == 1 \
                 else self.noise_model.two_qubit_gate
+
             if noise is not None:
                 noise_instruction = noise.instruction(gate.qubits)
                 circuit.add_instruction(gate_tick + 1, noise_instruction)
         # Return the next usable even tick
+
         return tick + 2 * len(gates)
 
     def _assert_final_stabilizers_valid(

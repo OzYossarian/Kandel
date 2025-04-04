@@ -15,7 +15,7 @@ from main.utils.types import Tick
 RepeatBlock = Union[Tuple[int, int, int], None]
 
 
-class Circuit:
+class Circuit(object):
     def __init__(self):
         """Intermediate representation of a quantum circuit. Rather than
         compile directly to a Stim circuit, which is somewhat inflexible, we
@@ -53,8 +53,16 @@ class Circuit:
         self.repeat_blocks: Dict[int, RepeatBlock] = defaultdict(lambda: None)
         # Track which measurements tell us the value of which checks
         self.measurer = Measurer()
+        # Annoying extra hoops to jump through to get the targets for
+        # Pauli product measurements.
+        self.pauli_targeters = {
+            'X': stim.target_x,
+            'Y': stim.target_y,
+            'Z': stim.target_z}
 
-    def to_cirq_string(self, idling_noise: OneQubitNoise = None) -> str:
+    def to_cirq_string(self,
+                       idling_noise: Union[OneQubitNoise, None] = None,
+                       resonator_idling_noise: Union[OneQubitNoise, None] = None) -> str:
         """Represents an instance of this class as cirq ascii circuit, useful for debugging
 
         Args:
@@ -65,7 +73,7 @@ class Circuit:
         Returns:
             str : a drawing of the circuit generated using cirq.
         """
-        return str(stimcirq.stim_circuit_to_cirq_circuit(self.to_stim(idling_noise)))
+        return str(stimcirq.stim_circuit_to_cirq_circuit(self.to_stim(idling_noise, resonator_idling_noise)))
 
     def number_of_instructions(self, instruction_names: Iterable[str]) -> int:
         """Counts the number of times an instruction occurs.
@@ -76,6 +84,8 @@ class Circuit:
         Returns:
             Number of occurrences of instructions with these names.
         """
+        if isinstance(instruction_names, str):
+            instruction_names = [instruction_names]
         occurrences = 0
         for instructions_at_tick in self.instructions.values():
             for instructions_on_qubit_at_tick in instructions_at_tick.values():
@@ -101,7 +111,7 @@ class Circuit:
         return index
 
     def is_initialised(self, tick: Tick, qubit: Qubit) -> bool:
-        """At this tick, return whether this qubit has been initialised but not yet measured
+        """At this tick, return whether this qubit has been initialised but not yet measured out
 
         Args:
             tick: Tick at which to check if a qubit is initialised
@@ -161,9 +171,12 @@ class Circuit:
         # TODO - raise error if measurement.is_measurement is False?
         # Measure a qubit (perhaps multiple)
         self.add_instruction(tick, measurement)
+        # If the measurement is not a Pauli product measurement,
+        # then this is a single qubit measurement which measures out the qubit.
         # Record that these qubits have been measured.
-        for qubit in measurement.qubits:
-            self.measure_ticks[qubit].append(tick)
+        if measurement.name != "MPP":
+            for qubit in measurement.qubits:
+                self.measure_ticks[qubit].append(tick)
         # Note down that this instruction corresponds to the measurement of a
         # particular check in a particular round. This info is used when
         # compiling detectors later.
@@ -259,7 +272,9 @@ class Circuit:
         # TODO - implement!
         raise NotImplementedError
 
-    def add_idling_noise(self, idling_noise: Union[OneQubitNoise, None]):
+    def add_idling_noise(self,
+                         idling_noise: Union[OneQubitNoise, None],
+                         resonator_idling_noise: Union[OneQubitNoise, None]):
         """Adds idling noise everywhere in the circuit
 
         Idling noise is added at every tick to qubits that have been
@@ -273,7 +288,7 @@ class Circuit:
         # If circuit is going to be compressed, then this should be done
         # before adding idling noise, since compression changes the amount
         # of idling time in the circuit.
-        if idling_noise is not None:
+        if idling_noise is not None or resonator_idling_noise is not None:
             # Note that this only loop through ticks at which there is at
             # least one instruction
             for tick in sorted(self.instructions.keys()):
@@ -285,9 +300,17 @@ class Circuit:
                     # Sort for reproducibility in tests.
                     idle_qubits = sorted(
                         idle_qubits, key=lambda qubit: qubit.coords)
+
+                    is_measurement_tick = self.check_for_measurement_at_tick(
+                        tick)
                     for qubit in idle_qubits:
-                        noise = idling_noise.instruction([qubit])
-                        self.add_instruction(tick + 1, noise)
+                        if idling_noise is not None:
+                            noise = idling_noise.instruction([qubit])
+                            self.add_instruction(tick + 1, noise)
+
+                        if is_measurement_tick == True and resonator_idling_noise is not None:
+                            noise = resonator_idling_noise.instruction([qubit])
+                            self.add_instruction(tick + 1, noise)
 
     def get_idle_qubits(self, tick: Tick):
         # A qubit is idle at a given tick if it has been initialised but
@@ -307,9 +330,17 @@ class Circuit:
         idle_qubits = initialised_qubits.difference(active_qubits)
         return idle_qubits
 
+    def check_for_measurement_at_tick(self, tick: Tick):
+        for instructions_on_qubit in self.instructions[tick].values():
+            for instruction in instructions_on_qubit:
+                if instruction.is_measurement:
+                    return True
+        return False
+
     def to_stim(
         self,
         idling_noise: Union[OneQubitNoise, None],
+        resonator_idling_noise: Union[OneQubitNoise, None] = None,
         track_coords: bool = True,
         track_progress: bool = True,
     ) -> stim.Circuit:
@@ -329,12 +360,16 @@ class Circuit:
         if track_progress:
             # TODO - bug here: sometimes this progress bar overfills!
             with alive_bar(len(self.instructions), force_tty=True) as bar:
-                return self._to_stim(idling_noise, track_coords, bar)
+                return self._to_stim(idling_noise, resonator_idling_noise, track_coords, bar)
         else:
-            return self._to_stim(idling_noise, track_coords, None)
+            return self._to_stim(idling_noise, resonator_idling_noise, track_coords, None)
 
     def _to_stim(
-        self, idling_noise: Union[OneQubitNoise, None], track_coords: bool, progress_bar: Any
+        self,
+        idling_noise: Union[OneQubitNoise, None],
+        resonator_idling_noise: Union[OneQubitNoise, None],
+        track_coords: bool,
+        progress_bar: Any
     ) -> stim.Circuit:
         """Called by to_stim() to transform the circuit to a stim circuit.
 
@@ -356,7 +391,7 @@ class Circuit:
             shift_coords = None
 
         # Go through the circuit and add idling noise.
-        self.add_idling_noise(idling_noise)
+        self.add_idling_noise(idling_noise, resonator_idling_noise)
 
         # Let 'circuit' denote the circuit we're currently compiling to - if
         # using repeat blocks, this need not always be the full circuit itself
@@ -382,12 +417,12 @@ class Circuit:
             if self.entered_repeat_block(tick, most_recent_tick):
                 circuit = stim.Circuit()
 
-            qubits_by_instruction, measurements = self.split_instructions_according_to_gate(
+            targets_by_instruction, measurements = self.split_instructions_according_to_gate(
                 qubit_instructions)
 
-            for instruction in qubits_by_instruction:
+            for instruction in targets_by_instruction:
                 circuit.append(instruction[0],
-                               qubits_by_instruction[instruction], instruction[1])
+                               targets_by_instruction[instruction], instruction[1])
 
             # Let the measurer determine if these measurements trigger any
             # further instructions - e.g. compiling detectors, adding checks
@@ -440,7 +475,7 @@ class Circuit:
             The second dictionary has keys of Instructions which are measurements and values of lists of qubits.        
         """
         measurements = []
-        qubits_by_instruction = {}
+        targets_by_instruction = {}
         compiled_instruction = defaultdict(bool)
 
         # Sorting the instructions such that the order of operations and qubits in the resulting stim circuit is stable.
@@ -455,18 +490,60 @@ class Circuit:
                         measurements.append(instruction)
 
                     key = (instruction.name, instruction.params)
-                    if key not in qubits_by_instruction:
-                        qubits_by_instruction[key] = []
+                    if key not in targets_by_instruction:
+                        targets_by_instruction[key] = []
+
+                    if instruction.name == "MPP":
+                        # Stim's strange syntax for these means we need to
+                        # retrieve the check associated to this instruction,
+                        # in order to set the targets correctly.
+                        check, _ = self.measurer.measurement_checks[instruction]
+                        instruction.targets = self.product_measurement_targets(
+                            check)
 
                     if instruction.targets is not None:
-                        qubits_by_instruction[key].extend(
+                        targets_by_instruction[key].extend(
                             instruction.targets)
                     else:
-                        qubits_by_instruction[key].extend(
+                        targets_by_instruction[key].extend(
                             [self.qubit_index(qubit) for qubit in instruction.qubits])
                     compiled_instruction[instruction] = True
 
-        return qubits_by_instruction, measurements
+        return targets_by_instruction, measurements
+
+    def product_measurement_targets(self, check: Check) -> List[stim.GateTarget]:
+        """
+        Get the Stim measurement targets for the given check, using native
+        Pauli product measurement. e.g. An XYZ check on qubits 0, 1 and 2
+        has targets X0 * Y1 * Z2
+
+        Args:
+            check: check to measure
+            circuit: circuit implementing the code so far
+
+        Returns:
+            the Stim targets for the check
+        """
+        # Do first pauli separately, then do the rest in a for loop.
+        # We only care about the non-identity ones.
+        paulis = [
+            pauli for pauli in check.paulis.values()
+            if pauli.letter.letter != 'I']
+        # We're guaranteed that there's at least one non-identity Pauli,
+        # because we enforce this on the Check class
+        pauli = paulis[0]
+        targeter = self.pauli_targeters[pauli.letter.letter]
+        # We're guaranteed the check's product has sign in [1, -1], because
+        # we force all checks to have a Hermitian product.
+        invert = check.product.word.sign == -1
+        # If inverting, it applies to the whole product, but equivalently can
+        # just invert one qubit - may as well pick the first one.
+        targets = [targeter(self.qubit_index(pauli.qubit), invert)]
+        for pauli in paulis[1:]:
+            targets.append(stim.target_combiner())
+            targeter = self.pauli_targeters[pauli.letter.letter]
+            targets.append(targeter(self.qubit_index(pauli.qubit)))
+        return targets
 
     def entered_repeat_block(self, tick: int, last_tick: int):
         """Checks if a repeat block started between last_tick and tick.

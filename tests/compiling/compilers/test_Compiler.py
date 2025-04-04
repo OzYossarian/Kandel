@@ -1061,7 +1061,7 @@ def test_compiler_compile_final_measurements_gets_final_measurements_if_final_st
 
     # Mock over the submethods used by the methods
     compiler.get_measurement_bases = mocker.Mock(return_value=[])
-    compiler.measure_qubits = mocker.Mock()
+    compiler.measure_individual_qubits = mocker.Mock()
     compiler.compile_final_detectors = mocker.Mock()
     compiler.compile_final_logical_operators = mocker.Mock()
 
@@ -1098,7 +1098,7 @@ def test_compiler_compile_final_measurements_does_nothing_if_neither_final_measu
 
     # Mock over the submethods used by the methods
     compiler.get_measurement_bases = mocker.Mock(return_value=[])
-    compiler.measure_qubits = mocker.Mock()
+    compiler.measure_individual_qubits = mocker.Mock()
     compiler.compile_final_detectors = mocker.Mock()
     compiler.compile_final_logical_operators = mocker.Mock()
 
@@ -1123,7 +1123,7 @@ def test_compiler_compile_final_measurements_does_nothing_if_neither_final_measu
         circuit,
         code)
 
-    compiler.measure_qubits.assert_not_called()
+    compiler.measure_individual_qubits.assert_not_called()
     compiler.compile_final_detectors.assert_not_called()
     compiler.compile_final_logical_operators.assert_not_called()
 
@@ -1136,7 +1136,7 @@ def test_compiler_compile_final_measurements_calls_measure_qubits_correctly(
 
     # Mock over the submethods used by the methods
     compiler.get_measurement_bases = mocker.Mock(return_value=[])
-    compiler.measure_qubits = mocker.Mock()
+    compiler.measure_individual_qubits = mocker.Mock()
     compiler.compile_final_detectors = mocker.Mock()
     compiler.compile_final_logical_operators = mocker.Mock()
 
@@ -1164,13 +1164,13 @@ def test_compiler_compile_final_measurements_calls_measure_qubits_correctly(
     expected_checks = [Check([Pauli(qubit, PauliLetter('Z'))])]
     # For some reason using assert_called_with doesn't work here,
     # so let's check each argument individually.
-    compiler.measure_qubits.assert_called_once()
-    assert compiler.measure_qubits.call_args_list[0].args[0] == final_measurements
+    compiler.measure_individual_qubits.assert_called_once()
+    assert compiler.measure_individual_qubits.call_args_list[0].args[0] == final_measurements
     assert list(
-        compiler.measure_qubits.call_args_list[0].args[1]) == expected_checks
-    assert compiler.measure_qubits.call_args_list[0].args[2] == round
-    assert compiler.measure_qubits.call_args_list[0].args[3] == tick
-    assert compiler.measure_qubits.call_args_list[0].args[4] == circuit
+        compiler.measure_individual_qubits.call_args_list[0].args[1]) == expected_checks
+    assert compiler.measure_individual_qubits.call_args_list[0].args[2] == round
+    assert compiler.measure_individual_qubits.call_args_list[0].args[3] == tick
+    assert compiler.measure_individual_qubits.call_args_list[0].args[4] == circuit
 
 
 def test_compiler_compile_final_measurements_calls_compile_final_detectors_correctly(
@@ -1181,7 +1181,7 @@ def test_compiler_compile_final_measurements_calls_compile_final_detectors_corre
 
     # Mock over the submethods used by the methods
     compiler.get_measurement_bases = mocker.Mock(return_value=[])
-    compiler.measure_qubits = mocker.Mock()
+    compiler.measure_individual_qubits = mocker.Mock()
     compiler.compile_final_detectors = mocker.Mock()
     compiler.compile_final_logical_operators = mocker.Mock()
 
@@ -1220,7 +1220,7 @@ def test_compiler_compile_final_measurements_calls_compile_final_logical_operato
 
     # Mock over the submethods used by the methods
     compiler.get_measurement_bases = mocker.Mock(return_value=[])
-    compiler.measure_qubits = mocker.Mock()
+    compiler.measure_individual_qubits = mocker.Mock()
     compiler.compile_final_detectors = mocker.Mock()
     compiler.compile_final_logical_operators = mocker.Mock()
 
@@ -1512,7 +1512,7 @@ def test_compiler_measure_qubits_defaults_to_compiler_measurement_instructions(
     circuit = mocker.Mock(spec=Circuit)
     tick = 0
     round = 0
-    compiler.measure_qubits(paulis, checks, round, tick, circuit)
+    compiler.measure_individual_qubits(paulis, checks, round, tick, circuit)
 
     # Assert compiler measurement instructions were used:
     measurements = [
@@ -1550,7 +1550,7 @@ def test_compiler_measure_qubits_otherwise_uses_given_measurement_instructions(
     measurement_instructions = {
         PauliLetter('Z'): ['H', 'MX'],
         PauliLetter('X'): ['MX']}
-    compiler.measure_qubits(
+    compiler.measure_individual_qubits(
         paulis, checks, round, tick, circuit, measurement_instructions)
 
     # Assert given measurement instructions were used:
@@ -1583,7 +1583,7 @@ def test_compiler_measure_qubits_applies_measurement_noise_correctly(
     measurement_instructions = {
         PauliLetter('Z'): ['H', 'MX'],
         PauliLetter('X'): ['MX']}
-    compiler.measure_qubits(
+    compiler.measure_individual_qubits(
         paulis, checks, round, tick, circuit, measurement_instructions)
 
     # Assert given measurement instructions were used:
@@ -1615,7 +1615,7 @@ def test_compiler_measure_qubits_returns_correct_tick(
     measurement_instructions = {
         PauliLetter('Z'): ['H', 'MX'],
         PauliLetter('X'): ['MX']}
-    next_tick = compiler.measure_qubits(
+    next_tick = compiler.measure_individual_qubits(
         paulis, checks, round, tick, circuit, measurement_instructions)
 
     # Assert circuit returns correct tick:

@@ -78,7 +78,7 @@ class RotatedSurfaceCode(Code):
 
         return checks
 
-    def init_boundary_checks(
+    def init_boundary_checks(   
         self, data_qubits: Dict[Coordinates, Qubit], distance: int
     ):
         checks = []
