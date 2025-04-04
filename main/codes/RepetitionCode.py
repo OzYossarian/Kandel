@@ -1,31 +1,40 @@
-from typing import Dict
-
 from main.building_blocks.Check import Check
-from main.building_blocks.Operator import Operator
-from main.building_blocks.Pauli import PauliZ
+from main.building_blocks.logical.LogicalOperator import LogicalOperator
+from main.building_blocks.logical.LogicalQubit import LogicalQubit
+from main.building_blocks.pauli.Pauli import Pauli
+from main.building_blocks.pauli.PauliLetter import PauliLetter
 from main.building_blocks.Qubit import Qubit
 from main.codes.Code import Code
-from main.enums import State
 
 
 class RepetitionCode(Code):
     def __init__(self, distance: int):
-        data_qubits, ancilla_qubits, schedule = self.init_checks(distance)
-        self.logical_operator = [Operator(data_qubits[0], PauliZ)]
-        super().__init__(data_qubits, [schedule], ancilla_qubits)
+        if distance < 2:
+            raise ValueError(
+                f"Repetition code should have distance at least 2. "
+                f"Instead, got distance {distance}.")
+
+        data_qubits, checks = self.init_checks(distance)
+        logical_x = LogicalOperator([
+            Pauli(qubit, PauliLetter('X')) for qubit in data_qubits.values()])
+        logical_z = LogicalOperator([
+            Pauli(data_qubits[0], PauliLetter('Z'))])
+        logical_qubit = LogicalQubit(x=logical_x, z=logical_z)
+
+        super().__init__(
+            data_qubits=data_qubits,
+            check_schedule=[checks],
+            distance=distance,
+            logical_qubits=[logical_qubit])
 
     def init_checks(self, distance: int):
-        data_qubits = {2*i: Qubit(2*i, State.Zero)
-                       for i in range(distance)}
-        ancilla_qubits = dict()
-        schedule = []
-        for i in range(distance-1):
-            operators = [
-                Operator(data_qubits[2*i], PauliZ),
-                Operator(data_qubits[2*(i+1)], PauliZ)]
-            center = 2*i + 1
-            ancilla = Qubit(center, State.Zero)
-            ancilla_qubits[center] = ancilla
-            new_check = Check(operators, center, ancilla)
-            schedule.append(new_check)
-        return data_qubits, ancilla_qubits, schedule
+        data_qubits = {2 * i: Qubit(2 * i) for i in range(distance)}
+        checks = []
+        for i in range(distance - 1):
+            paulis = [
+                Pauli(data_qubits[2 * i], PauliLetter('Z')),
+                Pauli(data_qubits[2 * (i + 1)], PauliLetter('Z'))]
+            anchor = 2 * i + 1
+            new_check = Check(paulis, anchor)
+            checks.append(new_check)
+        return data_qubits, checks

@@ -1,14 +1,17 @@
-from typing import Tuple
-from main.enums import State
+from main.utils.NiceRepr import NiceRepr
+from main.utils.types import Coordinates
+from main.utils.utils import coords_length
 
 
-Coordinates = Tuple[int, ...] | int
-
-
-class Qubit(object):
-    def __init__(self, coords: Coordinates, initial_state: State):
+class Qubit(NiceRepr):
+    def __init__(self, coords: Coordinates):
         self.coords = coords
-        self.initial_state = initial_state
+        super().__init__(['coords'])
 
-    def __repr__(self):
-        return f"position={self.coords}, state=|{self.initial_state.value}>"
+    @property
+    def dimension(self):
+        return coords_length(self.coords)
+
+    @property
+    def has_tuple_coords(self):
+        return isinstance(self.coords, tuple)

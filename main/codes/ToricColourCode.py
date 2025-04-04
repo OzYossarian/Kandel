@@ -1,60 +1,98 @@
-from main.building_blocks.Operator import Operator
-from main.building_blocks.Pauli import PauliX, PauliZ
+from typing import List
+
+from main.building_blocks.logical.LogicalOperator import LogicalOperator
+from main.building_blocks.logical.LogicalQubit import LogicalQubit
+from main.building_blocks.pauli.Pauli import Pauli
+from main.building_blocks.pauli.PauliLetter import PauliLetter
 from main.building_blocks.Check import Check
-from main.Colour import Red, Green, Blue
-from main.building_blocks.Qubit import Qubit, Coordinates
-from main.codes.HexagonalCode import HexagonalCode
-from main.enums import State, Layout
+from main.codes.ToricHexagonalCode import ToricHexagonalCode
+from main.utils.types import Coordinates
+from main.utils.utils import coords_minus
 
 
-class ToricColourCode(HexagonalCode):
-    def __init__(self, distance: int, layout: Layout):
-        assert distance % 4 == 0
-        self.distance = distance
+class ToricColourCode(ToricHexagonalCode):
+    """6.6.6 Colour code on a torus.
 
-        self.width = 3 * (distance // 2)
-        self.height = 3 * (distance // 4)
+    For details see: https://errorcorrectionzoo.org/c/color
 
-        data_qubits = {}
-        plaquette_centers = []
+    Args:
+        distance: The distance of the code.
+    """
+    def __init__(self, distance: int):
+        if distance <= 0:
+            raise ValueError(
+                f"Toric colour code must have positive distance! "
+                f"Instead, got distance {distance}")
+        if distance % 4 != 0:
+            raise ValueError(
+                f"Can only instantiate a toric colour code whose distance is a "
+                f"multiple of four - instead, got distance {distance}")
+
+        rows = 3 * (distance // 4)
+        columns = 4 * (distance // 4)
+        super().__init__(
+            rows=rows,
+            columns=columns,
+            distance=distance)
+
+        checks = self._create_checks()
+        self.set_schedules([checks])
+
+        logical_qubits = self._create_logical_qubits()
+        self.logical_qubits = logical_qubits
+
+    def _create_checks(self):
         checks = []
-        colours = [Red, Green, Blue]
+        for colour in self.colours:
+            anchors = self.colourful_plaquette_anchors[colour]
+            for anchor in anchors:
+                neighbour_coords = self.get_neighbour_coords(anchor)
+                relative_coords = [
+                    coords_minus(coords, anchor)
+                    for coords in neighbour_coords]
+                neighbours = [
+                    self.data_qubits[self.wrap_coords(coords)]
+                    for coords in neighbour_coords]
 
-        def define_qubits(grid, plaquette_center_column):
-            for x in range(self.width):
-                is_plaquette_center_column = x % 3 == plaquette_center_column
-                for y in range(self.height):
-                    coords = (grid, x, y)
-                    if is_plaquette_center_column:
-                        plaquette_centers.append(coords)
-                    else:
-                        data_qubits[coords] = Qubit(coords, State.Zero)
+                x_paulis = {
+                    coords: Pauli(qubit, PauliLetter('X'))
+                    for coords, qubit in zip(relative_coords, neighbours)}
+                z_paulis = {
+                    coords: Pauli(qubit, PauliLetter('Z'))
+                    for coords, qubit in zip(relative_coords, neighbours)}
 
-        define_qubits(0, 1)
-        define_qubits(1, 2)
+                x_check = Check(x_paulis, anchor, colour)
+                z_check = Check(z_paulis, anchor, colour)
 
-        for center in plaquette_centers:
-            plaquette_data_qubits = [
-                data_qubits[self._wrap_coords(neighbour)]
-                for neighbour in self.get_neighbours(center)]
+                checks.append(x_check)
+                checks.append(z_check)
+        return checks
 
-            x_ops = [
-                Operator(qubit, PauliX)
-                for qubit in plaquette_data_qubits]
-            z_ops = [
-                Operator(qubit, PauliZ)
-                for qubit in plaquette_data_qubits]
+    def _create_logical_qubits(self):
+        horizontal_coords = [
+            (x, 0)
+            for i in range(self.distance // 2)
+            for x in [2 + 12 * i, 6 + 12 * i]]
+        vertical_coords = [
+            (0, y)
+            for i in range(self.distance // 4)
+            for y in [2 + 12 * i, 6 + 12 * i]]
+        vertical_coords.extend([
+            (2, y)
+            for i in range(self.distance // 4)
+            for y in [0 + 12 * i, 8 + 12 * i]])
+        logical_qubits = [
+            self._create_logical_qubit(horizontal_coords, vertical_coords),
+            self._create_logical_qubit(vertical_coords, horizontal_coords)]
+        return logical_qubits
 
-            (g, x, y) = center
-            colour = (y - g) % 3
-            x_stabilizer = Check(x_ops, center, None, colours[colour], None)
-            z_stabilizer = Check(z_ops, center, None, colours[colour], None)
+    def _create_logical_qubit(
+            self, x_support: List[Coordinates], z_support: List[Coordinates]):
+        x = LogicalOperator([
+            Pauli(self.data_qubits[coords], PauliLetter('X'))
+            for coords in x_support])
+        z = LogicalOperator([
+            Pauli(self.data_qubits[coords], PauliLetter('Z'))
+            for coords in z_support])
+        return LogicalQubit(x=x, z=z)
 
-            checks.append(x_stabilizer)
-            checks.append(z_stabilizer)
-
-        super().__init__(data_qubits, [checks], layout)
-
-    def _wrap_coords(self, coords: Coordinates):
-        (g, x, y) = coords
-        return (g, x % self.width, y % self.height)
