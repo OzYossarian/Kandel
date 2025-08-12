@@ -102,46 +102,24 @@ class Compiler(ABC):
         self,
         code: Code,
         initial_states: Dict[Qubit, State] = None,
-        initial_stabilizers: List[Stabilizer] = None,
+        initial_detectors: List[List[Detector]] = None,
         final_measurements: List[Pauli] = None,
-        final_stabilizers: List[Stabilizer] = None,
+        final_detectors: List[List[Detector]] = None,
         observables: List[LogicalOperator] = None,
     ):
-
-        if not xor(initial_states is None, initial_stabilizers is None):
-            raise ValueError(
-                "Exactly one of initial_states and initial_stabilizers "
-                "should be provided."
-            )
-        if final_measurements is not None and final_stabilizers is not None:
-            raise ValueError(
-                "Shouldn't provide both final_measurements and "
-                "final_stabilizers - pick one!"
-            )
-
-        if final_stabilizers is not None:
-            # Checks within final stabilizers should be things we'll
-            # actually measure as part of the code's check schedule.
-            self._assert_final_stabilizers_valid(final_stabilizers, code)
-
-        compile_final_round = \
-            final_measurements is not None or final_stabilizers is not None
-
-        if observables is not None and not compile_final_round:
-            raise ValueError(
-                "Can't measure any observables if no method is given "
-                "for performing final measurements! Please provide one of "
-                "final_measurements or final_stabilizers, "
-                "or set observables to None.")
+        if initial_states is None:
+            raise ValueError("initial_states must be provided - instead got None.")
+        if initial_detectors is None:
+            raise ValueError("initial_detectors must be provided - instead got None.")
 
     def compile_to_circuit(
         self,
         code: Code,
         total_rounds: int,
         initial_states: Dict[Qubit, State] = None,
-        initial_stabilizers: List[Stabilizer] = None,
+        initial_detectors: List[List[Detector]] = None,
         final_measurements: List[Pauli] = None,
-        final_stabilizers: List[Stabilizer] = None,
+        final_detectors: List[List[Detector]] = None,
         observables: List[LogicalOperator] = None,
     ) -> Circuit:
         """ Compiles a circuit for a given code.
@@ -152,25 +130,19 @@ class Compiler(ABC):
             initial_states: The initial states of the data qubits. If not
                 provided, will use initial_stabilizers to determine the
                 initial state.
-            initial_stabilizers: If initial_states is not provided,
-                this can be used to determine the initial states of the data
-                qubits.
             final_measurements: The measurements to perform at the end of the
                 circuit. If not provided, will use final_stabilizers to
                 determine the measurements. If the code is a tic-tac-toe code,
                 the measurements will be determined by the pauli-letter of the 
                 observables at the last round.
-            final_stabilizers: If final_measurements is not provided,
-                this can be used to determine the measurements to perform at
-                the end of the circuit.
             observables: 
                 The observables to include in the circuit.
         """
         self.check_validity_of_inputs(
-            code, initial_states, initial_stabilizers, final_measurements, final_stabilizers, observables
+            code, initial_states, initial_detectors, final_measurements, final_detectors, observables
         )
         initial_detector_schedules, tick, circuit = self.compile_initialisation(
-            code, initial_states, initial_stabilizers)
+            code, initial_states, initial_detectors)
 
         initialization_layers = len(initial_detector_schedules)
         # initial_layers is the number of layers in which 'lid-only'
@@ -319,7 +291,7 @@ class Compiler(ABC):
             self,
             code: Code,
             initial_states: Union[Dict[Qubit, State], None],
-            initial_stabilizers: Union[List[Stabilizer], None],
+            initial_detectors: Union[List[List[Detector]], None],
     ):
         """Compiles the initialisation of the circuit.
 
@@ -346,31 +318,26 @@ class Compiler(ABC):
         tick = 0
         self.add_ancilla_qubits(code)
 
-        # Figure out states in which to initialise data qubits in order to
-        # satisfy desired initial stabilizers.
-        if initial_stabilizers is not None:
-            initial_states = self.get_initial_states(initial_stabilizers)
-
         if set(initial_states.keys()) != set(code.data_qubits.values()):
             raise ValueError(
-                f"Set of data qubits whose initial states were either given "
-                f"or could be determined differs from the set of all data "
-                f"qubits. Please give a complete set of desired initial states "
-                f"or desired stabilizers for the first round of measurements. "
+                f"Set of data qubits whose initial states were given "
+                f"differs from the set of all data qubits. Please give a "
+                f"complete set of desired initial states. "
                 f"Set of all data qubits is {list(code.data_qubits.values())}. "
-                f"Set of data qubits whose initial states could be determined "
+                f"Set of data qubits whose initial states were given "
                 f"is {list(initial_states.keys())}")
 
         # Initialise data qubits, and set the 'current' tick to be the tick
         # we're on after all data qubits have been initialised.
         tick = self.initialize_qubits(initial_states, tick, circuit)
 
-        # In the first few rounds (or even layers), there might be some
-        # non-deterministic detectors that need removing.
-
+        # If the user hasn't provided initial detectors, 
+        # then we just compile the subset of the regular detector schedule
+        # whose outcomes remain deterministic given these initial states.
+        # If the user has provided initial detectors, then we use them.
         detector_initialiser = DetectorInitialiser(code, self)
         initial_detector_schedules = detector_initialiser.get_initial_detectors(
-            initial_states, initial_stabilizers)
+            initial_states, initial_detectors)
 
         return initial_detector_schedules, tick, circuit
 
@@ -382,13 +349,6 @@ class Compiler(ABC):
     def get_measurement_bases(self, final_stabilizers: List[Stabilizer]):
         measurement_bases = list(self._get_paulis(final_stabilizers).values())
         return measurement_bases
-
-    def get_initial_states(self, initial_stabilizers: List[Stabilizer]):
-        paulis = self._get_paulis(initial_stabilizers)
-        initial_states = {
-            qubit: plus_one_eigenstates[pauli.letter]
-            for qubit, pauli in paulis.items()}
-        return initial_states
 
     def _get_paulis(self, stabilizers: List[Stabilizer]):
         paulis = {}
@@ -828,16 +788,3 @@ class Compiler(ABC):
                 circuit.add_instruction(gate_tick + 1, noise_instruction)
         # Return the next usable even tick
         return tick + 2 * len(gates)
-
-    def _assert_final_stabilizers_valid(
-            self, final_stabilizers: List[Stabilizer], code: Code):
-        for stabilizer in final_stabilizers:
-            for t, check in stabilizer.timed_checks:
-                expected_round = (stabilizer.end + t) % code.schedule_length
-                if check not in code.check_schedule[expected_round]:
-                    raise ValueError(
-                        f"Requested that a final detector is built using a "
-                        f"check that isn't in the code's check schedule! "
-                        f"The check is {check}, and is part of stabilizer "
-                        f"{stabilizer}. The code's check schedule is "
-                        f"{code.check_schedule}.")

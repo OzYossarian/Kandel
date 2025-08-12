@@ -52,7 +52,7 @@ class DetectorInitialiser:
 
     def get_initial_detectors(
             self, initial_states: Dict[Qubit, State],
-            initial_stabilizers: Union[List[Stabilizer], None]
+            initial_detectors: Union[List[List[Detector]], None]
     ) -> List[List[List[Detector]]]:
         """
         Determine the detectors that should be measured in the first round(s).
@@ -64,11 +64,9 @@ class DetectorInitialiser:
         Args:
             initial_states:
                 the states in which the data qubits should be initialised.
-            initial_stabilizers:
+            initial_detectors:
                 detectors to be used in the first round(s) of the code,
-                replacing the detectors from the usual schedule. As the name
-                suggests, data qubits should be initialised such that these
-                detectors are stabilizers in the first round(s).
+                replacing the detectors from the usual schedule.
         Returns:
             the initial detector schedules. That is, a nested list of
             detectors, where the list at index i specifies the detectors to
@@ -83,40 +81,37 @@ class DetectorInitialiser:
 
         # If we've been given initial stabilizers, stick them into the
         # initial detector schedule. Else, start with an empty schedule.
-        if initial_stabilizers is not None:
-            tick, initial_detector_schedule = self.use_stabilizers_as_detectors(
-                initial_stabilizers, tick, circuit)
-            round = len(initial_detector_schedule)
-        else:
-            initial_detector_schedule = {}
+        if initial_detectors is None:
+            initial_detector_schedule = []
             round = 0
 
-        layer = round // self.code.schedule_length
-        shift = layer * self.code.schedule_length
-        min_start = min(shift + detector.start for detector in self.code.detectors)
-        done = min_start >= 0
+            layer = round // self.code.schedule_length
+            shift = layer * self.code.schedule_length
+            min_start = min(shift + detector.start for detector in self.code.detectors)
+            done = min_start >= 0
 
-        while not done:
-            round_detectors = self.simulate_round(round, tick, circuit)
-            initial_detector_schedule[round] = round_detectors
-            tick += 2
-            round += 1
-            # If all detectors now start at a non-negative round, then we're done
-            # with this special initialisation logic.
-            new_layer = round // self.code.schedule_length
-            if new_layer == layer + 1:
-                layer = new_layer
-                min_start += self.code.schedule_length
-                done = min_start >= 0
+            while not done:
+                round_detectors = self.simulate_round(round, tick, circuit)
+                initial_detector_schedule.append(round_detectors)
+                tick += 2
+                round += 1
+                # If all detectors now start at a non-negative round, then we're done
+                # with this special initialisation logic.
+                new_layer = round // self.code.schedule_length
+                if new_layer == layer + 1:
+                    layer = new_layer
+                    min_start += self.code.schedule_length
+                    done = min_start >= 0
 
-        # Now split the schedule into chunks of the right size.
+        # Now split the initial detector schedule into chunks of the right size.
+        # Applies whether or not the initial detectors were given or calculated above.
         initial_detector_schedules = self.split_schedule(
             initial_detector_schedule)
 
         return initial_detector_schedules
 
     def split_schedule(
-            self, initial_detector_schedule: Dict[int, List[Detector]]):
+            self, initial_detector_schedule: List[List[Detector]]):
         """
         'Reshape' the initial detector schedule. Effectively the initial
         detector schedule right now is a list of lists of detectors (because
@@ -138,8 +133,7 @@ class DetectorInitialiser:
         initial_detector_schedules = [[] for _ in range(initial_layers)]
 
         # Chunk up the initial schedule into layers.
-        schedule = sorted(initial_detector_schedule.items())
-        for round, round_detectors in schedule:
+        for round, round_detectors in enumerate(initial_detector_schedule):
             layer = round // self.code.schedule_length
             initial_detector_schedules[layer].append(round_detectors)
 
