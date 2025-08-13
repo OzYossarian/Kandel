@@ -24,7 +24,6 @@ from main.compiling.syndrome_extraction.extractors.ancilla_per_check.mixed.CnotE
 )
 from main.utils.enums import State
 from main.utils.types import Tick
-from main.utils.utils import xor
 import stim
 
 
@@ -112,6 +111,32 @@ class Compiler(ABC):
         if initial_detectors is None:
             raise ValueError("initial_detectors must be provided - instead got None.")
 
+        if final_detectors is not None:
+            if final_measurements is None:
+                raise ValueError(
+                    "If final_detectors is provided, " 
+                    "final_measurements must also be provided - instead got None.")
+
+    def compile_to_stim(
+        self,
+        code: Code,
+        total_rounds: int,
+        initial_states: Dict[Qubit, State] = None,
+        initial_detectors: List[List[Detector]] = None,
+        final_measurements: List[Pauli] = None,
+        final_detectors: List[List[Detector]] = None,
+        observables: List[LogicalOperator] = None,
+    ) -> stim.Circuit:
+        circuit = self.compile_to_circuit(
+            code=code,
+            total_rounds=total_rounds,
+            initial_states=initial_states,
+            initial_detectors=initial_detectors,
+            final_measurements=final_measurements,
+            final_detectors=final_detectors,
+            observables=observables)
+        return circuit.to_stim(self.noise_model.idling)
+
     def compile_to_circuit(
         self,
         code: Code,
@@ -162,7 +187,19 @@ class Compiler(ABC):
 
         # Compile the remaining layers.
         round = code.schedule_length * initialization_layers
-        while round < total_rounds:
+
+        if final_detectors is not None:
+            # We assume that the final element in the list of final detectors
+            # is the list of detectors to be compiled in the very final round,
+            # i.e. in the round where we compile the final measurements.
+            # This is different to the initialisation process - 
+            # there the first element in the list of initial detectors was 
+            # the list of detectors to be compiled in round 1 -
+            # i.e. the round immediately after we compile the initial states.
+            final_detector_rounds = len(final_detectors)
+        else:
+            final_detector_rounds = 0
+        while round < total_rounds - final_detector_rounds:
             tick = self.compile_round(
                 round,
                 round % code.schedule_length,
@@ -174,26 +211,19 @@ class Compiler(ABC):
             )
             round += 1
 
-        # For tic-tac-toe codes, which measurements need to be performed at the end depends on the number of rounds.
-        # Only after compilation the at_round function contains the pauli letter of the observable.
-        # That is why we do this here.
-        if final_stabilizers is None and final_measurements is None:
-            # We are assuming that there is only one observable in the list.
-            pauli_letter_observable = observables[0].at_round(round-1)[0].letter.letter
-            final_measurements = [
-                Pauli(qubit, PauliLetter(pauli_letter_observable))
-                for qubit in code.data_qubits.values()]
-
-        # Finish with data qubit measurements, and use these to reconstruct
-        # some detectors.
-        self.compile_final_measurements(
-            final_measurements,
-            final_stabilizers,
-            observables,
-            round,
-            tick,
-            circuit,
-            code)
+        if final_detectors is not None:
+            raise NotImplementedError("Final detectors not yet implemented.")
+        else:
+            # Finish with data qubit measurements, and use these to reconstruct
+            # some detectors.
+            self.compile_final_measurements(
+                final_measurements,
+                final_stabilizers,
+                observables,
+                round,
+                tick,
+                circuit,
+                code)
 
         return circuit
 
@@ -266,26 +296,6 @@ class Compiler(ABC):
         circuit.end_round(tick - 2)
 
         return tick
-
-    def compile_to_stim(
-        self,
-        code: Code,
-        total_rounds: int,
-        initial_states: Dict[Qubit, State] = None,
-        initial_stabilizers: List[Stabilizer] = None,
-        final_measurements: List[Pauli] = None,
-        final_stabilizers: List[Stabilizer] = None,
-        observables: List[LogicalOperator] = None,
-    ) -> stim.Circuit:
-        circuit = self.compile_to_circuit(
-            code=code,
-            total_rounds=total_rounds,
-            initial_states=initial_states,
-            initial_stabilizers=initial_stabilizers,
-            final_measurements=final_measurements,
-            final_stabilizers=final_stabilizers,
-            observables=observables)
-        return circuit.to_stim(self.noise_model.idling)
 
     def compile_initialisation(
             self,

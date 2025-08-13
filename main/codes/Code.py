@@ -23,7 +23,8 @@ class Code:
     """
 
     def __init__(
-            self, data_qubits: Union[Dict[Coordinates, Qubit], List[Qubit]],
+            self, 
+            data_qubits: Union[Dict[Coordinates, Qubit], List[Qubit]],
             check_schedule: List[List[Check]] = None,
             detector_schedule: List[List[Drum]] = None,
             logical_qubits: List[LogicalQubit] = None,
