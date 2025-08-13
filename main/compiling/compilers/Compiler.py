@@ -220,7 +220,7 @@ class Compiler(ABC):
             # some detectors.
             self.compile_final_measurements(
                 final_measurements,
-                final_stabilizers,
+                final_detector_schedule,
                 observables,
                 round,
                 tick,
@@ -528,7 +528,7 @@ class Compiler(ABC):
     def compile_final_measurements(
             self,
             final_measurements: Union[List[Pauli], None],
-            final_stabilizers: Union[List[Stabilizer], None],
+            final_detector_schedule: Union[List[List[Detector]], None],
             observables: Union[List[LogicalOperator], None],
             round: int,
             tick: int,
@@ -561,8 +561,8 @@ class Compiler(ABC):
         """
         # TODO - allow measurements other than single data qubits
         #  measurements at the end? e.g. Pauli product measurements.
-        if final_stabilizers is not None:
-            final_measurements = self.get_measurement_bases(final_stabilizers)
+        if final_detector_schedule is not None:
+            raise NotImplementedError("Final detectors not yet implemented.")
 
         if final_measurements is not None:
             # A single qubit measurement is just a weight-1 check, and writing
@@ -578,7 +578,7 @@ class Compiler(ABC):
             # Now try to use these as lids for any detectors that at this point
             # have a floor but no lid.
             self.compile_final_detectors(
-                final_checks, final_stabilizers, round, circuit, code)
+                final_checks, final_detector_schedule, round, circuit, code)
             # Finally, define the observables we want to measure
             self.compile_final_logical_operators(
                 observables, final_checks, round, circuit)
@@ -586,42 +586,19 @@ class Compiler(ABC):
     def compile_final_detectors(
             self,
             final_checks: Union[Dict[Qubit, Check], None],
-            final_stabilizers: Union[List[Stabilizer], None],
+            final_detector_schedule: Union[List[List[Detector]], None],
             round: int,
             circuit: Circuit,
             code: Code
     ):
-        if final_stabilizers is None:
+        if final_detector_schedule is None:
             final_detectors = self.compile_final_detectors_from_measurements(
                 final_checks, round, code)
         else:
-            final_detectors = self.compile_final_detectors_from_stabilizers(
-                final_checks, final_stabilizers, code)
+            raise NotImplementedError("Final detectors not yet implemented.")
 
         # Finally, compile these detectors to the circuit.
         circuit.measurer.add_detectors(final_detectors, round)
-
-    def compile_final_detectors_from_stabilizers(
-            self, final_checks: Dict[Qubit, Check],
-            final_stabilizers: List[Stabilizer],
-            code: Code):
-
-        # Note - no need for extra validation here. We checked earlier that
-        # the final stabilizers actually consist of checks from the code's
-        # check schedule. And we derived the required single qubit data
-        # measurements from these final stabilizers.
-        final_detectors = []
-        for stabilizer in final_stabilizers:
-            qubits = [pauli.qubit for pauli in stabilizer.product.paulis]
-            measurements = [(0, final_checks[qubit]) for qubit in qubits]
-            floor = [
-                # Figure out how many rounds ago each check was measured
-                (stabilizer.end + t - code.schedule_length, check)
-                for (t, check) in
-                stabilizer.timed_checks]
-            drum = Drum(floor, measurements, 0, stabilizer.anchor)
-            final_detectors.append(drum)
-        return final_detectors
 
     def compile_final_detectors_from_measurements(
             self, final_checks: Dict[Qubit, Check], round: int, code: Code):
