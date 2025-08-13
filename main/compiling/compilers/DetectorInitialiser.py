@@ -52,7 +52,7 @@ class DetectorInitialiser:
 
     def get_initial_detectors(
             self, initial_states: Dict[Qubit, State],
-            initial_detectors: Union[List[List[Detector]], None]
+            initial_detector_schedule: Union[List[List[Detector]], None]
     ) -> List[List[List[Detector]]]:
         """
         Determine the detectors that should be measured in the first round(s).
@@ -81,7 +81,7 @@ class DetectorInitialiser:
 
         # If we've been given initial stabilizers, stick them into the
         # initial detector schedule. Else, start with an empty schedule.
-        if initial_detectors is None:
+        if initial_detector_schedule is None:
             initial_detector_schedule = []
             round = 0
 
@@ -105,10 +105,8 @@ class DetectorInitialiser:
 
         # Now split the initial detector schedule into chunks of the right size.
         # Applies whether or not the initial detectors were given or calculated above.
-        initial_detector_schedules = self.split_schedule(
-            initial_detector_schedule)
-
-        return initial_detector_schedules
+        initial_detector_layers = self.split_schedule(initial_detector_schedule)
+        return initial_detector_layers
 
     def split_schedule(
             self, initial_detector_schedule: List[List[Detector]]):
@@ -130,21 +128,21 @@ class DetectorInitialiser:
         """
         initial_rounds = len(initial_detector_schedule)
         initial_layers = math.ceil(initial_rounds / self.code.schedule_length)
-        initial_detector_schedules = [[] for _ in range(initial_layers)]
+        initial_detector_layers = [[] for _ in range(initial_layers)]
 
         # Chunk up the initial schedule into layers.
         for round, round_detectors in enumerate(initial_detector_schedule):
             layer = round // self.code.schedule_length
-            initial_detector_schedules[layer].append(round_detectors)
+            initial_detector_layers[layer].append(round_detectors)
 
         # Maybe pad out the final initial layer with the usual detectors.
 
-        truncation = len(initial_detector_schedules[-1])
+        truncation = len(initial_detector_layers[-1])
         if truncation < self.code.schedule_length:
-            initial_detector_schedules[-1] += \
+            initial_detector_layers[-1] += \
                 self.code.detector_schedule[truncation:]
 
-        return initial_detector_schedules
+        return initial_detector_layers
 
     def simulate_round(self, round: int, tick: Tick, circuit: Circuit):
         """
