@@ -2,11 +2,9 @@ from abc import abstractmethod, ABC
 from typing import List, Dict, Iterable, Union
 from main.building_blocks.Check import Check
 from main.building_blocks.detectors.Detector import Detector
-from main.building_blocks.detectors.Drum import Drum
 from main.building_blocks.detectors.Stabilizer import Stabilizer
 from main.building_blocks.logical.LogicalOperator import LogicalOperator
 from main.building_blocks.pauli.PauliProduct import PauliProduct
-from main.building_blocks.pauli.utils import plus_one_eigenstates
 from main.compiling.Instruction import Instruction
 from main.codes.Code import Code
 from main.building_blocks.pauli.PauliLetter import PauliLetter
@@ -171,25 +169,25 @@ class Compiler(ABC):
             final_detector_schedule,
             observables)
         
-        initial_detector_layers, tick, circuit = self.compile_initialisation(
+        initial_detector_schedule, tick, circuit = self.compile_initialisation(
             code, initial_states, initial_detector_schedule)
-        initialization_layers = len(initial_detector_layers)
-        # initialization_layers is the number of layers in which 'lid-only'
+        initialization_rounds = len(initial_detector_schedule)
+        # initialization_rounds is the number of rounds in which 'lid-only'
         # detectors exist.
-        if initialization_layers * code.schedule_length > total_rounds:
+        if initialization_rounds > total_rounds:
             raise ValueError(
-                f"The number of layers required to set up the code is "
-                f"greater than the number of layers to compile!"
+                f"The number of rounds required to set up the code is "
+                f"greater than the number of rounds to compile!"
                 f"Requested that {total_rounds} round(s) are compiled, but code "
-                f"seems to take {initialization_layers * code.schedule_length} round(s) to set up.")
+                f"seems to take {initialization_rounds} round(s) to set up.")
 
-        # Compile these initial layers.
-        for layer, detector_schedule in enumerate(initial_detector_layers):
-            tick = self.compile_layer(
-                layer, detector_schedule, observables, tick, circuit, code)
+        # Compile these initial rounds.
+        for round, detector_schedule in enumerate(initial_detector_schedule):
+            tick = self.compile_round(
+                round, detector_schedule, observables, tick, circuit, code)
 
-        # Compile the remaining layers.
-        round = code.schedule_length * initialization_layers
+        # Compile the remaining rounds.
+        round = initialization_rounds
 
         if final_detector_schedule is not None:
             # We assume that the final element in the list of final detectors
@@ -198,7 +196,7 @@ class Compiler(ABC):
             # This is different to the initialisation process - 
             # there the first element in the list of initial detectors was 
             # the list of detectors to be compiled in round 1 -
-            # i.e. the round immediately after we compile the initial states.
+            # i.e. the round immediately AFTER we compile the initial states.
             final_detector_rounds = len(final_detector_schedule)
         else:
             final_detector_rounds = 0
@@ -214,7 +212,14 @@ class Compiler(ABC):
             round += 1
 
         if final_detector_schedule is not None:
-            raise NotImplementedError("Final detectors not yet implemented.")
+            self.compile_final_detector_schedule(
+                final_measurements,
+                final_detector_schedule,
+                observables,
+                round,
+                tick,
+                circuit,
+                code)
         else:
             # Finish with data qubit measurements, and use these to reconstruct
             # some detectors.
@@ -343,15 +348,15 @@ class Compiler(ABC):
         # we're on after all data qubits have been initialised.
         tick = self.initialize_qubits(initial_states, tick, circuit)
 
-        # If the user hasn't provided initial detectors, 
-        # then we just compile the subset of the regular detector schedule
-        # whose outcomes remain deterministic given these initial states.
-        # If the user has provided initial detectors, then we use them.
-        detector_initialiser = DetectorInitialiser(code, self)
-        initial_detector_layers = detector_initialiser.get_initial_detectors(
-            initial_states, initial_detector_schedule)
+        if initial_detector_schedule is None:
+            # If the user hasn't provided initial detectors, 
+            # then we just compile the subset of the regular detector schedule
+            # whose outcomes remain deterministic given these initial states.
+            # If the user has provided initial detectors, then we use them.
+            detector_initialiser = DetectorInitialiser(code, self)
+            initial_detector_schedule = detector_initialiser.get_initial_detectors(initial_states)
 
-        return initial_detector_layers, tick, circuit
+        return initial_detector_schedule, tick, circuit
 
     @abstractmethod
     def add_ancilla_qubits(self, code):
@@ -665,6 +670,18 @@ class Compiler(ABC):
                     final_detectors.append(new_detector)
         return final_detectors
 
+    def compile_final_detector_schedule(
+            self,
+            final_measurements: List[Pauli],
+            final_detector_schedule: List[List[Detector]],
+            observables: Union[List[LogicalOperator], None],
+            round: int,
+            tick: int,
+            circuit: Circuit,
+            code: Code,
+    ):
+        raise NotImplementedError("Final detectors not yet implemented.")
+        
     def compile_final_logical_operators(
             self,
             observables: Union[List[LogicalOperator], None],

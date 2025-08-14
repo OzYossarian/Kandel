@@ -51,9 +51,9 @@ class DetectorInitialiser:
             'Z': stim.target_z}
 
     def get_initial_detectors(
-            self, initial_states: Dict[Qubit, State],
-            initial_detector_schedule: Union[List[List[Detector]], None]
-    ) -> List[List[List[Detector]]]:
+                self, 
+                initial_states: Dict[Qubit, State]
+            ) -> List[List[List[Detector]]]:
         """
         Determine the detectors that should be measured in the first round(s).
         Initial states should always be provided. Initial stabilizers can also
@@ -81,68 +81,28 @@ class DetectorInitialiser:
 
         # If we've been given initial stabilizers, stick them into the
         # initial detector schedule. Else, start with an empty schedule.
-        if initial_detector_schedule is None:
-            initial_detector_schedule = []
-            round = 0
+        initial_detector_schedule = []
+        round = 0
 
-            layer = round // self.code.schedule_length
-            shift = layer * self.code.schedule_length
-            min_start = min(shift + detector.start for detector in self.code.detectors)
-            done = min_start >= 0
+        layer = round // self.code.schedule_length
+        shift = layer * self.code.schedule_length
+        min_start = min(shift + detector.start for detector in self.code.detectors)
+        done = min_start >= 0
 
-            while not done:
-                round_detectors = self.simulate_round(round, tick, circuit)
-                initial_detector_schedule.append(round_detectors)
-                tick += 2
-                round += 1
-                # If all detectors now start at a non-negative round, then we're done
-                # with this special initialisation logic.
-                new_layer = round // self.code.schedule_length
-                if new_layer == layer + 1:
-                    layer = new_layer
-                    min_start += self.code.schedule_length
-                    done = min_start >= 0
+        while not done:
+            round_detectors = self.simulate_round(round, tick, circuit)
+            initial_detector_schedule.append(round_detectors)
+            tick += 2
+            round += 1
+            # If all detectors now start at a non-negative round, then we're done
+            # with this special initialisation logic.
+            new_layer = round // self.code.schedule_length
+            if new_layer == layer + 1:
+                layer = new_layer
+                min_start += self.code.schedule_length
+                done = min_start >= 0
 
-        # Now split the initial detector schedule into chunks of the right size.
-        # Applies whether or not the initial detectors were given or calculated above.
-        initial_detector_layers = self.split_schedule(initial_detector_schedule)
-        return initial_detector_layers
-
-    def split_schedule(
-            self, initial_detector_schedule: List[List[Detector]]):
-        """
-        'Reshape' the initial detector schedule. Effectively the initial
-        detector schedule right now is a list of lists of detectors (because
-        its keys are just integers starting at 0). This method just groups
-        the values into lists of size k, where k is the code's schedule
-        length. e.g. Letting i below denote the list with key i, we take:
-            [0, 1, ... , k, k+1, ..., 2k, 2k+1, ...]
-        and turn it into:
-            [[0, 1, ... , k], [k+1, ..., 2k], [2k+1, ...]]
-
-        Args:
-            initial_detector_schedule: schedule to reshape.
-
-        Returns:
-            reshaped detector schedule.
-        """
-        initial_rounds = len(initial_detector_schedule)
-        initial_layers = math.ceil(initial_rounds / self.code.schedule_length)
-        initial_detector_layers = [[] for _ in range(initial_layers)]
-
-        # Chunk up the initial schedule into layers.
-        for round, round_detectors in enumerate(initial_detector_schedule):
-            layer = round // self.code.schedule_length
-            initial_detector_layers[layer].append(round_detectors)
-
-        # Maybe pad out the final initial layer with the usual detectors.
-
-        truncation = len(initial_detector_layers[-1])
-        if truncation < self.code.schedule_length:
-            initial_detector_layers[-1] += \
-                self.code.detector_schedule[truncation:]
-
-        return initial_detector_layers
+        return initial_detector_schedule
 
     def simulate_round(self, round: int, tick: Tick, circuit: Circuit):
         """
