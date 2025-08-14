@@ -182,9 +182,10 @@ class Compiler(ABC):
                 f"seems to take {initialization_rounds} round(s) to set up.")
 
         # Compile these initial rounds.
-        for round, detector_schedule in enumerate(initial_detector_schedule):
+        for round, detectors in enumerate(initial_detector_schedule):
+            relative_round = round % code.schedule_length
             tick = self.compile_round(
-                round, detector_schedule, observables, tick, circuit, code)
+                round, relative_round, detectors, observables, tick, circuit, code)
 
         # Compile the remaining rounds.
         round = initialization_rounds
@@ -201,10 +202,12 @@ class Compiler(ABC):
         else:
             final_detector_rounds = 0
         while round < total_rounds - final_detector_rounds:
+            relative_round = round % code.schedule_length
+            detectors = code.detector_schedule[relative_round]
             tick = self.compile_round(
                 round,
-                round % code.schedule_length,
-                code.detector_schedule,
+                relative_round,
+                detectors,
                 observables,
                 tick,
                 circuit,
@@ -248,12 +251,12 @@ class Compiler(ABC):
             # Compile one round of checks, and note down the final tick
             # used, then start the next round of checks from this tick.
             round = layer * code.schedule_length + relative_round
-
+            detectors = detector_schedule[relative_round]
             if relative_round in stability_observable_rounds:
                 tick = self.compile_final_round(
                     round,
                     relative_round,
-                    detector_schedule,
+                    detectors,
                     obs,
                     tick,
                     circuit,
@@ -263,8 +266,7 @@ class Compiler(ABC):
                 tick = self.compile_round(
                     round,
                     relative_round,
-                    code.check_schedule,
-                    detector_schedule,
+                    detectors,
                     None,
                     tick,
                     circuit,
@@ -278,7 +280,7 @@ class Compiler(ABC):
         self,
         round: int,
         relative_round: int,
-        detector_schedule: List[List[Detector]],
+        detectors: List[Detector],
         observable: Union[List[LogicalOperator], None],
         tick: int,
         circuit: Circuit,
@@ -291,9 +293,6 @@ class Compiler(ABC):
         tick = self.syndrome_extractor.extract_checks(
             checks, round, tick, circuit, self
         )
-
-        # Next note down any detectors we'll need to compile at this round.
-        detectors = detector_schedule[relative_round]
 
         circuit.measurer.add_detectors(detectors, round)
 
@@ -460,16 +459,14 @@ class Compiler(ABC):
             The tick at which the last gates of the layer were compiled.
         """
         for relative_round in range(code.schedule_length):
-
             # Compile one round of checks, and note down the final tick
             # used, then start the next round of checks from this tick.
             round = layer * code.schedule_length + relative_round
-
+            detectors = detector_schedule[relative_round]
             tick = self.compile_round(
                 round,
                 relative_round,
-                #                code.check_schedule,
-                detector_schedule,
+                detectors,
                 observables,
                 tick,
                 circuit,
@@ -481,7 +478,7 @@ class Compiler(ABC):
             self,
             round: int,
             relative_round: int,
-            detector_schedule: List[List[Detector]],
+            detectors: List[Detector],
             observables: Union[List[LogicalOperator], None],
             tick: int,
             circuit: Circuit,
@@ -510,7 +507,6 @@ class Compiler(ABC):
         )
 
         # Next note down any detectors we'll need to compile at this round.
-        detectors = detector_schedule[relative_round]
         circuit.measurer.add_detectors(detectors, round)
 
         # And likewise note down any observables that need updating.
