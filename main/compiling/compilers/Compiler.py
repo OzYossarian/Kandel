@@ -100,8 +100,8 @@ class Compiler(ABC):
         code: Code,
         initial_states: Dict[Qubit, State] = None,
         initial_detector_schedule: List[List[Detector]] = None,
-        final_measurements: List[Pauli] = None,
-        final_detector_schedule: List[List[Detector]] = None,
+        final_measurements: Union[List[Pauli], Dict[Qubit, Check]] = None,
+        final_detectors: List[Detector] = None,
         observables: List[LogicalOperator] = None,
     ):
         if initial_states is None:
@@ -109,7 +109,7 @@ class Compiler(ABC):
         if initial_detector_schedule is None:
             raise ValueError("initial_detectors must be provided - instead got None.")
 
-        if final_detector_schedule is not None:
+        if final_detectors is not None:
             if final_measurements is None:
                 raise ValueError(
                     "If final_detectors is provided, " 
@@ -121,8 +121,8 @@ class Compiler(ABC):
         total_rounds: int,
         initial_states: Dict[Qubit, State] = None,
         initial_detector_schedule: List[List[Detector]] = None,
-        final_measurements: List[Pauli] = None,
-        final_detector_schedule: List[List[Detector]] = None,
+        final_measurements: Union[List[Pauli], Dict[Qubit, Check]] = None,
+        final_detectors: List[Detector] = None,
         observables: List[LogicalOperator] = None,
     ) -> stim.Circuit:
         circuit = self.compile_to_circuit(
@@ -131,7 +131,7 @@ class Compiler(ABC):
             initial_states=initial_states,
             initial_detector_schedule=initial_detector_schedule,
             final_measurements=final_measurements,
-            final_detector_schedule=final_detector_schedule,
+            final_detectors=final_detectors,
             observables=observables)
         return circuit.to_stim(self.noise_model.idling)
 
@@ -141,8 +141,8 @@ class Compiler(ABC):
         total_rounds: int,
         initial_states: Dict[Qubit, State] = None,
         initial_detector_schedule: List[List[Detector]] = None,
-        final_measurements: List[Pauli] = None,
-        final_detector_schedule: List[List[Detector]] = None,
+        final_measurements: Union[List[Pauli], Dict[Qubit, Check]] = None,
+        final_detectors: List[Detector] = None,
         observables: List[LogicalOperator] = None,
     ) -> Circuit:
         """ Compiles a circuit for a given code.
@@ -166,7 +166,7 @@ class Compiler(ABC):
             initial_states,
             initial_detector_schedule,
             final_measurements,
-            final_detector_schedule,
+            final_detectors,
             observables)
         
         initial_detector_schedule, tick, circuit = self.compile_initialisation(
@@ -180,8 +180,17 @@ class Compiler(ABC):
                 f"greater than the number of rounds to compile!"
                 f"Requested that {total_rounds} round(s) are compiled, but code "
                 f"seems to take {initialization_rounds} round(s) to set up.")
-
-        # Compile these initial rounds.
+        # While we're at it, perform a similar validation for the final detectors.
+        if final_detectors is not None:
+            max_detector_span = max([detector.span for detector in final_detectors])
+            if max_detector_span > total_rounds:
+                raise ValueError(
+                    f"The number of rounds required to compile the final detectors "
+                    f"is greater than the number of rounds to compile!"
+                    f"Requested that {total_rounds} round(s) are compiled, but code "
+                    f"seems to take {max_detector_span} round(s) to compile the final detectors.")
+        
+        # Compile the initial rounds.
         for round, detectors in enumerate(initial_detector_schedule):
             relative_round = round % code.schedule_length
             tick = self.compile_round(
@@ -189,19 +198,7 @@ class Compiler(ABC):
 
         # Compile the remaining rounds.
         round = initialization_rounds
-
-        if final_detector_schedule is not None:
-            # We assume that the final element in the list of final detectors
-            # is the list of detectors to be compiled in the very final round,
-            # i.e. in the round where we compile the final measurements.
-            # This is different to the initialisation process - 
-            # there the first element in the list of initial detectors was 
-            # the list of detectors to be compiled in round 1 -
-            # i.e. the round immediately AFTER we compile the initial states.
-            final_detector_rounds = len(final_detector_schedule)
-        else:
-            final_detector_rounds = 0
-        while round < total_rounds - final_detector_rounds:
+        while round < total_rounds:
             relative_round = round % code.schedule_length
             detectors = code.detector_schedule[relative_round]
             tick = self.compile_round(
@@ -214,26 +211,15 @@ class Compiler(ABC):
                 code)
             round += 1
 
-        if final_detector_schedule is not None:
-            self.compile_final_detector_schedule(
-                final_measurements,
-                final_detector_schedule,
-                observables,
-                round,
-                tick,
-                circuit,
-                code)
-        else:
-            # Finish with data qubit measurements, and use these to reconstruct
-            # some detectors.
-            self.compile_final_measurements(
-                final_measurements,
-                final_detector_schedule,
-                observables,
-                round,
-                tick,
-                circuit,
-                code)
+        # Compile the final round, where the qubits are measured out.
+        self.compile_final_measurements(
+            final_measurements,
+            final_detectors,
+            observables,
+            round,
+            tick,
+            circuit,
+            code)
 
         return circuit
 
@@ -528,8 +514,8 @@ class Compiler(ABC):
 
     def compile_final_measurements(
             self,
-            final_measurements: Union[List[Pauli], None],
-            final_detector_schedule: Union[List[List[Detector]], None],
+            final_measurements: Union[List[Pauli], Dict[Qubit, Check], None],
+            final_detectors: Union[List[Detector], None],
             observables: Union[List[LogicalOperator], None],
             round: int,
             tick: int,
@@ -562,41 +548,53 @@ class Compiler(ABC):
         """
         # TODO - allow measurements other than single data qubits
         #  measurements at the end? e.g. Pauli product measurements.
-        if final_detector_schedule is not None:
-            raise NotImplementedError("Final detectors not yet implemented.")
-
-        if final_measurements is not None:
-            # A single qubit measurement is just a weight-1 check, and writing
-            # them as checks rather than Paulis fits them into the same framework
-            # as other measurements.
+            
+        # A single qubit measurement is just a weight-1 check, and writing
+        # them as checks rather than Paulis fits them into the same framework
+        # as other measurements.
+        if isinstance(final_measurements, list):
             final_checks = {}
             for pauli in final_measurements:
                 check = Check([pauli], pauli.qubit.coords)
                 final_checks[pauli.qubit] = check
-            # First, compile instructions for actually measuring the qubits.
-            self.measure_individual_qubits(
-                final_measurements, final_checks.values(), round, tick, circuit)
-            # Now try to use these as lids for any detectors that at this point
-            # have a floor but no lid.
-            self.compile_final_detectors(
-                final_checks, final_detector_schedule, round, circuit, code)
-            # Finally, define the observables we want to measure
-            self.compile_final_logical_operators(
-                observables, final_checks, round, circuit)
+        elif isinstance(final_measurements, dict):
+            # Is already be a dict of qubits to corresponding checks.
+            final_checks = final_measurements
+            # But for compatibility with method below, still need to pull out 
+            # the list of Paulis that these checks actually measure (spaghetti code!)
+            final_measurements = [
+                list(check.paulis.values())[0] 
+                for check in final_checks.values()]
+        else:
+            # must be None - nothing to compile!
+            return
+        
+        # First, compile instructions for actually measuring the qubits.
+        self.measure_individual_qubits(
+            final_measurements, final_checks.values(), round, tick, circuit)
+        
+        # Then compile the final detectors.
+        self.compile_final_detectors(
+            final_checks, final_detectors, round, circuit, code)
+                        
+        # Finally, compile the final round of observable updates.
+        self.compile_final_logical_operators(
+            observables, final_checks, round, circuit)
 
     def compile_final_detectors(
             self,
-            final_checks: Union[Dict[Qubit, Check], None],
-            final_detector_schedule: Union[List[List[Detector]], None],
+            final_checks: Dict[Qubit, Check],
+            final_detectors: Union[List[Detector], None],
             round: int,
             circuit: Circuit,
             code: Code
     ):
-        if final_detector_schedule is None:
+        # If the final detectors are given, we just compile them.
+        # If not, we first need to figure out which of the regular detectors can be 
+        # "finished off" by these final measurements.
+        if final_detectors is None:
             final_detectors = self.compile_final_detectors_from_measurements(
                 final_checks, round, code)
-        else:
-            raise NotImplementedError("Final detectors not yet implemented.")
 
         # Finally, compile these detectors to the circuit.
         circuit.measurer.add_detectors(final_detectors, round)
@@ -665,18 +663,6 @@ class Compiler(ABC):
                         new_detector_checks, end, open_detector.anchor)
                     final_detectors.append(new_detector)
         return final_detectors
-
-    def compile_final_detector_schedule(
-            self,
-            final_measurements: List[Pauli],
-            final_detector_schedule: List[List[Detector]],
-            observables: Union[List[LogicalOperator], None],
-            round: int,
-            tick: int,
-            circuit: Circuit,
-            code: Code,
-    ):
-        raise NotImplementedError("Final detectors not yet implemented.")
         
     def compile_final_logical_operators(
             self,

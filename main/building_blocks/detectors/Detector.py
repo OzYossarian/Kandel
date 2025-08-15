@@ -16,7 +16,8 @@ class Detector(NiceRepr):
 
     def __init__(
             self,
-            timed_checks: List[TimedCheck], end: int,
+            timed_checks: List[TimedCheck], 
+            end: int,
             anchor: Coordinates = None):
         """Detector constructor
 
@@ -54,6 +55,8 @@ class Detector(NiceRepr):
             rounds_ago for rounds_ago, check in self.timed_checks)
         self.start = end + first_check_rounds_ago
         self.end = end
+        # Note down how many whole rounds this detector spans.
+        self.span = -first_check_rounds_ago
 
         super().__init__(['product.word', 'end', 'timed_checks'])
 
