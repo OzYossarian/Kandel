@@ -395,8 +395,10 @@ class Circuit:
             qubits_by_instruction, measurements = self.split_instructions_according_to_gate(qubit_instructions)
 
             for instruction in qubits_by_instruction:
-                circuit.append(instruction[0],
-                               qubits_by_instruction[instruction], instruction[1])
+                circuit.append(
+                    instruction[0],
+                    qubits_by_instruction[instruction], 
+                    instruction[1])
 
             # Let the measurer determine if these measurements trigger any
             # further instructions - e.g. compiling detectors, adding checks

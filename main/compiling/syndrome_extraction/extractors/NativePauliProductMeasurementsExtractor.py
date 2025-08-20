@@ -71,9 +71,11 @@ class NativePauliProductMeasurementsExtractor(SyndromeExtractor):
             tick: int,
             circuit: Circuit,
             compiler: Compiler):
-        noise_param = compiler.noise_model.measurement
-        if noise_param is None:
+        measurement_noise = compiler.noise_model.measurement
+        if measurement_noise is None:
             noise_param = ()
+        else:
+            noise_param = measurement_noise.params
         qubits = [pauli.qubit for pauli in check.paulis.values()]
         instruction = Instruction(
             qubits, "MPP", noise_param, is_measurement=True)
