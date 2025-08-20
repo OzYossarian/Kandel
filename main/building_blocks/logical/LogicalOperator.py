@@ -1,3 +1,4 @@
+from abc import abstractmethod
 from typing import List
 
 from main.building_blocks.Check import Check
@@ -8,26 +9,11 @@ from main.utils.NiceRepr import NiceRepr
 
 class LogicalOperator(NiceRepr):
     def __init__(self, paulis: List[Pauli]):
-        """
-        Class representing a logical operator. This base class assumes it's
-        'static' (defined by the same Paulis at all times). A 'dynamic'
-        logical operator (one defined by different Paulis at different times)
-        should subclass this. For an example of a dynamic logical operator,
-        see TicTacToeLogicalOperator.
-
-        Args:
-            paulis: the Paulis that constitute the operator.
-        """
         # Shouldn't access _paulis directly; instead, use at_round.
         self._paulis = paulis
-
-#        self._assert_non_empty()
+        self._assert_non_empty()
         self._assert_qubits_unique()
         self._assert_coords_valid()
-
-        product = PauliProduct(self.at_round(-1))
-        self._assert_is_hermitian(product)
-
         super().__init__(['_paulis'])
 
     @property
@@ -38,31 +24,35 @@ class LogicalOperator(NiceRepr):
     def has_tuple_coords(self):
         return self.at_round(-1)[0].has_tuple_coords
 
+    @abstractmethod
     def update(self, round: int) -> List[Check]:
         """
-        Updates the list of Paulis that form the logical operator at this
-        round. This base class assumes a static logical operator, as in a
-        stabilizer or subsystem code. A dynamic logical operator should
-        override this class with its own rules as to how the operator
-        changes at each round.
+        Update the logical operator after the given round.
+        For static logical operators, this does nothing.
+        Dynamic logical operators might require checks to be multiplied in.
 
         Args:
             round: the round that has just happened
 
         Returns:
-            a list of any checks that need multiplying into the observable
+            the checks to be multiplies into the logical operator at this round
         """
-        return []
+        pass
 
+    @abstractmethod
     def at_round(self, round: int) -> List[Pauli]:
         """
+        Get a list of Paulis that constitute the logical operator at the given round.
+        For static logical operators, this returns the same list at all rounds.
+        For dynamic logical operators, this may change from round to round.
+
         Args:
             round: the round that has just happened
 
         Returns:
             the Paulis that constitute the logical operator at this round
         """
-        return self._paulis
+        pass
 
     def _assert_non_empty(self):
         paulis = self.at_round(-1)
@@ -95,12 +85,3 @@ class LogicalOperator(NiceRepr):
             raise ValueError(
                 f"Can't mix tuple and non-tuple coordinates! "
                 f"Paulis that make up the operator are: {paulis}")
-
-    # TODO - this actually only needs to be Hermitian up to stabilizer -
-    #  should this change anything? Can't see how it could.
-    def _assert_is_hermitian(self, product: PauliProduct):
-        paulis = self.at_round(-1)
-        if not product.is_hermitian:
-            raise ValueError(
-                f"The product of all Paulis in a logical operator must be "
-                f"Hermitian! Given Paulis are {paulis}.")

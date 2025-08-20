@@ -37,7 +37,7 @@ class PauliProduct(NiceRepr):
             # one Pauli on each qubit.
             paulis = compose(paulis, identities_removed)
         self.paulis = paulis
-        self.weight = len(paulis)
+        self.weight = len([p for p in paulis if p.letter.letter != "I"])
         letters = [pauli.letter for pauli in self.paulis]
         self.word = PauliWord.from_letters(letters)
 

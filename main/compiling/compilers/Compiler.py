@@ -499,7 +499,6 @@ class Compiler(ABC):
         if observables is not None:
             for observable in observables:
                 checks_to_multiply_in = observable.update(round)
-
                 circuit.measurer.multiply_observable(
                     checks_to_multiply_in, observable, round)
 
@@ -677,12 +676,14 @@ class Compiler(ABC):
         if observables is not None:
             for observable in observables:
                 observable_checks = []
-                for observable_pauli in observable.at_round(round - 1):
+                observable_paulis = observable.at_round(round - 1)
+                for observable_pauli in observable_paulis:
                     # Just double check that what we measured is actually what we
                     # want to use to form the logical operator.
                     check = final_checks[observable_pauli.qubit]
                     check_pauli = list(check.paulis.values())[0]
-                    if check_pauli.letter.letter != observable_pauli.letter.letter:
+                    check_pauli_letter = check_pauli.letter.letter
+                    if check_pauli_letter != "I" and check_pauli_letter != observable_pauli.letter.letter:
                         raise ValueError(
                             f"Expected to include a final measurement of "
                             f"{observable_pauli} into an observable, but the "
